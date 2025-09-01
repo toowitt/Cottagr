@@ -21,6 +21,23 @@ async function main() {
 
   console.log('Created property:', property)
 
+  // Create a second sample property
+  const property2 = await prisma.property.create({
+    data: {
+      name: 'Sunset Bay Cabin',
+      slug: 'sunset-bay-cabin',
+      location: 'Sunset Bay, Muskoka',
+      beds: 2,
+      baths: 1,
+      description: 'Cozy cabin with amazing sunset views over the bay.',
+      nightlyRate: 20000, // $200.00 in cents
+      cleaningFee: 5000,  // $50.00 in cents
+      minNights: 3,
+    },
+  })
+
+  console.log('Created second property:', property2)
+
   // Create two sample bookings
   const booking1 = await prisma.booking.create({
     data: {
