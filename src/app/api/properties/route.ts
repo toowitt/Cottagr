@@ -5,8 +5,13 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const properties = await prisma.property.findMany({
-      include: {
-        bookings: true
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        location: true,
+        nightlyRate: true,
+        minNights: true
       }
     })
     return NextResponse.json(properties)
