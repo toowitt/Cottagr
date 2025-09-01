@@ -31,11 +31,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.issues?.[0]?.message ?? 'Invalid request' },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }
-
     return NextResponse.json(
       { error: 'Invalid request parameters' },
       { status: 400 }

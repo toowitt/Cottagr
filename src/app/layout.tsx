@@ -1,18 +1,21 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import SiteHeader from '@/components/SiteHeader';
+
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'CottageMaster',
-  description: 'Shared cottage management made simple.',
+  title: "CottageMaster",
+  description: "Shared cottage management app",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en" className="h-full">
-      <body className="min-h-full bg-gray-950 text-gray-100 antialiased">
-        <SiteHeader />
-        <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
+    <html lang="en">
+      <body className="antialiased">
+        {children}
       </body>
     </html>
   );

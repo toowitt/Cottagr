@@ -1,127 +1,139 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import type { ReactNode } from 'react';
 
-export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const isConfigured = Boolean(process.env.ADMIN_PASSWORD);
-  const authed = cookies().get('admin_auth')?.value === 'ok';
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+  const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // --- Server actions (run on the server only) ---
-  async function login(formData: FormData) {
-    'use server';
-    if (!process.env.ADMIN_PASSWORD) {
-      redirect('/admin?error=ADMIN_PASSWORD not configured');
+  useEffect(() => {
+    // Don't check auth on login page to prevent redirect loop
+    if (pathname === '/admin/login') {
+      setIsAuthenticated(true);
+      setIsChecking(false);
+      return;
     }
-    const pw = (formData.get('password') ?? '').toString();
-    if (pw !== process.env.ADMIN_PASSWORD) {
-      redirect('/admin?error=Invalid password');
-    }
-    cookies().set('admin_auth', 'ok', {
-      httpOnly: true,
-      path: '/',
-      maxAge: 60 * 60 * 24, // 1 day
-      sameSite: 'lax',
-    });
-    redirect('/admin');
-  }
 
-  async function logout() {
-    'use server';
-    cookies().delete('admin_auth');
-    redirect('/admin');
-  }
-  // ------------------------------------------------
+    const checkConfig = async () => {
+      try {
+        const configResponse = await fetch('/admin/api/config');
+        const configData = await configResponse.json();
+        
+        if (!configData.configured) {
+          setIsConfigured(false);
+          setIsChecking(false);
+          return;
+        }
+        
+        setIsConfigured(true);
+        
+        // Only check auth if config is valid
+        const authResponse = await fetch('/admin/api/check-auth');
+        if (authResponse.ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          router.replace('/admin/login');
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+        router.replace('/admin/login');
+      } finally {
+        setIsChecking(false);
+      }
+    };
 
-  // Not configured yet
-  if (!isConfigured) {
+    checkConfig();
+  }, [router, pathname]);
+
+  if (isChecking) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center p-6">
-        <div className="max-w-lg w-full bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-          <h1 className="text-2xl font-semibold">Admin not configured</h1>
-          <p>
-            Set <span className="font-mono">ADMIN_PASSWORD</span> in Replit Secrets for both
-            <strong> Run</strong> and <strong>Deploy</strong> environments, then reload.
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
+  if (isConfigured === false) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="max-w-md p-6 bg-gray-800 rounded-lg">
+          <h1 className="text-xl font-bold mb-4">Configuration Required</h1>
+          <p className="text-gray-300 mb-4">
+            To use the admin panel, please set these environment variables in Secrets:
           </p>
-          <div>
-            <Link href="/" className="text-blue-400 hover:text-blue-300">
-              ← Back to site
-            </Link>
-          </div>
+          <ul className="list-disc list-inside text-gray-300 space-y-1">
+            <li>SINGLE_TENANT="true"</li>
+            <li>ADMIN_PASSWORD="your-secure-password"</li>
+          </ul>
+          <p className="text-sm text-gray-400 mt-4">
+            After adding secrets, restart your application.
+          </p>
         </div>
       </div>
     );
   }
 
-  // Not authenticated → show server-action login form
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center p-6">
-        <form
-          action={login}
-          className="max-w-sm w-full bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4"
-        >
-          <h1 className="text-2xl font-semibold">Admin Login</h1>
-          <label className="block text-sm">
-            <span className="text-gray-300">Password</span>
-            <input
-              type="password"
-              name="password"
-              required
-              className="mt-1 w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </label>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-          >
-            Sign in
-          </button>
-          <div className="text-sm">
-            <Link href="/" className="text-gray-400 hover:text-gray-300">
-              ← Back to site
-            </Link>
-          </div>
-        </form>
-      </div>
-    );
+  if (!isAuthenticated && pathname !== '/admin/login') {
+    return null; // Will redirect to login
   }
 
-  // Authenticated → render admin chrome + children
+
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-gray-900 text-white">
       <nav className="bg-gray-800 border-b border-gray-700">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-6">
-              <Link href="/admin/properties" className="text-gray-200 hover:text-white">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/admin" className="text-xl font-bold">
+              CottageMaster Admin
+            </Link>
+            <div className="flex space-x-6">
+              <Link
+                href="/admin/properties"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
                 Properties
               </Link>
-              <Link href="/admin/bookings" className="text-gray-200 hover:text-white">
-                Bookings
+              <Link
+                href="/admin/calendar"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Calendar
               </Link>
-              <Link href="/admin/blackouts" className="text-gray-200 hover:text-white">
+              <Link
+                href="/admin/blackouts"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
                 Blackouts
               </Link>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/" className="text-gray-400 hover:text-gray-300">
-                ← Back to site
+              <Link
+                href="/admin/bookings"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Bookings
               </Link>
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="bg-gray-700 hover:bg-gray-600 text-sm px-3 py-1 rounded"
-                >
-                  Log out
-                </button>
-              </form>
+              <Link
+                href="/"
+                className="text-gray-400 hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                ← Back to Site
+              </Link>
             </div>
           </div>
         </div>
       </nav>
-
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
     </div>
   );
 }
