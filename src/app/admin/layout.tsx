@@ -11,6 +11,7 @@ export default function AdminLayout({
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -22,10 +23,22 @@ export default function AdminLayout({
       return;
     }
 
-    const checkAuth = async () => {
+    const checkConfig = async () => {
       try {
-        const response = await fetch('/admin/api/check-auth');
-        if (response.ok) {
+        const configResponse = await fetch('/admin/api/config');
+        const configData = await configResponse.json();
+        
+        if (!configData.configured) {
+          setIsConfigured(false);
+          setIsChecking(false);
+          return;
+        }
+        
+        setIsConfigured(true);
+        
+        // Only check auth if config is valid
+        const authResponse = await fetch('/admin/api/check-auth');
+        if (authResponse.ok) {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
@@ -39,7 +52,7 @@ export default function AdminLayout({
       }
     };
 
-    checkAuth();
+    checkConfig();
   }, [router, pathname]);
 
   if (isChecking) {
@@ -50,26 +63,28 @@ export default function AdminLayout({
     );
   }
 
-  if (!isAuthenticated && pathname !== '/admin/login') {
-    return null; // Will redirect to login
-  }
-
-  // Check environment variables
-  if (process.env.SINGLE_TENANT !== "true" || !process.env.ADMIN_PASSWORD) {
+  if (isConfigured === false) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="max-w-md p-6 bg-gray-800 rounded-lg">
           <h1 className="text-xl font-bold mb-4">Configuration Required</h1>
           <p className="text-gray-300 mb-4">
-            To use the admin panel, please set:
+            To use the admin panel, please set these environment variables in Secrets:
           </p>
           <ul className="list-disc list-inside text-gray-300 space-y-1">
             <li>SINGLE_TENANT="true"</li>
             <li>ADMIN_PASSWORD="your-secure-password"</li>
           </ul>
+          <p className="text-sm text-gray-400 mt-4">
+            After adding secrets, restart your application.
+          </p>
         </div>
       </div>
     );
+  }
+
+  if (!isAuthenticated && pathname !== '/admin/login') {
+    return null; // Will redirect to login
   }
 
 
