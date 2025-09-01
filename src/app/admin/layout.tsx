@@ -1,9 +1,12 @@
-
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-async function AuthGuard({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   // Check environment variables
   if (process.env.SINGLE_TENANT !== "true" || !process.env.ADMIN_PASSWORD) {
     return (
@@ -22,64 +25,54 @@ async function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Check authentication
+  // Check authentication - only redirect if not authenticated
   const cookieStore = cookies();
   const authCookie = cookieStore.get('auth');
-  
+
   if (!authCookie || authCookie.value !== 'ok') {
     redirect('/admin/login');
   }
 
-  return <>{children}</>;
-}
-
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gray-900 text-white">
-        <nav className="bg-gray-800 border-b border-gray-700">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between h-16">
-              <Link href="/admin" className="text-xl font-bold">
-                CottageMaster Admin
+    <div className="min-h-screen bg-gray-900 text-white">
+      <nav className="bg-gray-800 border-b border-gray-700">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/admin" className="text-xl font-bold">
+              CottageMaster Admin
+            </Link>
+            <div className="flex space-x-6">
+              <Link
+                href="/admin/properties"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Properties
               </Link>
-              <div className="flex space-x-6">
-                <Link
-                  href="/admin/properties"
-                  className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Properties
-                </Link>
-                <Link
-                  href="/admin/calendar"
-                  className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Calendar
-                </Link>
-                <Link
-                  href="/admin/bookings"
-                  className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Bookings
-                </Link>
-                <Link
-                  href="/"
-                  className="text-gray-400 hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  ← Back to Site
-                </Link>
-              </div>
+              <Link
+                href="/admin/calendar"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Calendar
+              </Link>
+              <Link
+                href="/admin/bookings"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Bookings
+              </Link>
+              <Link
+                href="/"
+                className="text-gray-400 hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                ← Back to Site
+              </Link>
             </div>
           </div>
-        </nav>
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
-      </div>
-    </AuthGuard>
+        </div>
+      </nav>
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+    </div>
   );
 }
