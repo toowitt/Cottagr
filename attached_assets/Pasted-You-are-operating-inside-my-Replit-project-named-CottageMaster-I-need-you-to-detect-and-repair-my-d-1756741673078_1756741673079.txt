@@ -1,0 +1,124 @@
+You are operating inside my Replit project named CottageMaster. I need you to detect and repair my dev environment and deliver a working Preview URL for a Next.js + Prisma (SQLite) app. Please execute the following plan and show me each command you run and its output.
+
+Goal
+
+Start the Next.js dev server reliably in this repl and give me the correct Preview URL to click.
+
+Ensure Prisma with SQLite is configured, migrated, and seeded with one Property named “Black Point Cottage”.
+
+Ensure the following routes work: /, /api/properties, /api/bookings, and /bookings.
+
+Constraints
+
+Use Next.js 14.x in dev to avoid Turbopack crashes.
+
+Bind to host 0.0.0.0.
+
+Use a fixed dev port if needed, but ensure the Preview URL opens in the browser.
+
+Keep SQLite local (file:./dev.db). Do not introduce external databases.
+
+Actions to perform
+
+Version check and correction
+
+Print node -v, npm -v, and cat package.json | sed -n '1,120p'.
+
+If next is 15.x, set next@14.2.5, react@18.2.0, react-dom@18.2.0, then rm -rf node_modules .next and npm install.
+
+Fix Next config for v14
+
+If next.config.ts exists, rename to next.config.js.
+
+Ensure next.config.js exports:
+
+/** @type {import('next').NextConfig} */
+const nextConfig = { reactStrictMode: true };
+module.exports = nextConfig;
+
+
+If src/app/layout.tsx imports Geist fonts, strip those imports and keep a simple <body className="antialiased">.
+
+Prisma + SQLite
+
+Ensure prisma/schema.prisma starts with:
+
+datasource db { provider = "sqlite"; url = "file:./dev.db" }
+generator client { provider = "prisma-client-js" }
+
+
+Ensure models:
+
+model Property { id String @id @default(cuid()) name String createdAt DateTime @default(now()) bookings Booking[] }
+model Booking { id String @id @default(cuid()) propertyId String property Property @relation(fields:[propertyId], references:[id]) start DateTime end DateTime status String @default("requested") createdAt DateTime @default(now()) }
+
+
+Run: npm i -D prisma@latest && npm i @prisma/client@latest
+
+Run: npx prisma generate
+
+Run: npx prisma migrate dev -n init (create if missing, update if present)
+
+Seed once:
+
+node -e "const {PrismaClient}=require('@prisma/client');const db=new PrismaClient();(async()=>{if(!(await db.property.findFirst())){await db.property.create({data:{name:'Black Point Cottage'}})};console.log('Seed OK');process.exit(0)})()"
+
+
+API and page files
+
+Ensure src/lib/prisma.ts exports a singleton Prisma client.
+
+Ensure src/app/api/properties/route.ts GET returns all properties.
+
+Ensure src/app/api/bookings/route.ts supports GET list and POST create with { propertyId, start, end } validation.
+
+Ensure src/app/bookings/page.tsx shows a form to create a booking and lists bookings.
+
+If any of these files are missing, create minimal working versions.
+
+Dev server settings
+
+In package.json set:
+
+"scripts": {
+  "dev": "next dev -H 0.0.0.0 -p 3001",
+  "build": "next build",
+  "start": "next start -H 0.0.0.0 -p 3000"
+}
+
+
+Kill any stale servers: pkill -f "next dev" || true.
+
+Clear cache: rm -rf .next.
+
+Start: npm run dev.
+
+Return the correct Preview URL
+
+Provide the exact clickable Preview URL that works now. If Replit shows an ephemeral *.riker.replit.dev URL, return that. Do not return 0.0.0.0 or localhost.
+
+Verify by fetching:
+
+GET / should be HTTP 200.
+
+GET /api/properties should be JSON array containing “Black Point Cottage”.
+
+GET /api/bookings should be [] initially.
+
+Smoke test create booking
+
+Issue a POST to /api/bookings with JSON body using the seeded propertyId and today+1/today+3 dates.
+
+Show the 201 response.
+
+Show that GET /api/bookings now includes the created booking.
+
+Outputs I require
+
+The exact commands you ran and their outputs.
+
+The final working Preview URL.
+
+A short summary of what changed and any TODOs left.
+
+Only proceed when all checks pass or explain precisely which step failed and why, with the command output.
