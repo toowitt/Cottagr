@@ -9,7 +9,14 @@ export default function SiteHeader() {
             src="/brand/logo.png" 
             alt="CottageMaster" 
             className="h-8 w-auto"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.setAttribute('style', 'display: block');
+            }}
           />
+          <span className="text-white font-semibold tracking-tight hidden">
+            Cottage<span className="text-blue-400">Master</span>
+          </span>
         </Link>
         <nav className="flex items-center gap-6 text-sm">
           <Link href="/#features" className="text-gray-300 hover:text-white">Features</Link>
