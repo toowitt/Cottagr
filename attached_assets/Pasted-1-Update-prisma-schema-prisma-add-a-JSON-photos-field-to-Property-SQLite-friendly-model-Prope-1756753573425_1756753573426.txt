@@ -1,0 +1,63 @@
+1) Update prisma/schema.prisma — add a JSON photos field to Property (SQLite-friendly):
+
+model Property {
+  id           Int      @id @default(autoincrement())
+  name         String
+  slug         String   @unique
+  location     String?
+  beds         Int?
+  baths        Int?
+  description  String?
+  nightlyRate  Int
+  cleaningFee  Int
+  minNights    Int      @default(2)
+  photos       Json?    // array of image URLs, e.g., ["https://...","https://..."]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  bookings     Booking[]
+  blackout     Blackout[]
+  seasonPrices SeasonPrice[]
+}
+
+2) Apply schema and regenerate client locally:
+- npx prisma db push
+- npx prisma generate
+- Restart the dev server so TypeScript picks up the new @prisma/client types.
+
+3) Make the admin actions JSON-safe (don’t stringify) — in app/admin/properties/actions.ts:
+- When reading the "photos" form field (comma-separated URLs), parse to a string[] and pass it directly to Prisma.
+
+Example helpers:
+
+function parsePhotos(val: FormDataEntryValue | null) {
+  const s = (val?.toString() ?? '').trim();
+  if (!s) return [];
+  return s.split(',').map(x => x.trim()).filter(Boolean);
+}
+
+In create/update actions:
+  const photos = parsePhotos(formData.get('photos'));
+  await prisma.property.create({ data: { ..., photos }});
+  // and in update:
+  await prisma.property.update({ where: { id }, data: { ..., photos }});
+
+4) Make the public page tolerant to null/JSON:
+In app/[slug]/page.tsx and any gallery component, guard access:
+
+const photoUrls = Array.isArray(property.photos) ? (property.photos as string[]) : [];
+
+5) Ensure the deploy container also generates the Prisma client:
+- In package.json, add a postinstall (and/or prebuild) hook so the deploy VM runs prisma generate:
+
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "db:seed": "ts-node prisma/seed.ts",
+  "postinstall": "prisma generate",
+  "prebuild": "prisma generate"
+}
+
+(Keeping both postinstall and prebuild is harmless and fixes most CI/deploy flows.)
+
+6) Re-run the deployment.
