@@ -1,145 +1,143 @@
-
-import Link from "next/link";
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { formatCents } from '@/lib/money';
 
-export default async function Home() {
-  const properties = await prisma.property.findMany({
+export default async function HomePage() {
+  // Pull first/featured property if present
+  const property = await prisma.property.findFirst({
     orderBy: { createdAt: 'desc' },
   });
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">CottageMaster</h1>
-          <p className="text-lg text-gray-400">Shared cottage management app</p>
-          <div className="mt-6">
+    <div className="space-y-20">
+      {/* HERO */}
+      <section className="relative overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-b from-gray-900 to-gray-950 p-10">
+        <div className="max-w-2xl">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+            Shared cottage management, without the spreadsheets.
+          </h1>
+          <p className="mt-4 text-gray-300">
+            Block owner time, track bookings, and keep everyone in sync—built
+            for a single cottage (yours) with room to grow.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/bookings"
+              className="inline-flex items-center rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-white"
+            >
+              Check availability
+            </Link>
             <Link
               href="/admin"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
+              className="inline-flex items-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white"
             >
-              Admin Panel
+              Owner Login
             </Link>
           </div>
-        </header>
+        </div>
+      </section>
 
-        <main className="max-w-6xl mx-auto">
-          {/* Properties Grid */}
-          {properties.length > 0 ? (
-            <>
-              <h2 className="text-2xl font-bold mb-6">Available Properties</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {properties.map((property) => (
-                  <div key={property.id} className="bg-gray-800 rounded-lg overflow-hidden">
-                    {/* Hero Image Placeholder */}
-                    <div className="h-48 bg-gray-700 flex items-center justify-center">
-                      {property.photos && Array.isArray(property.photos) && property.photos.length > 0 ? (
-                        <img
-                          src={property.photos[0] as string}
-                          alt={property.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <div className={`text-gray-400 text-center ${property.photos && Array.isArray(property.photos) && property.photos.length > 0 ? 'hidden' : ''}`}>
-                        <div className="text-4xl mb-2">🏡</div>
-                        <div>No Photo Available</div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-6">
-                      <h3 className="text-xl font-semibold mb-2">{property.name}</h3>
-                      {property.location && (
-                        <p className="text-gray-400 mb-2">{property.location}</p>
-                      )}
-                      
-                      <div className="flex items-center gap-4 mb-4 text-sm text-gray-300">
-                        {property.beds && <span>{property.beds} beds</span>}
-                        {property.baths && <span>{property.baths} baths</span>}
-                      </div>
-                      
-                      <p className="text-gray-300 mb-4 line-clamp-2">
-                        {property.description || 'Beautiful cottage rental property.'}
-                      </p>
-                      
-                      <div className="mb-4">
-                        <span className="text-2xl font-bold text-green-400">
-                          {formatCents(property.nightlyRate)}
-                        </span>
-                        <span className="text-gray-400">/night</span>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/${property.slug}`}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-4 rounded-md transition-colors"
-                        >
-                          View Details
-                        </Link>
-                        <Link
-                          href={`/admin/properties?edit=${property.id}`}
-                          className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-md transition-colors"
-                        >
-                          Manage
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🏡</div>
-              <h2 className="text-2xl font-bold mb-4">No Properties Yet</h2>
-              <p className="text-gray-400 mb-6">
-                Get started by adding your first property in the admin panel.
-              </p>
-              <Link
-                href="/admin/properties"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md transition-colors"
-              >
-                Add Your First Property
-              </Link>
-            </div>
-          )}
+      {/* FEATURES */}
+      <section id="features" className="grid gap-6 md:grid-cols-3">
+        {[
+          { title: 'Calendar & Blackouts', body: 'See availability at a glance and block owner time in seconds.' },
+          { title: 'Manual Bookings', body: 'Capture requests, avoid overlaps, and confirm when you’re ready.' },
+          { title: 'Single-Tenant First', body: 'Designed for one property now, with a path to multi-user later.' },
+        ].map((f) => (
+          <div key={f.title} className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+            <h3 className="text-lg font-semibold">{f.title}</h3>
+            <p className="mt-2 text-sm text-gray-300">{f.body}</p>
+          </div>
+        ))}
+      </section>
 
-          {/* Quick Links */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-            <div className="bg-gray-800 p-6 rounded-lg">
-              <h2 className="text-2xl font-semibold mb-4">Management</h2>
-              <p className="text-gray-400 mb-4">Access the admin panel to manage properties and bookings</p>
-              <Link
-                href="/admin"
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
-              >
-                Admin Panel
-              </Link>
-            </div>
-
-            <div className="bg-gray-800 p-6 rounded-lg">
-              <h2 className="text-2xl font-semibold mb-4">Bookings</h2>
-              <p className="text-gray-400 mb-4">View and manage current reservations</p>
-              <Link
-                href="/bookings"
-                className="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
-              >
-                View Bookings
-              </Link>
-            </div>
+      {/* FEATURED PROPERTY */}
+      <section id="property" className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold">Your Cottage</h2>
+            {property ? (
+              <>
+                <p className="mt-1 text-gray-300">
+                  {property.name}
+                  {property.location ? ` — ${property.location}` : ''}
+                </p>
+                <p className="mt-4 text-sm text-gray-300">
+                  {property.description || 'A cozy retreat on the coast.'}
+                </p>
+                <div className="mt-6 flex gap-3">
+                  <Link
+                    href={`/${property.slug}`}
+                    className="inline-flex items-center rounded-md bg-gray-700 hover:bg-gray-600 px-4 py-2"
+                  >
+                    View details
+                  </Link>
+                  <Link
+                    href="/bookings"
+                    className="inline-flex items-center rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-white"
+                  >
+                    See calendar
+                  </Link>
+                  <Link
+                    href={`/admin/properties?edit=${property.id}`}
+                    className="inline-flex items-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white"
+                  >
+                    Manage
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-gray-300">
+                  No property set up yet. Add one to get started.
+                </p>
+                <div className="mt-4">
+                  <Link
+                    href="/admin/properties"
+                    className="inline-flex items-center rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white"
+                  >
+                    Add property
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="text-center mt-12">
-            <p className="text-gray-500">
-              Next.js 14.2.5 + Prisma + SQLite
-            </p>
+          {/* simple photo panel */}
+          <div className="w-full md:w-80 aspect-[4/3] rounded-xl border border-gray-800 bg-gray-800/40 grid place-items-center text-gray-400">
+            {Array.isArray(property?.photos) && (property!.photos as any[]).length > 0 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={(property!.photos as string[])[0]}
+                alt={property!.name}
+                className="h-full w-full object-cover rounded-xl"
+              />
+            ) : (
+              <div className="text-sm">No Photo Available</div>
+            )}
           </div>
-        </main>
-      </div>
+        </div>
+      </section>
+
+      {/* CTA FOOTER */}
+      <section className="rounded-2xl border border-gray-800 bg-gray-900 p-6 text-center">
+        <h3 className="text-xl font-semibold">
+          Ready to simplify cottage scheduling?
+        </h3>
+        <div className="mt-4 flex justify-center gap-3">
+          <Link
+            href="/bookings"
+            className="rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-white"
+          >
+            Open calendar
+          </Link>
+          <Link
+            href="/admin"
+            className="rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white"
+          >
+            Owner login
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
