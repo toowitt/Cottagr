@@ -9,18 +9,51 @@ generator client {
 }
 
 model Property {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  bookings  Booking[]
+  id           Int      @id @default(autoincrement())
+  name         String
+  slug         String   @unique
+  location     String?
+  beds         Int?     
+  baths        Int?
+  description  String?
+  nightlyRate  Int      // in cents
+  cleaningFee  Int      // in cents
+  minNights    Int      @default(2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  bookings     Booking[]
+  blackout     Blackout[]
+  seasonPrices SeasonPrice[]
 }
 
 model Booking {
-  id         String   @id @default(cuid())
-  propertyId String
+  id          Int      @id @default(autoincrement())
+  propertyId  Int
+  startDate   DateTime
+  endDate     DateTime
+  guestName   String?
+  guestEmail  String?
+  status      String   @default("pending") // pending|confirmed|cancelled
+  totalAmount Int      // in cents
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  property    Property @relation(fields: [propertyId], references: [id])
+}
+
+model SeasonPrice {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  startDate  DateTime
+  endDate    DateTime
+  nightlyRate Int
   property   Property @relation(fields: [propertyId], references: [id])
-  start      DateTime
-  end        DateTime
-  status     String   @default("requested")
-  createdAt  DateTime @default(now())
+}
+
+model Blackout {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  startDate  DateTime
+  endDate    DateTime
+  reason     String?
+  property   Property @relation(fields: [propertyId], references: [id])
 }
