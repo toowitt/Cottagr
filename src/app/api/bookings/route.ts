@@ -1,37 +1,19 @@
-
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const propertyId = searchParams.get('propertyId')
-    const from = searchParams.get('from')
-    const to = searchParams.get('to')
-
-    let whereClause: any = {}
-
-    if (propertyId) {
-      whereClause.propertyId = parseInt(propertyId)
-    }
-
-    if (from && to) {
-      whereClause.OR = [
-        {
-          startDate: {
-            lte: new Date(to)
-          },
-          endDate: {
-            gte: new Date(from)
+    const bookings = await prisma.booking.findMany({
+      include: {
+        property: {
+          select: {
+            name: true,
+            slug: true
           }
         }
-      ]
-    }
-
-    const bookings = await prisma.booking.findMany({
-      where: whereClause,
-      include: {
-        property: true
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
     })
     return NextResponse.json(bookings)
@@ -40,74 +22,118 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { propertyId, startDate, endDate, guestName, guestEmail } = body
 
+    // Input validation
     if (!propertyId || !startDate || !endDate) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Missing required fields: propertyId, startDate, endDate' },
+        { status: 400 }
+      )
     }
 
+    // Validate property exists
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId }
+    })
+
+    if (!property) {
+      return NextResponse.json(
+        { error: 'Property not found' },
+        { status: 404 }
+      )
+    }
+
+    // Parse and validate dates
     const start = new Date(startDate)
     const end = new Date(endDate)
 
-    // Validate dates
-    if (start >= end) {
-      return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 })
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid date format' },
+        { status: 400 }
+      )
     }
 
-    // Check for overlapping bookings
-    const overlappingBookings = await prisma.booking.findMany({
+    if (start >= end) {
+      return NextResponse.json(
+        { error: 'End date must be after start date' },
+        { status: 400 }
+      )
+    }
+
+    // Check for conflicts with existing bookings
+    const conflictingBooking = await prisma.booking.findFirst({
       where: {
-        propertyId: parseInt(propertyId),
-        OR: [
-          {
-            startDate: {
-              lte: end
-            },
-            endDate: {
-              gte: start
-            }
-          }
+        propertyId,
+        status: { not: 'cancelled' },
+        AND: [
+          { startDate: { lt: end } },
+          { endDate: { gt: start } }
         ]
       }
     })
 
-    if (overlappingBookings.length > 0) {
-      return NextResponse.json({ error: 'Booking dates overlap with existing booking' }, { status: 409 })
+    if (conflictingBooking) {
+      return NextResponse.json(
+        { error: 'Property is not available for selected dates' },
+        { status: 409 }
+      )
     }
 
-    // Get property details for pricing
-    const property = await prisma.property.findUnique({
-      where: { id: parseInt(propertyId) }
+    // Check for blackout periods
+    const blackoutConflict = await prisma.blackout.findFirst({
+      where: {
+        propertyId,
+        AND: [
+          { startDate: { lt: end } },
+          { endDate: { gt: start } }
+        ]
+      }
     })
 
-    if (!property) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 })
+    if (blackoutConflict) {
+      return NextResponse.json(
+        { error: 'Property is not available for selected dates (blackout period)' },
+        { status: 409 }
+      )
     }
 
-    // Calculate nights and total amount
+    // Calculate total amount (simplified - using base rate for now)
     const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-    const totalAmount = (property.nightlyRate * nights) + property.cleaningFee
+    const totalAmount = (nights * property.nightlyRate) + property.cleaningFee
 
+    // Create booking
     const booking = await prisma.booking.create({
       data: {
-        propertyId: parseInt(propertyId),
+        propertyId,
         startDate: start,
         endDate: end,
-        guestName,
-        guestEmail,
-        status: 'pending',
-        totalAmount
+        guestName: guestName || 'Guest',
+        guestEmail: guestEmail || '',
+        totalAmount,
+        status: 'pending'
       },
       include: {
-        property: true
+        property: {
+          select: {
+            name: true,
+            slug: true
+          }
+        }
       }
     })
 
     return NextResponse.json(booking, { status: 201 })
+
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
+    console.error('Error creating booking:', error)
+    return NextResponse.json(
+      { error: 'Failed to create booking' },
+      { status: 500 }
+    )
   }
 }
