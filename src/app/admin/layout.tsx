@@ -1,5 +1,7 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export default function AdminLayout({
@@ -7,6 +9,51 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // Don't check auth on login page to prevent redirect loop
+    if (pathname === '/admin/login') {
+      setIsAuthenticated(true);
+      setIsChecking(false);
+      return;
+    }
+
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/admin/api/check-auth');
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          router.replace('/admin/login');
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+        router.replace('/admin/login');
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, [router, pathname]);
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated && pathname !== '/admin/login') {
+    return null; // Will redirect to login
+  }
+
   // Check environment variables
   if (process.env.SINGLE_TENANT !== "true" || !process.env.ADMIN_PASSWORD) {
     return (
@@ -25,13 +72,6 @@ export default function AdminLayout({
     );
   }
 
-  // Check authentication - only redirect if not authenticated
-  const cookieStore = cookies();
-  const authCookie = cookieStore.get('auth');
-
-  if (!authCookie || authCookie.value !== 'ok') {
-    redirect('/admin/login');
-  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">

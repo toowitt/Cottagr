@@ -1,26 +1,24 @@
-
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Placeholder middleware for future multi-tenant functionality
-  // Currently does nothing but can be extended for:
-  // - Tenant detection based on subdomain/domain
-  // - Authentication checks
-  // - Request routing based on tenant
-  
+  // Only check auth for admin routes, excluding login and API routes
+  if (request.nextUrl.pathname.startsWith('/admin') &&
+      !request.nextUrl.pathname.startsWith('/admin/login') &&
+      !request.nextUrl.pathname.startsWith('/admin/api/')) {
+
+    // Check for auth cookie
+    const authCookie = request.cookies.get('auth');
+
+    if (!authCookie || authCookie.value !== 'ok') {
+      // Redirect to admin login
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  // Match all paths except static files and API routes that don't need tenant context
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes - handled individually)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/admin/((?!login|api).*)'],
 };
