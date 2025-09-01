@@ -8,7 +8,7 @@ export default function SiteHeader() {
           <img 
             src="/brand/logo.png" 
             alt="CottageMaster" 
-            className="h-12 w-auto"
+            className="h-8 w-auto"
           />
         </Link>
         <nav className="flex items-center gap-6 text-sm">
