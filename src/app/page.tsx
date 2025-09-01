@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
@@ -40,7 +41,7 @@ export default async function HomePage() {
       <section id="features" className="grid gap-6 md:grid-cols-3">
         {[
           { title: 'Calendar & Blackouts', body: 'See availability at a glance and block owner time in seconds.' },
-          { title: 'Manual Bookings', body: 'Capture requests, avoid overlaps, and confirm when you’re ready.' },
+          { title: 'Manual Bookings', body: 'Capture requests, avoid overlaps, and confirm when you're ready.' },
           { title: 'Single-Tenant First', body: 'Designed for one property now, with a path to multi-user later.' },
         ].map((f) => (
           <div key={f.title} className="rounded-xl border border-gray-800 bg-gray-900 p-6">
@@ -105,7 +106,6 @@ export default async function HomePage() {
           {/* simple photo panel */}
           <div className="w-full md:w-80 aspect-[4/3] rounded-xl border border-gray-800 bg-gray-800/40 grid place-items-center text-gray-400">
             {Array.isArray(property?.photos) && (property!.photos as any[]).length > 0 ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={(property!.photos as string[])[0]}
                 alt={property!.name}
