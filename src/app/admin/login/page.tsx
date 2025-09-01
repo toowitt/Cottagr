@@ -1,6 +1,4 @@
-'use client';
 
-import { useRouter } from 'next/navigation';
 import { loginAction } from './actions';
 
 interface SearchParams {
@@ -12,12 +10,6 @@ export default function AdminLoginPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const router = useRouter();
-
-  // useEffect hook for checking authentication is removed as it's not part of the edited snippet.
-  // The original loginAction function is replaced by the imported loginAction.
-  // The component signature is updated to use the SearchParams interface.
-
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="max-w-md w-full p-6 bg-gray-800 rounded-lg">

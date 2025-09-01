@@ -1,4 +1,3 @@
-
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -54,6 +53,12 @@ export default function AdminLayout({
                 className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
               >
                 Calendar
+              </Link>
+              <Link
+                href="/admin/blackouts"
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Blackouts
               </Link>
               <Link
                 href="/admin/bookings"

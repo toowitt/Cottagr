@@ -1,10 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  
+
   const propertyIdParam = searchParams.get('propertyId');
   const fromParam = searchParams.get('from');
   const toParam = searchParams.get('to');
@@ -27,11 +26,11 @@ export async function GET(request: NextRequest) {
 
   let fromDate: Date;
   let toDate: Date;
-  
+
   try {
     fromDate = new Date(fromParam);
     toDate = new Date(toParam);
-    
+
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       throw new Error('Invalid date format');
     }
@@ -43,30 +42,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Load property data
-    const property = await prisma.property.findUnique({
-      where: { id: propertyId },
-      select: {
-        id: true,
-        nightlyRate: true,
-      },
-    });
-
-    if (!property) {
-      return NextResponse.json(
-        { error: 'Property not found' },
-        { status: 404 }
-      );
-    }
-
-    // Load season prices, blackouts, and bookings for the date range
-    const [seasonPrices, blackouts, bookings] = await Promise.all([
-      prisma.seasonPrice.findMany({
+    // Load bookings and blackouts that overlap with the date range
+    const [bookings, blackouts] = await Promise.all([
+      prisma.booking.findMany({
         where: {
           propertyId,
+          status: { not: 'cancelled' },
           AND: [
-            { startDate: { lte: toDate } },
-            { endDate: { gte: fromDate } },
+            { startDate: { lt: toDate } },
+            { endDate: { gt: fromDate } },
           ],
         },
       }),
@@ -74,18 +58,8 @@ export async function GET(request: NextRequest) {
         where: {
           propertyId,
           AND: [
-            { startDate: { lte: toDate } },
-            { endDate: { gte: fromDate } },
-          ],
-        },
-      }),
-      prisma.booking.findMany({
-        where: {
-          propertyId,
-          status: { not: 'cancelled' },
-          AND: [
-            { startDate: { lte: toDate } },
-            { endDate: { gte: fromDate } },
+            { startDate: { lt: toDate } },
+            { endDate: { gt: fromDate } },
           ],
         },
       }),
@@ -94,7 +68,7 @@ export async function GET(request: NextRequest) {
     // Generate day-by-day availability
     const days = [];
     const currentDate = new Date(fromDate);
-    
+
     while (currentDate < toDate) {
       // Normalize to UTC midnight for consistent comparison
       const dayStart = new Date(
@@ -109,30 +83,14 @@ export async function GET(request: NextRequest) {
       const isUnavailable = [...bookings, ...blackouts].some((item) => {
         const itemStart = new Date(item.startDate);
         const itemEnd = new Date(item.endDate);
-        
-        // Overlap logic: (startA <= endB) && (endA >= startB)
-        return itemStart < dayEnd && itemEnd >= dayStart;
-      });
 
-      // Determine nightly rate (check season prices first)
-      let nightlyRate = property.nightlyRate;
-      
-      const applicableSeasonPrice = seasonPrices.find((season) => {
-        const seasonStart = new Date(season.startDate);
-        const seasonEnd = new Date(season.endDate);
-        
-        // Check if day falls within season range
-        return seasonStart <= dayStart && seasonEnd > dayStart;
+        // Overlap logic: (startA < endB) && (endA > startB)
+        return itemStart < dayEnd && itemEnd > dayStart;
       });
-
-      if (applicableSeasonPrice) {
-        nightlyRate = applicableSeasonPrice.nightlyRate;
-      }
 
       days.push({
         date: dayStart.toISOString().split('T')[0], // YYYY-MM-DD format
         available: !isUnavailable,
-        nightlyRate,
       });
 
       // Move to next day
