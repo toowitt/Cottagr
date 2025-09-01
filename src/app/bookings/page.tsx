@@ -1,143 +1,123 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
 
 interface Property {
-  id: string
+  id: number
   name: string
+  location: string
 }
 
 interface Booking {
-  id: string
-  propertyId: string
-  start: string
-  end: string
+  id: number
+  startDate: string
+  endDate: string
+  guestName: string
+  guestEmail: string
   status: string
+  totalAmount: number
   property: Property
 }
 
 export default function BookingsPage() {
-  const [properties, setProperties] = useState<Property[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [selectedPropertyId, setSelectedPropertyId] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchProperties()
+    async function fetchBookings() {
+      try {
+        const response = await fetch('/api/bookings')
+        if (!response.ok) {
+          throw new Error('Failed to fetch bookings')
+        }
+        const data = await response.json()
+        setBookings(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchBookings()
   }, [])
 
-  const fetchProperties = async () => {
-    try {
-      const response = await fetch('/api/properties')
-      const data = await response.json()
-      setProperties(data)
-      if (data.length > 0) {
-        setSelectedPropertyId(data[0].id)
-      }
-    } catch (error) {
-      console.error('Failed to fetch properties:', error)
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold mb-6">Bookings</h1>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
   }
 
-  const fetchBookings = async () => {
-    try {
-      const response = await fetch('/api/bookings')
-      const data = await response.json()
-      setBookings(data)
-    } catch (error) {
-      console.error('Failed to fetch bookings:', error)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    try {
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          propertyId: selectedPropertyId,
-          start: startDate,
-          end: endDate,
-        }),
-      })
-
-      if (response.ok) {
-        setStartDate('')
-        setEndDate('')
-        fetchBookings()
-      }
-    } catch (error) {
-      console.error('Failed to create booking:', error)
-    }
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold mb-6">Bookings</h1>
+          <p className="text-red-500">Error: {error}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Bookings</h1>
-      
-      <form onSubmit={handleSubmit} className="mb-8 space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Property</label>
-          <select
-            value={selectedPropertyId}
-            onChange={(e) => setSelectedPropertyId(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          >
-            {properties.map((property) => (
-              <option key={property.id} value={property.id}>
-                {property.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">Start Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1">End Date</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Create Booking
-        </button>
-      </form>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Bookings</h1>
 
-      <h2 className="text-xl font-semibold mb-4">Existing Bookings</h2>
-      <div className="space-y-2">
-        {bookings.map((booking) => (
-          <div key={booking.id} className="p-4 border rounded">
-            <p><strong>Property:</strong> {booking.property.name}</p>
-            <p><strong>Dates:</strong> {new Date(booking.start).toLocaleDateString()} - {new Date(booking.end).toLocaleDateString()}</p>
-            <p><strong>Status:</strong> {booking.status}</p>
+        {bookings.length === 0 ? (
+          <p>No bookings found.</p>
+        ) : (
+          <div className="grid gap-4">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="bg-gray-50 p-6 rounded-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold">{booking.property.name}</h3>
+                    <p className="text-gray-600">{booking.property.location}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-sm ${
+                    booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {booking.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Guest</p>
+                    <p className="font-medium">{booking.guestName}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Email</p>
+                    <p className="font-medium">{booking.guestEmail}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Check-in</p>
+                    <p className="font-medium">{new Date(booking.startDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Check-out</p>
+                    <p className="font-medium">{new Date(booking.endDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-lg font-semibold">
+                    Total: ${(booking.totalAmount / 100).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   )
