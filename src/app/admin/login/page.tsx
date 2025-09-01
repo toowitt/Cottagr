@@ -1,21 +1,24 @@
 
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 async function loginAction(formData: FormData) {
-  'use server';
-  
   const password = formData.get('password') as string;
   
-  if (password === process.env.ADMIN_PASSWORD) {
-    cookies().set('auth', 'ok', {
-      httpOnly: true,
-      maxAge: 24 * 60 * 60, // 1 day
-      path: '/',
-    });
-    redirect('/admin');
+  const response = await fetch('/admin/api/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ password }),
+  });
+  
+  if (response.ok) {
+    window.location.href = '/admin';
   } else {
-    redirect('/admin/login?error=1');
+    window.location.href = '/admin/login?error=1';
   }
 }
 
@@ -24,6 +27,21 @@ export default function AdminLogin({
 }: {
   searchParams: { error?: string };
 }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if already authenticated
+    fetch('/admin/api/check-auth')
+      .then(response => {
+        if (response.ok) {
+          router.push('/admin');
+        }
+      })
+      .catch(() => {
+        // Stay on login page if check fails
+      });
+  }, [router]);
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="max-w-md w-full p-6 bg-gray-800 rounded-lg">
