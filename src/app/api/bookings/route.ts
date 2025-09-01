@@ -18,17 +18,20 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { propertyId, start, end } = body
+    const { propertyId, startDate, endDate, guestName, guestEmail, totalAmount } = body
 
-    if (!propertyId || !start || !end) {
+    if (!propertyId || !startDate || !endDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const booking = await prisma.booking.create({
       data: {
-        propertyId,
-        start: new Date(start),
-        end: new Date(end)
+        propertyId: parseInt(propertyId),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        guestName,
+        guestEmail,
+        totalAmount: totalAmount || 0
       },
       include: {
         property: true
