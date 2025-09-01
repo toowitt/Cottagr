@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -24,9 +23,9 @@ interface Booking {
 }
 
 export default function BookingsPage() {
-  const [properties, setProperties] = useState<Property[]>([])
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const [properties, setProperties] = useState<any[]>([])
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null)
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -126,7 +125,7 @@ export default function BookingsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    
+
     const errors = validateForm()
     setValidationErrors(errors)
 
@@ -235,7 +234,7 @@ export default function BookingsPage() {
         {selectedPropertyId && (
           <div className="bg-gray-50 p-6 rounded-lg mb-6">
             <h2 className="text-xl font-semibold mb-4">Create New Booking</h2>
-            
+
             {validationErrors.length > 0 && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
                 <ul>
