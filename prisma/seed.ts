@@ -19,13 +19,7 @@ async function main() {
       description: 'Beautiful lakefront cottage with stunning views and private dock.',
       nightlyRate: 35000, // $350.00 in cents
       cleaningFee: 12000, // $120.00 in cents
-      minNights: 2,
-      photos: JSON.stringify([
-        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
-        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800',
-        'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
-        'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?w=800'
-      ])
+      minNights: 2
     },
     create: {
       name: 'Black Point Cottage',
@@ -36,13 +30,7 @@ async function main() {
       description: 'Beautiful lakefront cottage with stunning views and private dock.',
       nightlyRate: 35000, // $350.00 in cents
       cleaningFee: 12000, // $120.00 in cents
-      minNights: 2,
-      photos: JSON.stringify([
-        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800',
-        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800',
-        'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
-        'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?w=800'
-      ])
+      minNights: 2
     },
   })
 
