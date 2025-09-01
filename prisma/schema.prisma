@@ -19,6 +19,7 @@ model Property {
   nightlyRate  Int      // in cents
   cleaningFee  Int      // in cents
   minNights    Int      @default(2)
+  photos       Json?    // Array of photo URLs
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   bookings     Booking[]
