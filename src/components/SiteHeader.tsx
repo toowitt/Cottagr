@@ -4,8 +4,12 @@ export default function SiteHeader() {
   return (
     <header className="border-b border-gray-800 bg-gray-900/70 backdrop-blur supports-[backdrop-filter]:bg-gray-900/60">
       <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="text-white font-semibold tracking-tight">
-          Cottage<span className="text-blue-400">Master</span>
+        <Link href="/" className="flex items-center">
+          <img 
+            src="/brand/logo.png" 
+            alt="CottageMaster" 
+            className="h-8 w-auto"
+          />
         </Link>
         <nav className="flex items-center gap-6 text-sm">
           <Link href="/#features" className="text-gray-300 hover:text-white">Features</Link>
