@@ -1,17 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
+import { BookingCreateSchema, AvailabilityQuerySchema } from '@/lib/validation'
+import { formatCents } from '@/lib/money'
 
-// Validation schema for POST requests
-const BookingCreateSchema = z.object({
-  propertyId: z.number().int().positive(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
-  guestName: z.string().optional(),
-  guestEmail: z.string().email().optional()
-})
-
+// GET Bookings API
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -19,31 +11,37 @@ export async function GET(request: NextRequest) {
     const fromParam = searchParams.get('from')
     const toParam = searchParams.get('to')
 
+    // Validate query parameters using Zod
+    const queryParams = AvailabilityQuerySchema.safeParse({
+      propertyId: propertyIdParam ? parseInt(propertyIdParam) : undefined,
+      from: fromParam || undefined,
+      to: toParam || undefined
+    })
+
+    if (!queryParams.success) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: queryParams.error.errors },
+        { status: 400 }
+      )
+    }
+
+    const { propertyId, from, to } = queryParams.data
+
     let whereClause: any = {}
 
-    // Filter by property if specified
-    if (propertyIdParam) {
-      const propertyId = parseInt(propertyIdParam)
-      if (isNaN(propertyId)) {
-        return NextResponse.json(
-          { error: 'propertyId must be a valid number' },
-          { status: 400 }
-        )
-      }
+    if (propertyId !== undefined) {
       whereClause.propertyId = propertyId
     }
 
-    // Filter by date range if specified
-    if (fromParam && toParam) {
+    if (from && to) {
       try {
-        const fromDate = new Date(fromParam)
-        const toDate = new Date(toParam)
-        
+        const fromDate = new Date(from)
+        const toDate = new Date(to)
+
         if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
           throw new Error('Invalid date format')
         }
 
-        // Overlap logic: booking overlaps if (startA < endB) && (endA > startB)
         whereClause.AND = [
           { startDate: { lt: toDate } },
           { endDate: { gt: fromDate } }
@@ -78,10 +76,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST Booking API
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Validate input with Zod
     const validation = BookingCreateSchema.safeParse(body)
     if (!validation.success) {
@@ -205,11 +204,11 @@ export async function POST(request: NextRequest) {
 
       // Find applicable season price for this night
       let nightlyRate = property.nightlyRate
-      
+
       const applicableSeasonPrice = seasonPrices.find((season) => {
         const seasonStart = new Date(season.startDate)
         const seasonEnd = new Date(season.endDate)
-        
+
         // Check if night falls within season range
         return seasonStart <= dayStart && seasonEnd > dayStart
       })
@@ -242,10 +241,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: booking.id,
       status: booking.status,
-      totalAmount: booking.totalAmount
+      totalAmount: formatCents(booking.totalAmount)
     }, { status: 201 })
 
   } catch (error) {
+    if (error instanceof Error && error.name === 'ZodError') {
+      return NextResponse.json(
+        { error: 'Invalid request data' },
+        { status: 400 }
+      )
+    }
     console.error('Error creating booking:', error)
     return NextResponse.json(
       { error: 'Failed to create booking' },

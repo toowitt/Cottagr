@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -75,11 +74,11 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
       const response = await fetch(
         `/api/availability?propertyId=${propertyId}&from=${fromParam}&to=${toParam}`
       );
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch availability');
       }
-      
+
       const data = await response.json();
       setDays(data.days || []);
     } catch (error) {
@@ -158,7 +157,7 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
     const start = new Date(selectedStart);
     const end = new Date(selectedEnd);
     const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     // Calculate total nightly amount (using property's base rate for simplicity)
     const nightlyTotal = nights * property.nightlyRate;
     const total = nightlyTotal + property.cleaningFee;
@@ -172,9 +171,17 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
     };
   };
 
+  // Helper function to format cents to a currency string like "$X,XXX.YY"
+  const formatCents = (cents: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(cents / 100);
+  };
+
   const handleCreateBooking = async () => {
     if (!selectedStart || !selectedEnd || !property) return;
-    
+
     setBookingStatus('loading');
     try {
       const response = await fetch('/api/bookings', {
@@ -198,7 +205,7 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
       setSelectedStart(null);
       setSelectedEnd(null);
       addToast('Booking request submitted successfully!', 'success');
-      
+
       // Refresh availability data
       await fetchAvailability(currentMonth);
     } catch (error) {
@@ -235,7 +242,7 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
       const dateString = cellDate.toISOString().split('T')[0];
       const isCurrentMonth = cellDate.getMonth() === month;
       const dayData = days.find(d => d.date === dateString);
-      
+
       const isSelected = selectedStart === dateString || selectedEnd === dateString;
       const isInRange = selectedStart && selectedEnd && 
         dateString > selectedStart && dateString < selectedEnd;
@@ -343,16 +350,16 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span>${(bookingDetails.nightlyRate / 100).toFixed(2)} × {bookingDetails.nights} nights</span>
-                    <span>${(bookingDetails.nightlyTotal / 100).toFixed(2)}</span>
+                    <span>${(bookingDetails.nightlyRate / 100).toFixed(0)} × {bookingDetails.nights} nights</span>
+                    <span>{formatCents(bookingDetails.nightlyTotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Cleaning fee</span>
-                    <span>${(bookingDetails.cleaningFee / 100).toFixed(2)}</span>
+                    <span>{formatCents(bookingDetails.cleaningFee)}</span>
                   </div>
                   <div className="flex justify-between font-semibold text-lg border-t border-gray-600 pt-1">
                     <span>Total</span>
-                    <span>${(bookingDetails.total / 100).toFixed(2)}</span>
+                    <span>{formatCents(bookingDetails.total)}</span>
                   </div>
                 </div>
               </div>

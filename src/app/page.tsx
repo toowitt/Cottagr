@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import { prisma } from '@/lib/prisma';
+import { formatCents } from '@/lib/money';
 
 export default async function Home() {
   const properties = await prisma.property.findMany({
@@ -67,7 +68,7 @@ export default async function Home() {
                       
                       <div className="mb-4">
                         <span className="text-2xl font-bold text-green-400">
-                          ${(property.nightlyRate / 100).toFixed(2)}
+                          {formatCents(property.nightlyRate)}
                         </span>
                         <span className="text-gray-400">/night</span>
                       </div>

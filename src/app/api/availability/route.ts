@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+
+// Zod schema for availability query
+const AvailabilityQuerySchema = z.object({
+  propertyId: z.number().int(),
+  from: z.string().refine((date) => !isNaN(new Date(date).getTime()), {
+    message: 'Invalid date format. Use ISO format (YYYY-MM-DD)',
+  }),
+  to: z.string().refine((date) => !isNaN(new Date(date).getTime()), {
+    message: 'Invalid date format. Use ISO format (YYYY-MM-DD)',
+  }),
+});
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -8,45 +20,36 @@ export async function GET(request: NextRequest) {
   const fromParam = searchParams.get('from');
   const toParam = searchParams.get('to');
 
-  // Input validation
-  if (!propertyIdParam || !fromParam || !toParam) {
-    return NextResponse.json(
-      { error: 'Missing required parameters: propertyId, from, to' },
-      { status: 400 }
-    );
-  }
-
-  const propertyId = parseInt(propertyIdParam);
-  if (isNaN(propertyId)) {
-    return NextResponse.json(
-      { error: 'propertyId must be a valid number' },
-      { status: 400 }
-    );
-  }
-
-  let fromDate: Date;
-  let toDate: Date;
-
+  // Input validation using Zod
+  let validatedData;
   try {
-    fromDate = new Date(fromParam);
-    toDate = new Date(toParam);
-
-    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-      throw new Error('Invalid date format');
-    }
+    validatedData = AvailabilityQuerySchema.parse({
+      propertyId: propertyIdParam ? parseInt(propertyIdParam) : undefined,
+      from: fromParam,
+      to: toParam,
+    });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
-      { error: 'Invalid date format. Use ISO format (YYYY-MM-DD)' },
+      { error: 'Invalid request parameters' },
       { status: 400 }
     );
   }
 
+  const fromDate = new Date(validatedData.from);
+  const toDate = new Date(validatedData.to);
+
   try {
-    // Load bookings and blackouts that overlap with the date range
+    // Fetch bookings and blackouts that overlap with the date range
     const [bookings, blackouts] = await Promise.all([
       prisma.booking.findMany({
         where: {
-          propertyId,
+          propertyId: validatedData.propertyId,
           status: { not: 'cancelled' },
           AND: [
             { startDate: { lt: toDate } },
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.blackout.findMany({
         where: {
-          propertyId,
+          propertyId: validatedData.propertyId,
           AND: [
             { startDate: { lt: toDate } },
             { endDate: { gt: fromDate } },
@@ -72,12 +75,10 @@ export async function GET(request: NextRequest) {
     while (currentDate < toDate) {
       // Normalize to UTC midnight for consistent comparison
       const dayStart = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        currentDate.getDate()
+        Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())
       );
       const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
+      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
 
       // Check if day is unavailable due to bookings or blackouts
       const isUnavailable = [...bookings, ...blackouts].some((item) => {
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
       });
 
       // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 
     return NextResponse.json({ days });
