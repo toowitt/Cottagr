@@ -5,6 +5,12 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
+function parsePhotos(val: FormDataEntryValue | null) {
+  const s = (val?.toString() ?? '').trim();
+  if (!s) return [];
+  return s.split(',').map(x => x.trim()).filter(Boolean);
+}
+
 const PropertySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z.string().min(1, 'Slug is required'),

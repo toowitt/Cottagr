@@ -3,6 +3,11 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import AvailabilityCalendar from './AvailabilityCalendar';
 
+// Helper to safely parse photos from JSON
+function getPhotoUrls(photos: any): string[] {
+  return Array.isArray(photos) ? (photos as string[]) : [];
+}
+
 interface PropertyPageProps {
   params: {
     slug: string;
