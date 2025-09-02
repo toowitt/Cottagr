@@ -9,14 +9,15 @@ function getPhotoUrls(photos: any): string[] {
 }
 
 interface PropertyPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function PropertyPage({ params }: PropertyPageProps) {
+  const { slug } = await params;
   const property = await prisma.property.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
   });
 
   if (!property) {
