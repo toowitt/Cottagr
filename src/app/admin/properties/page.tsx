@@ -1,6 +1,7 @@
 import ConfirmSubmitButton from '@/components/ConfirmSubmitButton';
 import { prisma } from '@/lib/prisma';
 import { createProperty, updateProperty, deleteProperty } from './actions';
+import PropertyForm from './PropertyForm';
 
 interface SearchParams {
   edit?: string;
@@ -17,7 +18,7 @@ export default async function PropertiesPage({
     orderBy: { createdAt: 'desc' },
   });
 
-  const editId = searchParams.edit ? parseInt(searchParams.edit) : null;
+  const editId = searchParams.edit ? parseInt(searchParams.edit, 10) : null;
 
   let editProperty: Awaited<ReturnType<typeof prisma.property.findUnique>> | null = null;
   if (editId) {
@@ -26,13 +27,12 @@ export default async function PropertiesPage({
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Properties</h1>
       </div>
 
-      {/* Status Messages */}
       {searchParams.success && (
-        <div className="mb-6 p-4 bg-green-900 border border-green-700 rounded text-green-300">
+        <div className="mb-6 rounded border border-emerald-500/40 bg-emerald-500/10 p-4 text-emerald-100">
           {searchParams.success === 'created' && 'Property created successfully!'}
           {searchParams.success === 'updated' && 'Property updated successfully!'}
           {searchParams.success === 'deleted' && 'Property deleted successfully!'}
@@ -40,222 +40,93 @@ export default async function PropertiesPage({
       )}
 
       {searchParams.error && (
-        <div className="mb-6 p-4 bg-red-900 border border-red-700 rounded text-red-300">
+        <div className="mb-6 rounded border border-rose-500/40 bg-rose-500/10 p-4 text-rose-100">
           <span className="font-semibold">Error:</span> {searchParams.error}
         </div>
       )}
 
-      {/* Property Form */}
-      <div className="bg-gray-800 p-6 rounded-lg mb-8">
-        <h2 className="text-xl font-semibold mb-4">
+      <div className="mb-8 rounded-lg bg-gray-800 p-6">
+        <h2 className="mb-4 text-xl font-semibold">
           {editProperty ? 'Edit Property' : 'Add New Property'}
         </h2>
 
-        <form action={editProperty ? updateProperty.bind(null, editProperty.id) : createProperty}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Name</label>
-              <input
-                type="text"
-                name="name"
-                defaultValue={editProperty?.name || ''}
-                required
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Slug</label>
-              <input
-                type="text"
-                name="slug"
-                defaultValue={editProperty?.slug || ''}
-                required
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Location</label>
-              <input
-                type="text"
-                name="location"
-                defaultValue={editProperty?.location || ''}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Beds</label>
-              <input
-                type="number"
-                name="beds"
-                defaultValue={editProperty?.beds ?? ''}
-                min="0"
-                step="1"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Baths</label>
-              <input
-                type="number"
-                name="baths"
-                defaultValue={editProperty?.baths ?? ''}
-                min="0"
-                step="1"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Nightly Rate (cents)</label>
-              <input
-                type="number"
-                name="nightlyRate"
-                defaultValue={editProperty?.nightlyRate ?? ''}
-                required
-                min="0"
-                step="1"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Cleaning Fee (cents)</label>
-              <input
-                type="number"
-                name="cleaningFee"
-                defaultValue={editProperty?.cleaningFee ?? ''}
-                required
-                min="0"
-                step="1"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Minimum Nights</label>
-              <input
-                type="number"
-                name="minNights"
-                defaultValue={editProperty?.minNights ?? 2}
-                required
-                min="1"
-                step="1"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Description</label>
-            <textarea
-              name="description"
-              defaultValue={editProperty?.description || ''}
-              rows={3}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Photos (comma-separated URLs)</label>
-            <input
-              type="text"
-              name="photos"
-              defaultValue={
-                editProperty?.photos
-                  ? Array.isArray(editProperty.photos)
-                    ? (editProperty.photos as string[]).join(', ')
-                    : ''
-                  : ''
-              }
-              placeholder="https://example.com/photo1.jpg, https://example.com/photo2.jpg"
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-            >
-              {editProperty ? 'Update Property' : 'Create Property'}
-            </button>
-
-            {editProperty && (
-              <a
-                href="/admin/properties"
-                className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              >
-                Cancel
-              </a>
-            )}
-          </div>
-        </form>
+        <PropertyForm
+          key={editProperty ? `edit-${editProperty.id}` : 'create'}
+          mode={editProperty ? 'edit' : 'create'}
+          action={editProperty ? updateProperty.bind(null, editProperty.id) : createProperty}
+          initialValues={
+            editProperty
+              ? {
+                  id: editProperty.id,
+                  name: editProperty.name,
+                  slug: editProperty.slug,
+                  location: editProperty.location,
+                  beds: editProperty.beds,
+                  baths: editProperty.baths,
+                  nightlyRate: editProperty.nightlyRate,
+                  cleaningFee: editProperty.cleaningFee,
+                  minNights: editProperty.minNights,
+                  description: editProperty.description,
+                  photos: Array.isArray(editProperty.photos)
+                    ? (editProperty.photos as string[])
+                    : null,
+                }
+              : undefined
+          }
+        />
       </div>
 
-      {/* Properties List */}
-      <div className="bg-gray-800 rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg bg-gray-800">
         <table className="w-full">
           <thead className="bg-gray-700">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-300">
                 Property
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-300">
                 Slug
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-300">
                 Nightly Rate
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-300">
                 Actions
               </th>
             </tr>
           </thead>
-
           <tbody className="divide-y divide-gray-700">
             {properties.map((property) => (
               <tr key={property.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="whitespace-nowrap px-6 py-4">
                   <div>
                     <div className="text-sm font-medium text-white">{property.name}</div>
                     <div className="text-sm text-gray-400">{property.location}</div>
                   </div>
                 </td>
-
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                  {property.slug}
-                </td>
-
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">{property.slug}</td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">
                   ${(property.nightlyRate / 100).toFixed(2)}
                 </td>
-
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium space-x-2">
                   <a
                     href={`/admin/properties?edit=${property.id}`}
                     className="text-blue-400 hover:text-blue-300"
                   >
                     Edit
                   </a>
-
                   <form action={deleteProperty.bind(null, property.id)} className="inline">
                     <ConfirmSubmitButton
-                      className="text-red-400 hover:text-red-300"
+                      className="text-rose-400 hover:text-rose-300"
                       confirmText="Are you sure you want to delete this property?"
                     >
                       Delete
                     </ConfirmSubmitButton>
                   </form>
-
                   <a
                     href={`/${property.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-green-400 hover:text-green-300"
+                    className="text-emerald-400 hover:text-emerald-300"
                   >
                     View
                   </a>

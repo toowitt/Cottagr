@@ -5,7 +5,8 @@ import type { ReactNode } from 'react';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const isConfigured = Boolean(process.env.ADMIN_PASSWORD);
-  const authed = cookies().get('admin_auth')?.value === 'ok';
+  const cookieStore = await cookies();
+  const authed = cookieStore.get('admin_auth')?.value === 'ok';
 
   // --- Server actions (run on the server only) ---
   async function login(formData: FormData) {
@@ -17,7 +18,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     if (pw !== process.env.ADMIN_PASSWORD) {
       redirect('/admin?error=Invalid password');
     }
-    cookies().set('admin_auth', 'ok', {
+    const cookieStore = await cookies();
+    cookieStore.set('admin_auth', 'ok', {
       httpOnly: true,
       path: '/',
       maxAge: 60 * 60 * 24, // 1 day
@@ -28,7 +30,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   async function logout() {
     'use server';
-    cookies().delete('admin_auth');
+    const cookieStore = await cookies();
+    cookieStore.delete('admin_auth');
     redirect('/admin');
   }
   // ------------------------------------------------
@@ -97,8 +100,17 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               <Link href="/admin/properties" className="text-gray-200 hover:text-white">
                 Properties
               </Link>
+              <Link href="/admin/owners" className="text-gray-200 hover:text-white">
+                Owners
+              </Link>
               <Link href="/admin/bookings" className="text-gray-200 hover:text-white">
                 Bookings
+              </Link>
+              <Link href="/admin/knowledge-hub" className="text-gray-200 hover:text-white">
+                Knowledge Hub
+              </Link>
+              <Link href="/admin/expenses" className="text-gray-200 hover:text-white">
+                Expenses
               </Link>
               <Link href="/admin/blackouts" className="text-gray-200 hover:text-white">
                 Blackouts

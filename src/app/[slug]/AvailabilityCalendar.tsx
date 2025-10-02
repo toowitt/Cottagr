@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Day {
   date: string;
@@ -44,32 +44,42 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
     }, 5000);
   };
 
-  const fetchProperty = async () => {
+  const fetchProperty = useCallback(async () => {
     try {
       const response = await fetch(`/api/properties`);
       if (!response.ok) throw new Error('Failed to fetch property');
-      const properties = await response.json();
-      const foundProperty = properties.find((p: any) => p.id === propertyId);
+      const properties: Array<{
+        id: number;
+        name: string;
+        nightlyRate: number;
+        cleaningFee: number;
+        minNights: number;
+      }> = await response.json();
+      const foundProperty = properties.find((p) => p.id === propertyId);
       if (foundProperty) {
-        setProperty(foundProperty);
+        setProperty({
+          id: foundProperty.id,
+          name: foundProperty.name,
+          nightlyRate: foundProperty.nightlyRate,
+          cleaningFee: foundProperty.cleaningFee,
+          minNights: foundProperty.minNights,
+        });
       }
     } catch (error) {
       console.error('Error fetching property:', error);
     }
-  };
+  }, [propertyId]);
 
-  const fetchAvailability = async (date: Date) => {
+  const fetchAvailability = useCallback(async (date: Date) => {
     setLoading(true);
     try {
       const year = date.getFullYear();
       const month = date.getMonth();
       const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const nextDay = new Date(lastDay);
-      nextDay.setDate(nextDay.getDate() + 1);
+      const endBoundary = new Date(year, month + 1, 1);
 
       const fromParam = firstDay.toISOString().split('T')[0];
-      const toParam = nextDay.toISOString().split('T')[0];
+      const toParam = endBoundary.toISOString().split('T')[0];
 
       const response = await fetch(
         `/api/availability?propertyId=${propertyId}&from=${fromParam}&to=${toParam}`
@@ -88,15 +98,15 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchProperty();
   }, [propertyId]);
 
   useEffect(() => {
+    fetchProperty();
+  }, [fetchProperty]);
+
+  useEffect(() => {
     fetchAvailability(currentMonth);
-  }, [currentMonth, propertyId]);
+  }, [currentMonth, fetchAvailability]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newMonth = new Date(currentMonth);
@@ -219,7 +229,6 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
     const startDate = new Date(firstDayOfMonth);
     startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay());
 
@@ -243,29 +252,42 @@ export default function AvailabilityCalendar({ propertyId }: AvailabilityCalenda
       const isCurrentMonth = cellDate.getMonth() === month;
       const dayData = days.find(d => d.date === dateString);
 
-      const isSelected = selectedStart === dateString || selectedEnd === dateString;
-      const isInRange = selectedStart && selectedEnd && 
-        dateString > selectedStart && dateString < selectedEnd;
-
+      const isCheckIn = selectedStart === dateString;
+      const isCheckOut = selectedEnd === dateString;
+      const isSelected = isCheckIn || isCheckOut;
+      const isInRange =
+        selectedStart && selectedEnd && dateString > selectedStart && dateString < selectedEnd;
+      const isUnavailable = isCurrentMonth && dayData && !dayData.available;
       const isClickable = isCurrentMonth && dayData && dayData.available;
+
+      let classes = 'p-2 border min-h-[80px] transition-colors ';
+      classes += isCurrentMonth ? 'border-gray-600 bg-gray-900 text-gray-100 ' : 'border-gray-700 bg-gray-800 text-gray-600 ';
+
+      if (isUnavailable) {
+        classes += 'border-rose-500/40 bg-rose-500/20 text-rose-100 cursor-not-allowed ';
+      }
+
+      if (isClickable) {
+        classes += 'cursor-pointer hover:bg-emerald-500/25 ';
+      }
+
+      if (isInRange) {
+        classes += 'bg-emerald-500/30 text-emerald-50 ';
+      }
+
+      if (isSelected) {
+        classes += 'bg-emerald-500 text-white ring-2 ring-emerald-300 ';
+      }
 
       cells.push(
         <div
           key={dateString}
-          onClick={() => isClickable && handleDayClick(dateString, dayData.available)}
-          className={`
-            p-2 border border-gray-600 min-h-[80px] transition-colors
-            ${!isCurrentMonth ? 'text-gray-600 bg-gray-800' : ''}
-            ${dayData && !dayData.available ? 'bg-gray-700 line-through text-gray-500 cursor-not-allowed' : ''}
-            ${isClickable ? 'hover:bg-gray-600 cursor-pointer' : ''}
-            ${!isClickable && isCurrentMonth ? 'cursor-not-allowed' : ''}
-            ${isSelected ? 'bg-blue-600' : ''}
-            ${isInRange ? 'bg-blue-400' : ''}
-          `}
+          onClick={() => isClickable && handleDayClick(dateString, dayData?.available ?? false)}
+          className={classes.trim()}
         >
           <div className="text-sm font-medium">{cellDate.getDate()}</div>
           {isCurrentMonth && dayData && dayData.available && property && (
-            <div className="text-xs mt-1">
+            <div className="mt-1 text-xs text-emerald-200">
               ${(property.nightlyRate / 100).toFixed(0)}
             </div>
           )}

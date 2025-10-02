@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { CalendarDays, Receipt, BookOpenText, ShieldCheck, Users, ArrowRight } from "lucide-react";
 
 export default function CottagrLandingPage() {
@@ -42,7 +43,14 @@ export default function CottagrLandingPage() {
           </div>
           <div className="relative">
             <div className="mx-auto max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl">
-              <img src="/cottagr-hero.png" alt="Cottagr app preview placeholder" className="aspect-video w-full rounded-2xl object-cover" />
+              <Image
+                src="/cottagr-hero.svg"
+                alt="Cottagr app preview placeholder"
+                width={960}
+                height={540}
+                priority
+                className="aspect-video w-full rounded-2xl object-cover"
+              />
               <div className="mt-4 grid grid-cols-3 gap-3 text-center text-xs text-white/70">
                 <div className="rounded-xl border border-white/10 p-3">Owner votes</div>
                 <div className="rounded-xl border border-white/10 p-3">Calendar sync</div>
@@ -88,6 +96,7 @@ export default function CottagrLandingPage() {
                 "Wiring diagrams & permits",
                 "Vendors & maintenance schedules",
               ]}
+              href="/knowledge-hub"
             />
           </div>
         </div>
@@ -224,9 +233,8 @@ export default function CottagrLandingPage() {
       {/* FOOTER */}
       <footer className="px-6 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-3 text-white/70">
-            <img src="/cottagr-logo.png" alt="Cottagr logo" className="h-6 w-6" />
-            <span className="text-sm">© {new Date().getFullYear()} Cottagr</span>
+          <div className="text-sm text-white/70">
+            © {new Date().getFullYear()} Cottagr
           </div>
           <div className="text-xs text-white/50">
             Made for families who share a place they love.
@@ -237,7 +245,7 @@ export default function CottagrLandingPage() {
   );
 }
 
-function FeatureCard({ icon, title, points }: { icon: React.ReactNode; title: string; points: string[] }) {
+function FeatureCard({ icon, title, points, href }: { icon: React.ReactNode; title: string; points: string[]; href?: string }) {
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl">
       <div className="flex items-center gap-3">
@@ -249,6 +257,14 @@ function FeatureCard({ icon, title, points }: { icon: React.ReactNode; title: st
           <li key={i}>• {p}</li>
         ))}
       </ul>
+      {href ? (
+        <a
+          href={href}
+          className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-emerald-300 hover:text-emerald-200"
+        >
+          Explore the handbook <ArrowRight className="h-4 w-4" />
+        </a>
+      ) : null}
     </div>
   );
 }

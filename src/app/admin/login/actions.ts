@@ -11,7 +11,7 @@ export async function loginAction(formData: FormData) {
     redirect('/admin/login?error=invalid');
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set('auth', 'ok', {
     httpOnly: true,
     maxAge: 24 * 60 * 60, // 1 day

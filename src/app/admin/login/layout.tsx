@@ -1,11 +1,12 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
 
-export default function LoginLayout({
+export default async function LoginLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   // Check environment variables
   if (process.env.SINGLE_TENANT !== "true" || !process.env.ADMIN_PASSWORD) {
@@ -17,8 +18,8 @@ export default function LoginLayout({
             To use the admin panel, please set:
           </p>
           <ul className="list-disc list-inside text-gray-300 space-y-1">
-            <li>SINGLE_TENANT="true"</li>
-            <li>ADMIN_PASSWORD="your-secure-password"</li>
+            <li>SINGLE_TENANT=&quot;true&quot;</li>
+            <li>ADMIN_PASSWORD=&quot;your-secure-password&quot;</li>
           </ul>
         </div>
       </div>
@@ -26,7 +27,7 @@ export default function LoginLayout({
   }
 
   // If already authenticated, redirect to admin
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authCookie = cookieStore.get('auth');
   
   if (authCookie && authCookie.value === 'ok') {

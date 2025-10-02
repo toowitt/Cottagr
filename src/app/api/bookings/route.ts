@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { BookingStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { BookingCreateSchema, AvailabilityQuerySchema } from '@/lib/validation';
+import {
+  BookingCreateSchema,
+  BookingListQuerySchema,
+} from '@/lib/validation';
 import { formatCents } from '@/lib/money';
 
 // Overlap: [aStart, aEnd) intersects [bStart, bEnd)
@@ -11,12 +15,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const parsed = AvailabilityQuerySchema.safeParse({
+    const parsed = BookingListQuerySchema.safeParse({
       propertyId: searchParams.get('propertyId')
         ? Number(searchParams.get('propertyId'))
         : undefined,
-      from: searchParams.get('from') || undefined,
-      to: searchParams.get('to') || undefined,
     });
 
     if (!parsed.success) {
@@ -26,20 +28,74 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { propertyId, from, to } = parsed.data;
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
+    const { propertyId } = parsed.data;
 
     const bookings = await prisma.booking.findMany({
-      where: {
-        propertyId,
-        status: { not: 'cancelled' },
-        AND: [{ startDate: { lt: toDate } }, { endDate: { gt: fromDate } }],
+      where: { propertyId },
+      include: {
+        createdByOwnership: {
+          include: { owner: true },
+        },
+        votes: {
+          include: {
+            ownership: {
+              include: { owner: true },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { startDate: 'asc' },
     });
 
-    return NextResponse.json({ bookings });
+    const serialized = bookings.map((booking) => ({
+      id: booking.id,
+      propertyId: booking.propertyId,
+      createdByOwnershipId: booking.createdByOwnershipId,
+      createdBy: booking.createdByOwnership
+        ? {
+            ownershipId: booking.createdByOwnership.id,
+            role: booking.createdByOwnership.role,
+            shareBps: booking.createdByOwnership.shareBps,
+            votingPower: booking.createdByOwnership.votingPower,
+            owner: {
+              id: booking.createdByOwnership.owner.id,
+              email: booking.createdByOwnership.owner.email,
+              firstName: booking.createdByOwnership.owner.firstName,
+              lastName: booking.createdByOwnership.owner.lastName,
+            },
+          }
+        : null,
+      startDate: booking.startDate.toISOString(),
+      endDate: booking.endDate.toISOString(),
+      guestName: booking.guestName,
+      guestEmail: booking.guestEmail,
+      requestNotes: booking.requestNotes,
+      status: booking.status,
+      decisionSummary: booking.decisionSummary,
+      totalAmount: booking.totalAmount,
+      totalFormatted: formatCents(booking.totalAmount),
+      votes: booking.votes.map((vote) => ({
+        id: vote.id,
+        choice: vote.choice,
+        rationale: vote.rationale,
+        createdAt: vote.createdAt.toISOString(),
+        ownershipId: vote.ownershipId,
+        owner: {
+          id: vote.ownership.owner.id,
+          firstName: vote.ownership.owner.firstName,
+          lastName: vote.ownership.owner.lastName,
+          email: vote.ownership.owner.email,
+        },
+        ownership: {
+          role: vote.ownership.role,
+          votingPower: vote.ownership.votingPower,
+          shareBps: vote.ownership.shareBps,
+        },
+      })),
+    }));
+
+    return NextResponse.json({ bookings: serialized });
   } catch (err) {
     console.error('GET /api/bookings error:', err);
     return NextResponse.json(
@@ -61,14 +117,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { propertyId, startDate, endDate, guestName, guestEmail } =
-      validation.data;
+    const {
+      propertyId,
+      createdByOwnershipId,
+      startDate,
+      endDate,
+      guestName,
+      guestEmail,
+      notes,
+    } = validation.data;
 
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
+      include: { ownerships: true },
     });
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+    }
+
+    const requestingOwnership = property.ownerships.find(
+      (ownership) => ownership.id === createdByOwnershipId
+    );
+    if (!requestingOwnership) {
+      return NextResponse.json(
+        { error: 'Ownership record not found for property' },
+        { status: 400 }
+      );
     }
 
     const start = new Date(startDate);
@@ -105,7 +179,7 @@ export async function POST(request: NextRequest) {
       prisma.booking.findMany({
         where: {
           propertyId,
-          status: { not: 'cancelled' },
+          status: { not: BookingStatus.cancelled },
           AND: [{ startDate: { lt: end } }, { endDate: { gt: start } }],
         },
         select: { id: true, startDate: true, endDate: true },
@@ -135,24 +209,39 @@ export async function POST(request: NextRequest) {
     const booking = await prisma.booking.create({
       data: {
         propertyId,
+        createdByOwnershipId,
         startDate: start,
         endDate: end,
-        guestName: guestName ?? null,
-        guestEmail: guestEmail ?? null,
-        status: 'pending',
+        guestName,
+        guestEmail,
+        requestNotes: notes ?? null,
+        status: BookingStatus.pending,
         totalAmount,
+      },
+      include: {
+        createdByOwnership: {
+          include: { owner: true },
+        },
+        votes: {
+          include: {
+            ownership: {
+              include: { owner: true },
+            },
+          },
+        },
       },
     });
 
-    return NextResponse.json(
-      {
-        id: booking.id,
-        status: booking.status,
-        totalAmount,
-        totalFormatted: formatCents(totalAmount),
-      },
-      { status: 201 }
-    );
+    const payload = {
+      id: booking.id,
+      status: booking.status,
+      totalAmount,
+      totalFormatted: formatCents(totalAmount),
+      startDate: booking.startDate.toISOString(),
+      endDate: booking.endDate.toISOString(),
+    };
+
+    return NextResponse.json(payload, { status: 201 });
   } catch (err) {
     console.error('POST /api/bookings error:', err);
     return NextResponse.json(

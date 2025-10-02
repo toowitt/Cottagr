@@ -91,12 +91,12 @@ export default async function AdminBlackoutsPage() {
       </div>
 
       {/* Blackouts List */}
-      <BlackoutsList properties={properties} />
+      <BlackoutsList />
     </div>
   );
 }
 
-async function BlackoutsList({ properties }: { properties: { id: number; name: string }[] }) {
+async function BlackoutsList() {
   const blackouts = await prisma.blackout.findMany({
     include: {
       property: {
@@ -139,11 +139,6 @@ async function BlackoutsList({ properties }: { properties: { id: number; name: s
               <button
                 type="submit"
                 className="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded transition-colors"
-                onClick={(e) => {
-                  if (!confirm('Are you sure you want to delete this blackout?')) {
-                    e.preventDefault();
-                  }
-                }}
               >
                 Delete
               </button>

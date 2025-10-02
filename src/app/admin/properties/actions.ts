@@ -47,6 +47,16 @@ const PropertySchema = z.object({
   photos: z.string().optional(), // comma-separated URLs
 });
 
+const slugify = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
+
 export async function createProperty(formData: FormData) {
   // Use safeParse so a validation failure doesn’t throw a server exception
   const parsed = PropertySchema.safeParse(Object.fromEntries(formData));
@@ -57,13 +67,14 @@ export async function createProperty(formData: FormData) {
   }
 
   const data = parsed.data;
+  const resolvedSlug = slugify(data.slug || data.name) || slugify(`property-${Date.now()}`);
   const photos = parsePhotosToJson(formData.get('photos'), { forCreate: true });
 
   // Persist
   await prisma.property.create({
     data: {
       name: data.name,
-      slug: data.slug,
+      slug: resolvedSlug,
       location: data.location ?? null,
       beds: typeof data.beds === 'number' ? data.beds : null,
       baths: typeof data.baths === 'number' ? data.baths : null,
@@ -87,6 +98,7 @@ export async function updateProperty(id: number, formData: FormData) {
   }
 
   const data = parsed.data;
+  const resolvedSlug = slugify(data.slug || data.name) || slugify(`property-${Date.now()}`);
   // Undefined => leave the JSON column untouched
   const photosU = parsePhotosToJson(formData.get('photos'));
 
@@ -94,7 +106,7 @@ export async function updateProperty(id: number, formData: FormData) {
     where: { id },
     data: {
       name: data.name,
-      slug: data.slug,
+      slug: resolvedSlug,
       location: data.location ?? null,
       beds: typeof data.beds === 'number' ? data.beds : null,
       baths: typeof data.baths === 'number' ? data.baths : null,

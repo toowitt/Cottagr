@@ -1,6 +1,7 @@
 
 'use server';
 
+import { BookingStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -14,7 +15,7 @@ export async function confirmBooking(formData: FormData) {
   try {
     await prisma.booking.update({
       where: { id },
-      data: { status: 'confirmed' },
+      data: { status: BookingStatus.approved },
     });
 
     revalidatePath('/admin/bookings');
@@ -34,7 +35,7 @@ export async function cancelBooking(formData: FormData) {
   try {
     await prisma.booking.update({
       where: { id },
-      data: { status: 'cancelled' },
+      data: { status: BookingStatus.cancelled },
     });
 
     revalidatePath('/admin/bookings');
@@ -105,9 +106,9 @@ export async function createQuickBooking(formData: FormData) {
         startDate: start,
         endDate: end,
         guestName: guestName || 'Manual Entry',
-        guestEmail: '',
+        guestEmail: null,
         totalAmount,
-        status: 'confirmed', // Manual bookings are confirmed by default
+        status: BookingStatus.approved, // Manual bookings are approved by default
       },
     });
 

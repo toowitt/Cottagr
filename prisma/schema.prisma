@@ -7,46 +7,180 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum OwnershipRole {
+  PRIMARY
+  OWNER
+  CARETAKER
+}
+
+enum BookingStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum BookingVoteChoice {
+  approve
+  reject
+  abstain
+}
+
+enum ExpenseStatus {
+  pending
+  approved
+  reimbursed
+  rejected
+}
+
+enum ExpenseApprovalChoice {
+  approve
+  reject
+  abstain
+}
+
+model Owner {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  firstName    String
+  lastName     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  ownerships   Ownership[]
+  bookingVotes BookingVote[]
+}
+
+model Ownership {
+  id           Int           @id @default(autoincrement())
+  propertyId   Int
+  ownerId      Int
+  role         OwnershipRole @default(OWNER)
+  shareBps     Int           @default(0) // 10000 = 100%
+  votingPower  Int           @default(1)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  property     Property      @relation(fields: [propertyId], references: [id])
+  owner        Owner         @relation(fields: [ownerId], references: [id])
+  bookingVotes BookingVote[]
+  Booking      Booking[]
+  expenseApprovals ExpenseApproval[]
+  expenseAllocations ExpenseAllocation[]
+  createdExpenses Expense[] @relation("ExpenseCreatedBy")
+  paidExpenses    Expense[] @relation("ExpensePaidBy")
+
+  @@unique([propertyId, ownerId])
+}
+
 model Property {
-  id           Int      @id @default(autoincrement())
-  name         String
-  slug         String   @unique
-  location     String?
-  beds         Int?
-  baths        Int?
-  description  String?
-  nightlyRate  Int      // in cents
-  cleaningFee  Int      // in cents
-  minNights    Int      @default(2)
-  photos       Json?    // array of image URLs, e.g., ["https://...","https://..."]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  bookings     Booking[]
-  blackout     Blackout[]
-  seasonPrices SeasonPrice[]
+  id             Int           @id @default(autoincrement())
+  name           String
+  slug           String        @unique
+  location       String?
+  beds           Int?
+  baths          Int?
+  description    String?
+  nightlyRate    Int // in cents
+  cleaningFee    Int // in cents
+  minNights      Int           @default(2)
+  approvalPolicy String        @default("majority")
+  photos         Json? // array of image URLs, e.g., ["https://...","https://..."]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  bookings       Booking[]
+  blackouts      Blackout[]
+  seasonPrices   SeasonPrice[]
+  ownerships     Ownership[]
+  expenses       Expense[]
 }
 
 model Booking {
+  id                   Int           @id @default(autoincrement())
+  propertyId           Int
+  createdByOwnershipId Int?
+  startDate            DateTime
+  endDate              DateTime
+  guestName            String?
+  guestEmail           String?
+  status               BookingStatus @default(pending)
+  decisionSummary      String?
+  requestNotes         String?
+  totalAmount          Int // in cents
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  property             Property      @relation(fields: [propertyId], references: [id])
+  createdByOwnership   Ownership?    @relation(fields: [createdByOwnershipId], references: [id])
+  votes                BookingVote[]
+}
+
+model BookingVote {
+  id          Int               @id @default(autoincrement())
+  bookingId   Int
+  ownershipId Int
+  choice      BookingVoteChoice @default(abstain)
+  rationale   String?
+  createdAt   DateTime          @default(now())
+  booking     Booking           @relation(fields: [bookingId], references: [id])
+  ownership   Ownership         @relation(fields: [ownershipId], references: [id])
+  Owner       Owner?            @relation(fields: [ownerId], references: [id])
+  ownerId     Int?
+
+  @@unique([bookingId, ownershipId])
+}
+
+model Expense {
+  id                   Int            @id @default(autoincrement())
+  propertyId           Int
+  createdByOwnershipId Int?
+  paidByOwnershipId    Int?
+  vendorName           String?
+  category             String?
+  memo                 String?
+  amountCents          Int
+  incurredOn           DateTime
+  status               ExpenseStatus   @default(pending)
+  receiptUrl           String?
+  decisionSummary      String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  property             Property        @relation(fields: [propertyId], references: [id])
+  createdByOwnership   Ownership?      @relation("ExpenseCreatedBy", fields: [createdByOwnershipId], references: [id])
+  paidByOwnership      Ownership?      @relation("ExpensePaidBy", fields: [paidByOwnershipId], references: [id])
+  approvals            ExpenseApproval[]
+  allocations          ExpenseAllocation[]
+}
+
+model ExpenseApproval {
+  id          Int                     @id @default(autoincrement())
+  expenseId   Int
+  ownershipId Int
+  choice      ExpenseApprovalChoice   @default(abstain)
+  rationale   String?
+  createdAt   DateTime                @default(now())
+  expense     Expense                 @relation(fields: [expenseId], references: [id])
+  ownership   Ownership               @relation(fields: [ownershipId], references: [id])
+
+  @@unique([expenseId, ownershipId])
+}
+
+model ExpenseAllocation {
+  id          Int        @id @default(autoincrement())
+  expenseId   Int
+  ownershipId Int
+  amountCents Int
+  createdAt   DateTime   @default(now())
+  expense     Expense    @relation(fields: [expenseId], references: [id])
+  ownership   Ownership  @relation(fields: [ownershipId], references: [id])
+
+  @@unique([expenseId, ownershipId])
+}
+
+model SeasonPrice {
   id          Int      @id @default(autoincrement())
   propertyId  Int
   startDate   DateTime
   endDate     DateTime
-  guestName   String?
-  guestEmail  String?
-  status      String   @default("pending") // pending|confirmed|cancelled
-  totalAmount Int      // in cents
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  property    Property @relation(fields: [propertyId], references: [id])
-}
-
-model SeasonPrice {
-  id         Int      @id @default(autoincrement())
-  propertyId Int
-  startDate  DateTime
-  endDate    DateTime
   nightlyRate Int
-  property   Property @relation(fields: [propertyId], references: [id])
+  property    Property @relation(fields: [propertyId], references: [id])
 }
 
 model Blackout {
@@ -56,4 +190,98 @@ model Blackout {
   endDate    DateTime
   reason     String?
   property   Property @relation(fields: [propertyId], references: [id])
+}
+
+enum ChecklistStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model KnowledgeChecklist {
+  id             Int               @id @default(autoincrement())
+  title          String
+  category       String?
+  summary        String?
+  status         ChecklistStatus   @default(DRAFT)
+  versionCounter Int               @default(1)
+  publishedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  items          ChecklistItem[]
+  versions       ChecklistVersion[]
+  documents      ChecklistDocument[]
+}
+
+model ChecklistItem {
+  id          Int                @id @default(autoincrement())
+  checklistId Int
+  position    Int
+  text        String
+  isRequired  Boolean            @default(false)
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  checklist   KnowledgeChecklist @relation(fields: [checklistId], references: [id])
+
+  @@index([checklistId, position])
+}
+
+model ChecklistVersion {
+  id          Int                @id @default(autoincrement())
+  checklistId Int
+  version     Int
+  title       String
+  summary     String?
+  category    String?
+  items       Json
+  documents   Json?
+  isPublished Boolean            @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime           @default(now())
+  checklist   KnowledgeChecklist @relation(fields: [checklistId], references: [id])
+
+  @@unique([checklistId, version])
+}
+
+model KnowledgeDocument {
+  id             Int                @id @default(autoincrement())
+  title          String
+  description    String?
+  fileKey        String
+  fileUrl        String?
+  mimeType       String?
+  size           Int?
+  version        Int                @default(1)
+  uploadedBy     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  versions       DocumentVersion[]
+  checklistLinks ChecklistDocument[]
+}
+
+model DocumentVersion {
+  id          Int               @id @default(autoincrement())
+  documentId  Int
+  version     Int
+  fileKey     String
+  fileUrl     String?
+  mimeType    String?
+  size        Int?
+  description String?
+  createdAt   DateTime          @default(now())
+  document    KnowledgeDocument @relation(fields: [documentId], references: [id])
+
+  @@unique([documentId, version])
+}
+
+model ChecklistDocument {
+  id          Int                @id @default(autoincrement())
+  checklistId Int
+  documentId  Int
+  createdAt   DateTime           @default(now())
+  checklist   KnowledgeChecklist @relation(fields: [checklistId], references: [id])
+  document    KnowledgeDocument  @relation(fields: [documentId], references: [id])
+
+  @@unique([checklistId, documentId])
 }
