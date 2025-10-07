@@ -19,6 +19,7 @@ type ServerAction = typeof createProperty;
 type PropertyFormProps = {
   action: ServerAction;
   mode: 'create' | 'edit';
+  organizations: Array<{ id: number; name: string; slug: string }>;
   initialValues?: {
     id?: number;
     name?: string | null;
@@ -31,10 +32,11 @@ type PropertyFormProps = {
     minNights?: number | null;
     description?: string | null;
     photos?: string[] | null;
+    organizationId?: number | null;
   };
 };
 
-export default function PropertyForm({ action, mode, initialValues }: PropertyFormProps) {
+export default function PropertyForm({ action, mode, organizations, initialValues }: PropertyFormProps) {
   const initialName = initialValues?.name ?? '';
   const initialSlug = initialValues?.slug ?? '';
 
@@ -170,6 +172,22 @@ export default function PropertyForm({ action, mode, initialValues }: PropertyFo
             step="1"
             className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium mb-2">Organization</label>
+          <select
+            name="organizationId"
+            defaultValue={initialValues?.organizationId ?? ''}
+            className="w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Unassigned</option>
+            {organizations.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

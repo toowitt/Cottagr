@@ -45,6 +45,7 @@ const PropertySchema = z.object({
   ),
   description: z.preprocess(blankToUndef, z.string().optional()),
   photos: z.string().optional(), // comma-separated URLs
+  organizationId: z.preprocess(blankToUndef, z.coerce.number().int().positive()).optional(),
 });
 
 const slugify = (value: string) =>
@@ -82,6 +83,7 @@ export async function createProperty(formData: FormData) {
       nightlyRate: data.nightlyRate,
       cleaningFee: data.cleaningFee,
       minNights: data.minNights,
+      organizationId: typeof data.organizationId === 'number' ? data.organizationId : null,
       photos, // JSON array; never null
     },
   });
@@ -114,6 +116,8 @@ export async function updateProperty(id: number, formData: FormData) {
       nightlyRate: data.nightlyRate,
       cleaningFee: data.cleaningFee,
       minNights: data.minNights,
+      organizationId:
+        typeof data.organizationId === 'number' ? data.organizationId : null,
       ...(photosU !== undefined ? { photos: photosU } : {}),
     },
   });

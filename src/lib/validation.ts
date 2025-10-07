@@ -46,6 +46,11 @@ export const ExpenseCreateSchema = z.object({
     ),
 });
 
+export const ExpenseUpdateSchema = ExpenseCreateSchema.extend({
+  expenseId: z.number().int().positive(),
+  createdByOwnershipId: z.number().int().positive().nullable(),
+});
+
 export const ExpenseApprovalSchema = z.object({
   expenseId: z.number().int().positive(),
   ownershipId: z.number().int().positive(),
@@ -54,7 +59,7 @@ export const ExpenseApprovalSchema = z.object({
 });
 
 export const BookingListQuerySchema = z.object({
-  propertyId: z.number().int().positive(),
+  propertyId: z.number().int().positive().optional(),
 });
 
 export const AvailabilityQuerySchema = z.object({
@@ -68,4 +73,5 @@ export type BookingVoteInput = z.infer<typeof BookingVoteSchema>;
 export type BookingListQuery = z.infer<typeof BookingListQuerySchema>;
 export type AvailabilityQuery = z.infer<typeof AvailabilityQuerySchema>;
 export type ExpenseCreate = z.infer<typeof ExpenseCreateSchema>;
+export type ExpenseUpdate = z.infer<typeof ExpenseUpdateSchema>;
 export type ExpenseApprovalInput = z.infer<typeof ExpenseApprovalSchema>;

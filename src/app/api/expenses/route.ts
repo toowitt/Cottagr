@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { ExpenseCreateSchema, BookingListQuerySchema } from '@/lib/validation';
+import { ExpenseCreateSchema, ExpenseUpdateSchema, BookingListQuerySchema } from '@/lib/validation';
 import { formatCents } from '@/lib/money';
 
 const splitAmount = (amountCents: number, shares: Array<{ id: number; shareBps: number }>) => {
@@ -196,5 +196,91 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('POST /api/expenses error:', error);
     return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const parsed = ExpenseUpdateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', issues: parsed.error.issues }, { status: 400 });
+    }
+
+    const {
+      expenseId,
+      propertyId,
+      createdByOwnershipId,
+      paidByOwnershipId,
+      vendorName,
+      category,
+      memo,
+      amountCents,
+      incurredOn,
+      receiptUrl,
+    } = parsed.data;
+
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+      include: {
+        property: { include: { ownerships: true } },
+      },
+    });
+
+    if (!expense || expense.propertyId !== propertyId) {
+      return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
+    }
+
+    const ownerships = expense.property.ownerships;
+    const ownershipIds = new Set(ownerships.map((share) => share.id));
+
+    if (createdByOwnershipId !== null && !ownershipIds.has(createdByOwnershipId)) {
+      return NextResponse.json({ error: 'Ownership record not found for property' }, { status: 400 });
+    }
+
+    if (paidByOwnershipId && !ownershipIds.has(paidByOwnershipId)) {
+      return NextResponse.json({ error: 'Payer must be an owner of this property' }, { status: 400 });
+    }
+
+    const allocations = splitAmount(
+      amountCents,
+      ownerships.map((share) => ({ id: share.id, shareBps: share.shareBps }))
+    );
+
+    await prisma.$transaction(async (tx) => {
+      await tx.expenseAllocation.deleteMany({ where: { expenseId } });
+      await tx.expenseApproval.deleteMany({ where: { expenseId } });
+      await tx.expense.update({
+        where: { id: expenseId },
+        data: {
+          createdByOwnershipId,
+          paidByOwnershipId,
+          vendorName: vendorName?.trim() || null,
+          category: category?.trim() || null,
+          memo: memo?.trim() || null,
+          amountCents,
+          incurredOn: new Date(`${incurredOn}T00:00:00Z`),
+          receiptUrl: receiptUrl?.trim() || null,
+          status: 'pending',
+          decisionSummary: null,
+        },
+      });
+
+      if (allocations.length > 0) {
+        await tx.expenseAllocation.createMany({
+          data: allocations.map((allocation) => ({
+            expenseId,
+            ownershipId: allocation.ownershipId,
+            amountCents: allocation.amountCents,
+          })),
+        });
+      }
+    });
+
+    return NextResponse.json({ id: expenseId, amountFormatted: formatCents(amountCents) });
+  } catch (error) {
+    console.error('PATCH /api/expenses error:', error);
+    return NextResponse.json({ error: 'Failed to update expense' }, { status: 500 });
   }
 }

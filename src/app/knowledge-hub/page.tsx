@@ -17,37 +17,42 @@ type DocumentSnapshot = {
 
 function parseItems(raw: unknown): ItemSnapshot[] {
   if (!Array.isArray(raw)) return [];
-  return raw
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null;
-      const { position, text, isRequired, notes } = entry as Record<string, unknown>;
-      if (typeof position !== 'number' || typeof text !== 'string') return null;
-      return {
-        position,
-        text,
-        isRequired: typeof isRequired === 'boolean' ? isRequired : undefined,
-        notes: typeof notes === 'string' ? notes : null,
-      };
-    })
-    .filter((entry): entry is ItemSnapshot => Boolean(entry))
-    .sort((a, b) => a.position - b.position);
+
+  const items: ItemSnapshot[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const { position, text, isRequired, notes } = entry as Record<string, unknown>;
+    if (typeof position !== 'number' || typeof text !== 'string') continue;
+
+    items.push({
+      position,
+      text,
+      isRequired: typeof isRequired === 'boolean' ? isRequired : undefined,
+      notes: typeof notes === 'string' ? notes : null,
+    });
+  }
+
+  return items.sort((a, b) => a.position - b.position);
 }
 
 function parseDocuments(raw: unknown): DocumentSnapshot[] {
   if (!Array.isArray(raw)) return [];
-  return raw
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null;
-      const { id, title, version, fileUrl } = entry as Record<string, unknown>;
-      if (typeof id !== 'number' || typeof title !== 'string') return null;
-      return {
-        id,
-        title,
-        version: typeof version === 'number' ? version : undefined,
-        fileUrl: typeof fileUrl === 'string' ? fileUrl : undefined,
-      };
-    })
-    .filter((entry): entry is DocumentSnapshot => Boolean(entry));
+
+  const docs: DocumentSnapshot[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const { id, title, version, fileUrl } = entry as Record<string, unknown>;
+    if (typeof id !== 'number' || typeof title !== 'string') continue;
+
+    docs.push({
+      id,
+      title,
+      version: typeof version === 'number' ? version : undefined,
+      fileUrl: typeof fileUrl === 'string' ? fileUrl : undefined,
+    });
+  }
+
+  return docs;
 }
 
 export default async function KnowledgeHubPage() {

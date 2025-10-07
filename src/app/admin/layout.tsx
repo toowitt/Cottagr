@@ -1,139 +1,61 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { ensureUserRecord } from '@/lib/auth/ensureUser';
+import { getUserMemberships } from '@/lib/auth/getMemberships';
+
+export const metadata = {
+  title: 'Admin | Cottagr',
+};
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const isConfigured = Boolean(process.env.ADMIN_PASSWORD);
-  const cookieStore = await cookies();
-  const authed = cookieStore.get('admin_auth')?.value === 'ok';
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // --- Server actions (run on the server only) ---
-  async function login(formData: FormData) {
-    'use server';
-    if (!process.env.ADMIN_PASSWORD) {
-      redirect('/admin?error=ADMIN_PASSWORD not configured');
-    }
-    const pw = (formData.get('password') ?? '').toString();
-    if (pw !== process.env.ADMIN_PASSWORD) {
-      redirect('/admin?error=Invalid password');
-    }
-    const cookieStore = await cookies();
-    cookieStore.set('admin_auth', 'ok', {
-      httpOnly: true,
-      path: '/',
-      maxAge: 60 * 60 * 24, // 1 day
-      sameSite: 'lax',
-    });
-    redirect('/admin');
+  if (!user) {
+    redirect('/login?redirect=/admin');
   }
 
-  async function logout() {
-    'use server';
-    const cookieStore = await cookies();
-    cookieStore.delete('admin_auth');
-    redirect('/admin');
+  const userRecord = await ensureUserRecord(user);
+  if (!userRecord) {
+    redirect('/login?redirect=/admin');
   }
-  // ------------------------------------------------
 
-  // Not configured yet
-  if (!isConfigured) {
+  const memberships = await getUserMemberships(userRecord.id);
+  const adminMemberships = memberships.filter((membership) => membership.role === 'OWNER_ADMIN');
+
+  if (adminMemberships.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center p-6">
-        <div className="max-w-lg w-full bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
-          <h1 className="text-2xl font-semibold">Admin not configured</h1>
-          <p>
-            Set <span className="font-mono">ADMIN_PASSWORD</span> in Replit Secrets for both
-            <strong> Run</strong> and <strong>Deploy</strong> environments, then reload.
-          </p>
-          <div>
-            <Link href="/" className="text-blue-400 hover:text-blue-300">
-              ← Back to site
-            </Link>
+      <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+        <main className="mx-auto max-w-4xl px-4 py-8">
+          <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-sm text-emerald-900 dark:text-emerald-100">
+            <h1 className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">No admin access yet</h1>
+            <p className="mt-2 text-emerald-700/90 dark:text-emerald-200/80">
+              You&apos;re signed in, but you need owner admin permissions to see the full dashboard. Create your
+              first organization below or ask an existing owner admin to upgrade you.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/admin/setup"
+                className="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+              >
+                Go to setup
+              </Link>
+            </div>
           </div>
-        </div>
+
+          <div className="mt-8">{children}</div>
+        </main>
       </div>
     );
   }
 
-  // Not authenticated → show server-action login form
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center p-6">
-        <form
-          action={login}
-          className="max-w-sm w-full bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4"
-        >
-          <h1 className="text-2xl font-semibold">Admin Login</h1>
-          <label className="block text-sm">
-            <span className="text-gray-300">Password</span>
-            <input
-              type="password"
-              name="password"
-              required
-              className="mt-1 w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </label>
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-          >
-            Sign in
-          </button>
-          <div className="text-sm">
-            <Link href="/" className="text-gray-400 hover:text-gray-300">
-              ← Back to site
-            </Link>
-          </div>
-        </form>
-      </div>
-    );
-  }
-
-  // Authenticated → render admin chrome + children
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <nav className="bg-gray-800 border-b border-gray-700">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-6">
-              <Link href="/admin/properties" className="text-gray-200 hover:text-white">
-                Properties
-              </Link>
-              <Link href="/admin/owners" className="text-gray-200 hover:text-white">
-                Owners
-              </Link>
-              <Link href="/admin/bookings" className="text-gray-200 hover:text-white">
-                Bookings
-              </Link>
-              <Link href="/admin/knowledge-hub" className="text-gray-200 hover:text-white">
-                Knowledge Hub
-              </Link>
-              <Link href="/admin/expenses" className="text-gray-200 hover:text-white">
-                Expenses
-              </Link>
-              <Link href="/admin/blackouts" className="text-gray-200 hover:text-white">
-                Blackouts
-              </Link>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/" className="text-gray-400 hover:text-gray-300">
-                ← Back to site
-              </Link>
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="bg-gray-700 hover:bg-gray-600 text-sm px-3 py-1 rounded"
-                >
-                  Log out
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto px-4 py-8">{children}</main>
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );
 }

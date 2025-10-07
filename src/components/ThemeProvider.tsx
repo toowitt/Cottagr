@@ -21,7 +21,7 @@ function isTheme(value: unknown): value is Theme {
 
 function getPreferredTheme(): Theme {
   if (typeof window === 'undefined') {
-    return 'dark';
+    return 'light';
   }
 
   try {
@@ -38,7 +38,7 @@ function getPreferredTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark');
+  const [theme, setThemeState] = useState<Theme>('light');
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -53,8 +53,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     const root = document.documentElement;
-    root.classList.remove('theme-light', 'theme-dark');
-    root.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light');
+    root.classList.remove('theme-light', 'theme-dark', 'light', 'dark');
+    if (theme === 'dark') {
+      root.classList.add('theme-dark', 'dark');
+    } else {
+      root.classList.add('theme-light', 'light');
+    }
 
     try {
       window.localStorage.setItem(STORAGE_KEY, theme);

@@ -31,8 +31,16 @@ export async function GET(request: NextRequest) {
     const { propertyId } = parsed.data;
 
     const bookings = await prisma.booking.findMany({
-      where: { propertyId },
+      where: propertyId ? { propertyId } : undefined,
       include: {
+        property: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            location: true,
+          },
+        },
         createdByOwnership: {
           include: { owner: true },
         },
@@ -75,6 +83,14 @@ export async function GET(request: NextRequest) {
       decisionSummary: booking.decisionSummary,
       totalAmount: booking.totalAmount,
       totalFormatted: formatCents(booking.totalAmount),
+      property: booking.property
+        ? {
+            id: booking.property.id,
+            name: booking.property.name,
+            slug: booking.property.slug,
+            location: booking.property.location,
+          }
+        : null,
       votes: booking.votes.map((vote) => ({
         id: vote.id,
         choice: vote.choice,

@@ -1,24 +1,31 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
-export function middleware(request: NextRequest) {
-  // Only check auth for admin routes, excluding login and API routes
-  if (request.nextUrl.pathname.startsWith('/admin') &&
-      !request.nextUrl.pathname.startsWith('/admin/login') &&
-      !request.nextUrl.pathname.startsWith('/admin/api/')) {
+const PROTECTED_PATHS = ['/admin', '/bookings', '/expenses', '/knowledge-hub'];
 
-    // Check for auth cookie
-    const authCookie = request.cookies.get('auth');
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next({ request: { headers: request.headers } });
+  const supabase = createMiddlewareClient({ req: request, res: response });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-    if (!authCookie || authCookie.value !== 'ok') {
-      // Redirect to admin login
-      return NextResponse.redirect(new URL('/admin/login', request.url));
-    }
+  const { pathname } = request.nextUrl;
+  const isProtectedRoute = PROTECTED_PATHS.some((path) =>
+    pathname === path || pathname.startsWith(`${path}/`),
+  );
+
+  if (isProtectedRoute && !session) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/login';
+    redirectUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(redirectUrl);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
-  matcher: ['/admin/((?!login|api).*)'],
+  matcher: ['/admin/:path*', '/bookings/:path*', '/expenses/:path*', '/knowledge-hub/:path*'],
 };

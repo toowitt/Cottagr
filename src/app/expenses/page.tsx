@@ -103,7 +103,7 @@ export default function ExpensesPage() {
   const formatMoney = (cents: number) =>
     new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(cents / 100)
 
-  const [formData, setFormData] = useState({
+  const createInitialFormState = () => ({
     vendorName: '',
     category: '',
     amount: '',
@@ -112,11 +112,17 @@ export default function ExpensesPage() {
     receiptUrl: '',
     paidByOwnershipId: '',
   })
+
+  const [formData, setFormData] = useState(createInitialFormState)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [uploadingReceipt, setUploadingReceipt] = useState(false)
+  const [uploadedReceiptUrl, setUploadedReceiptUrl] = useState<string | null>(null)
   const [uploadedReceiptName, setUploadedReceiptName] = useState<string | null>(null)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const photoInputRef = useRef<HTMLInputElement | null>(null)
   const documentInputRef = useRef<HTMLInputElement | null>(null)
+  const formSectionRef = useRef<HTMLDivElement | null>(null)
+  const previousActiveOwnershipIdRef = useRef<number | null>(null)
 
   const fetchProperties = useCallback(async () => {
     try {
@@ -170,6 +176,54 @@ export default function ExpensesPage() {
   }, [selectedPropertyId, fetchExpenses])
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId)
+  const isEditing = Boolean(editingExpense)
+
+  const resetFormState = () => {
+    setFormData(createInitialFormState())
+    setUploadedReceiptUrl(null)
+    setUploadedReceiptName(null)
+    setEditingExpense(null)
+    setValidationErrors([])
+    if (previousActiveOwnershipIdRef.current !== null) {
+      setActiveOwnershipId(previousActiveOwnershipIdRef.current)
+      previousActiveOwnershipIdRef.current = null
+    }
+  }
+
+  const beginEditingExpense = (expense: Expense) => {
+    setError(null)
+    setValidationErrors([])
+
+    const isUploaded = Boolean(expense.receiptUrl && expense.receiptUrl.startsWith('/uploads/expenses/'))
+    setFormData({
+      vendorName: expense.vendorName ?? '',
+      category: expense.category ?? '',
+      amount: (expense.amountCents / 100).toFixed(2),
+      incurredOn: expense.incurredOn,
+      memo: expense.memo ?? '',
+      receiptUrl: isUploaded ? '' : expense.receiptUrl ?? '',
+      paidByOwnershipId: expense.paidByOwnershipId ? String(expense.paidByOwnershipId) : '',
+    })
+
+    if (isUploaded) {
+      setUploadedReceiptUrl(expense.receiptUrl)
+      const guessedName = expense.receiptUrl?.split('/').pop()
+      setUploadedReceiptName(guessedName && guessedName.length > 0 ? guessedName : 'Uploaded receipt')
+    } else {
+      setUploadedReceiptUrl(null)
+      setUploadedReceiptName(null)
+    }
+
+    if (expense.createdByOwnershipId) {
+      if (previousActiveOwnershipIdRef.current === null) {
+        previousActiveOwnershipIdRef.current = activeOwnershipId
+      }
+      setActiveOwnershipId(expense.createdByOwnershipId)
+    }
+
+    setEditingExpense(expense)
+    formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const handleReceiptUpload = async (file?: File | null) => {
     if (!file) return
@@ -193,8 +247,9 @@ export default function ExpensesPage() {
         throw new Error(message)
       }
 
-      setFormData(prev => ({ ...prev, receiptUrl: payload.url }))
+      setUploadedReceiptUrl(payload.url)
       setUploadedReceiptName(payload.originalName || file.name)
+      setFormData(prev => (prev.receiptUrl ? { ...prev, receiptUrl: '' } : prev))
       if (validationErrors.length > 0) {
         setValidationErrors([])
       }
@@ -207,6 +262,7 @@ export default function ExpensesPage() {
 
   const clearReceiptAttachment = () => {
     setFormData(prev => ({ ...prev, receiptUrl: '' }))
+    setUploadedReceiptUrl(null)
     setUploadedReceiptName(null)
   }
 
@@ -218,12 +274,14 @@ export default function ExpensesPage() {
     documentInputRef.current?.click()
   }
 
-  const hasReceiptAttachment = formData.receiptUrl.trim().length > 0
-  const receiptIsUploaded = hasReceiptAttachment && formData.receiptUrl.startsWith('/uploads/expenses/')
+  const manualReceiptUrl = formData.receiptUrl.trim()
+  const receiptHref = uploadedReceiptUrl ?? manualReceiptUrl
+  const hasReceiptAttachment = Boolean(receiptHref)
+  const receiptIsUploaded = Boolean(uploadedReceiptUrl)
   const receiptDisplayName = receiptIsUploaded
     ? uploadedReceiptName ?? 'Uploaded receipt'
-    : hasReceiptAttachment
-    ? formData.receiptUrl.replace(/^https?:\/\//, '')
+    : manualReceiptUrl
+    ? manualReceiptUrl.replace(/^https?:\/\//, '')
     : ''
 
   const ownerBalances = useMemo(() => {
@@ -271,13 +329,13 @@ export default function ExpensesPage() {
     }))
   }, [expenses, selectedProperty])
 
-  const validateForm = () => {
+  const validateForm = (createdById: number | null) => {
     const errors: string[] = []
 
     if (!selectedPropertyId) {
       errors.push('Select a property')
     }
-    if (!activeOwnershipId) {
+    if (!createdById) {
       errors.push('Select which owner is submitting this expense')
     }
     if (!formData.amount.trim() || Number.isNaN(Number(formData.amount))) {
@@ -292,7 +350,8 @@ export default function ExpensesPage() {
 
   const handleFormChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    if (field === 'receiptUrl' && (!value || !value.startsWith('/uploads/expenses/'))) {
+    if (field === 'receiptUrl') {
+      setUploadedReceiptUrl(null)
       setUploadedReceiptName(null)
     }
     if (validationErrors.length > 0) {
@@ -302,11 +361,13 @@ export default function ExpensesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const errors = validateForm()
+    const createdByOwnershipId = activeOwnershipId
+    const propertyId = selectedPropertyId ?? editingExpense?.propertyId ?? null
+    const errors = validateForm(createdByOwnershipId ?? null)
     setValidationErrors(errors)
     if (errors.length > 0) return
 
-    if (!selectedPropertyId || !activeOwnershipId) return
+    if (!propertyId || !createdByOwnershipId) return
 
     const cents = Math.round(Number(formData.amount) * 100)
     if (Number.isNaN(cents) || cents <= 0) {
@@ -322,20 +383,28 @@ export default function ExpensesPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
+      const endpoint = '/api/expenses'
+      const method = isEditing ? 'PATCH' : 'POST'
+      const payload = {
+        propertyId,
+        createdByOwnershipId,
+        vendorName: formData.vendorName || undefined,
+        category: formData.category || undefined,
+        memo: formData.memo || undefined,
+        amountCents: cents,
+        incurredOn: formData.incurredOn,
+        paidByOwnershipId,
+        receiptUrl: receiptHref || undefined,
+      }
+
+      const response = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          propertyId: selectedPropertyId,
-          createdByOwnershipId: activeOwnershipId,
-          vendorName: formData.vendorName || undefined,
-          category: formData.category || undefined,
-          memo: formData.memo || undefined,
-          amountCents: cents,
-          incurredOn: formData.incurredOn,
-          paidByOwnershipId,
-          receiptUrl: formData.receiptUrl || undefined,
-        }),
+        body: JSON.stringify(
+          isEditing
+            ? { ...payload, expenseId: editingExpense?.id }
+            : payload
+        ),
       })
 
       if (!response.ok) {
@@ -343,19 +412,12 @@ export default function ExpensesPage() {
         throw new Error(data.error || 'Failed to record expense')
       }
 
-      setFormData({
-        vendorName: '',
-        category: '',
-        amount: '',
-        incurredOn: todayIso(),
-        memo: '',
-        receiptUrl: '',
-        paidByOwnershipId: '',
-      })
-      setValidationErrors([])
-      setUploadedReceiptName(null)
+      const propertyToRefresh = propertyId
+      resetFormState()
 
-      await fetchExpenses(selectedPropertyId)
+      if (propertyToRefresh) {
+        await fetchExpenses(propertyToRefresh)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while saving the expense')
     } finally {
@@ -533,7 +595,10 @@ export default function ExpensesPage() {
 
         {selectedPropertyId && (
           <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-black/20">
+            <div
+              ref={formSectionRef}
+              className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-black/20"
+            >
               <h2 className="text-lg font-semibold tracking-tight text-slate-100">Log a shared expense</h2>
               <p className="mt-1 text-sm text-slate-400">Owners will see this immediately and can approve or reject it.</p>
 
@@ -544,6 +609,15 @@ export default function ExpensesPage() {
                       <li key={idx}>• {err}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {isEditing && editingExpense && (
+                <div className="mt-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
+                  <p>
+                    Editing “{editingExpense.vendorName || 'Untitled expense'}” from {formatDisplayDate(editingExpense.incurredOn)}.
+                    Saving will reset approvals for this expense.
+                  </p>
                 </div>
               )}
 
@@ -660,7 +734,7 @@ export default function ExpensesPage() {
                       <div>
                         <p className="text-sm font-medium text-slate-100">{receiptDisplayName}</p>
                         <a
-                          href={formData.receiptUrl}
+                          href={receiptHref}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs font-medium text-emerald-300 hover:text-emerald-200"
@@ -711,13 +785,31 @@ export default function ExpensesPage() {
                   }}
                 />
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:bg-slate-600"
-                >
-                  {submitting ? 'Submitting expense…' : 'Submit for approval'}
-                </button>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:bg-slate-600 sm:flex-1"
+                  >
+                    {submitting
+                      ? isEditing
+                        ? 'Saving changes…'
+                        : 'Submitting expense…'
+                      : isEditing
+                      ? 'Save changes'
+                      : 'Submit for approval'}
+                  </button>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={resetFormState}
+                      disabled={submitting}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-rose-400 hover:text-rose-100 disabled:border-slate-800 disabled:text-slate-500 sm:w-auto"
+                    >
+                      Cancel editing
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -736,11 +828,13 @@ export default function ExpensesPage() {
                   {expenses.map((expense) => {
                     const statusClass = statusStyles[expense.status] ?? 'border-slate-700 bg-slate-900/60 text-slate-200'
                     const activeOwnership = selectedProperty?.ownerships.find((o) => o.id === activeOwnershipId)
+                    const isEditingThisExpense = editingExpense?.id === expense.id
+                    const cardBorderClass = isEditingThisExpense ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : 'border-slate-800'
 
                     return (
                       <div
                         key={expense.id}
-                        className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-5 shadow-inner shadow-black/30 transition hover:border-emerald-500/30"
+                        className={`space-y-4 rounded-2xl border bg-slate-950/70 p-5 shadow-inner shadow-black/30 transition hover:border-emerald-500/30 ${cardBorderClass}`}
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
@@ -765,8 +859,24 @@ export default function ExpensesPage() {
                               </a>
                             )}
                           </div>
-                          <div className={`inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold capitalize ${statusClass}`}>
-                            {expense.status}
+                          <div className="flex flex-col items-start gap-2 sm:items-end">
+                            <div className={`inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold capitalize ${statusClass}`}>
+                              {expense.status}
+                            </div>
+                            {isEditingThisExpense ? (
+                              <span className="inline-flex items-center rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+                                Editing
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => beginEditingExpense(expense)}
+                                className="inline-flex items-center rounded-md border border-slate-700 bg-slate-900/60 px-2.5 py-1 text-xs font-semibold text-slate-200 transition hover:border-emerald-500 hover:text-emerald-200"
+                                disabled={submitting}
+                              >
+                                Edit
+                              </button>
+                            )}
                           </div>
                         </div>
 

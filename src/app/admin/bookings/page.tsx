@@ -25,9 +25,11 @@ interface Booking {
   totalAmount: number;
   createdAt: string;
   property: {
+    id: number;
     name: string;
     slug: string;
-  };
+    location?: string;
+  } | null;
 }
 
 export default function AdminBookingsPage() {
@@ -77,8 +79,19 @@ export default function AdminBookingsPage() {
       const response = await fetch(`/api/bookings?propertyId=${propertyId}`);
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
-      setBookings(data);
+      const bookingsData = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.bookings)
+          ? data.bookings
+          : null;
+
+      if (!bookingsData) {
+        throw new Error('Invalid bookings response');
+      }
+
+      setBookings(bookingsData);
     } catch (err) {
+      setBookings([]);
       setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
     }
   }
@@ -88,8 +101,19 @@ export default function AdminBookingsPage() {
       const response = await fetch('/api/bookings');
       if (!response.ok) throw new Error('Failed to fetch bookings');
       const data = await response.json();
-      setBookings(data);
+      const bookingsData = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.bookings)
+          ? data.bookings
+          : null;
+
+      if (!bookingsData) {
+        throw new Error('Invalid bookings response');
+      }
+
+      setBookings(bookingsData);
     } catch (err) {
+      setBookings([]);
       setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
     }
   }
@@ -365,59 +389,66 @@ export default function AdminBookingsPage() {
                   </td>
                 </tr>
               ) : (
-                bookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-white">
-                        {booking.property.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-white">{booking.guestName}</div>
-                      <div className="text-sm text-gray-400">{booking.guestEmail}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-white">
-                        {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {Math.ceil((new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 60 * 60 * 24))} nights
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      ${(booking.totalAmount / 100).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                      {booking.status === 'pending' && (
+                bookings.map((booking) => {
+                  const propertyDetails =
+                    booking.property ??
+                    properties.find((property) => property.id === booking.propertyId) ??
+                    null;
+
+                  return (
+                    <tr key={booking.id} className="hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-white">
+                          {propertyDetails?.name ?? 'Unknown property'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-white">{booking.guestName}</div>
+                        <div className="text-sm text-gray-400">{booking.guestEmail}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-white">
+                          {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {Math.ceil((new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / (1000 * 60 * 60 * 24))} nights
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                        ${(booking.totalAmount / 100).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                        {booking.status === 'pending' && (
+                          <button
+                            onClick={() => handleConfirm(booking.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                          >
+                            Confirm
+                          </button>
+                        )}
+                        {booking.status !== 'cancelled' && (
+                          <button
+                            onClick={() => handleCancel(booking.id)}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
+                          >
+                            Cancel
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleConfirm(booking.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                          onClick={() => handleDelete(booking.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
                         >
-                          Confirm
+                          Delete
                         </button>
-                      )}
-                      {booking.status !== 'cancelled' && (
-                        <button
-                          onClick={() => handleCancel(booking.id)}
-                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(booking.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
