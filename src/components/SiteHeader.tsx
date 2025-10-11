@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSessionContext } from '@supabase/auth-helpers-react';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { Moon, SunMedium } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -22,6 +22,8 @@ const authenticatedLinks = [
   { href: '/admin/expenses', label: 'Expenses' },
   { href: '/admin/blackouts', label: 'Blackouts' },
   { href: '/admin/knowledge-hub', label: 'Knowledge Hub' },
+  { href: '/admin/guests', label: 'Guests' },
+  { href: '/admin/profile', label: 'Preferences' },
 ];
 
 interface SiteHeaderProps {
@@ -30,13 +32,39 @@ interface SiteHeaderProps {
 
 export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderProps) {
   const { theme, toggleTheme, isReady } = useTheme();
-  const { session } = useSessionContext();
-  const sessionAuthenticated = Boolean(session?.user);
   const [showAuthenticatedNav, setShowAuthenticatedNav] = useState(initialAuthenticated);
+  const supabase = useSupabaseClient();
 
   useEffect(() => {
-    setShowAuthenticatedNav(sessionAuthenticated);
-  }, [sessionAuthenticated]);
+    let mounted = true;
+
+    const syncUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (mounted) {
+        setShowAuthenticatedNav(Boolean(user));
+      }
+    };
+
+    syncUser();
+
+    const {
+      data: authListener,
+    } = supabase.auth.onAuthStateChange(async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (mounted) {
+        setShowAuthenticatedNav(Boolean(user));
+      }
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const isDark = (isReady ? theme : 'light') === 'dark';
   const navLinks = useMemo(

@@ -1,6 +1,7 @@
 
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { BookingStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
@@ -17,6 +18,29 @@ const longDate = new Intl.DateTimeFormat('en-CA', {
   month: 'short',
   day: 'numeric',
 });
+
+const monthFormatter = new Intl.DateTimeFormat('en-CA', {
+  month: 'long',
+  year: 'numeric',
+});
+
+const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+type CalendarBooking = {
+  id: number;
+  propertyName: string;
+  guestLabel: string;
+  startIso: string;
+  endIso: string;
+};
+
+type PendingExpense = Awaited<ReturnType<typeof prisma.expense.findMany>>[number] & {
+  property: { id: number; name: string };
+};
+
+type UpcomingBlackout = Awaited<ReturnType<typeof prisma.blackout.findMany>>[number] & {
+  property: { id: number; name: string };
+};
 
 export default async function AdminDashboard() {
   const supabase = await createServerSupabaseClient();
@@ -111,12 +135,73 @@ export default async function AdminDashboard() {
     });
   });
 
-type PendingExpense = Awaited<ReturnType<typeof prisma.expense.findMany>>[number] & {
-  property: { id: number; name: string };
-};
-type UpcomingBlackout = Awaited<ReturnType<typeof prisma.blackout.findMany>>[number] & {
-  property: { id: number; name: string };
-};
+  const now = new Date();
+  const calendarMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const calendarGridStart = new Date(calendarMonthStart);
+  calendarGridStart.setDate(calendarMonthStart.getDate() - calendarMonthStart.getDay());
+  const calendarGridEnd = new Date(calendarGridStart);
+  calendarGridEnd.setDate(calendarGridEnd.getDate() + 42);
+
+  const rawApprovedBookings =
+    propertyIds.length === 0
+      ? []
+      : await prisma.booking.findMany({
+          where: {
+            propertyId: { in: propertyIds },
+            status: BookingStatus.approved,
+            startDate: { lt: calendarGridEnd },
+            endDate: { gt: calendarGridStart },
+          },
+          orderBy: { startDate: 'asc' },
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            guestName: true,
+            property: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
+
+  const bookingsForCalendar: CalendarBooking[] = rawApprovedBookings.map((booking) => {
+    const guestLabel = booking.guestName?.trim() || 'Owner stay';
+    return {
+      id: booking.id,
+      propertyName: booking.property?.name ?? 'Property',
+      guestLabel,
+      startIso: booking.startDate.toISOString().slice(0, 10),
+      endIso: booking.endDate.toISOString().slice(0, 10),
+    };
+  });
+
+  const todayIso = now.toISOString().slice(0, 10);
+  const calendarCells: Array<{
+    date: Date;
+    iso: string;
+    inCurrentMonth: boolean;
+    isToday: boolean;
+    bookings: CalendarBooking[];
+  }> = Array.from({ length: 42 }, (_, index) => {
+    const cellDate = new Date(calendarGridStart);
+    cellDate.setDate(calendarGridStart.getDate() + index);
+    const iso = cellDate.toISOString().slice(0, 10);
+    const bookings = bookingsForCalendar.filter(
+      (booking) => iso >= booking.startIso && iso < booking.endIso,
+    );
+
+    return {
+      date: cellDate,
+      iso,
+      inCurrentMonth: cellDate.getMonth() === calendarMonthStart.getMonth(),
+      isToday: iso === todayIso,
+      bookings,
+    };
+  });
+  const calendarMonthLabel = monthFormatter.format(calendarMonthStart);
 
   let pendingExpenses: PendingExpense[] = [];
   let upcomingBlackouts: UpcomingBlackout[] = [];
@@ -205,6 +290,86 @@ type UpcomingBlackout = Awaited<ReturnType<typeof prisma.blackout.findMany>>[num
           href="/admin/expenses"
           hint={pendingExpenses.length ? currency.format(totalPendingExpenseAmount / 100) : undefined}
         />
+      </section>
+
+      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+        <header className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Approved bookings</h2>
+            <p className="text-sm text-slate-400">Current month at a glance for every property.</p>
+          </div>
+          <Link href="/admin/bookings" className="text-sm text-emerald-300 hover:text-emerald-200">
+            Go to bookings
+          </Link>
+        </header>
+
+        {propertyIds.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-300">
+            Add a property in setup to start tracking stays.
+          </p>
+        ) : bookingsForCalendar.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-300">
+            No approved bookings for this month yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <p className="font-semibold text-white">{calendarMonthLabel}</p>
+              <p className="text-xs text-slate-400">Showing confirmed stays only.</p>
+            </div>
+            <div className="overflow-hidden rounded-2xl border border-slate-800">
+              <div className="grid grid-cols-7 bg-slate-900/70 text-xs uppercase tracking-wide text-slate-400">
+                {weekdayLabels.map((weekday) => (
+                  <div key={weekday} className="px-3 py-2 text-center">
+                    {weekday}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">
+                {calendarCells.map((cell) => {
+                  const hasBookings = cell.bookings.length > 0;
+                  const cellClasses = [
+                    'min-h-[7.5rem] border border-slate-800 p-2 text-xs transition',
+                    cell.inCurrentMonth ? 'bg-slate-950/60 text-slate-200' : 'bg-slate-950/20 text-slate-500',
+                    cell.isToday ? 'ring-2 ring-emerald-400' : '',
+                  ].join(' ');
+
+                  return (
+                    <div key={cell.iso} className={cellClasses}>
+                      <div className="flex items-center justify-between text-white">
+                        <span className="text-sm font-semibold">{cell.date.getDate()}</span>
+                        {hasBookings ? (
+                          <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-200">
+                            Booked
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {cell.bookings.slice(0, 3).map((booking) => (
+                          <div
+                            key={booking.id}
+                            className="rounded-lg bg-emerald-500/20 px-2 py-1 text-[11px] text-white"
+                          >
+                            <p className="font-medium">{booking.guestLabel}</p>
+                            <p className="text-[10px] text-emerald-100">{booking.propertyName}</p>
+                          </div>
+                        ))}
+                        {cell.bookings.length > 3 ? (
+                          <p className="text-[10px] text-slate-300">
+                            +{cell.bookings.length - 3} more
+                          </p>
+                        ) : null}
+                        {!hasBookings ? (
+                          <p className="text-[10px] text-slate-500">Available</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
@@ -16,29 +16,98 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [cooldownMs, setCooldownMs] = useState(0);
+  const retryCountRef = useRef(0);
+
+  useEffect(() => {
+    if (cooldownMs <= 0) {
+      setError((current) =>
+        current && current.startsWith('Too many attempts.') ? null : current,
+      );
+      return undefined;
+    }
+
+    setError((current) =>
+      !current || current.startsWith('Too many attempts.') ? getCooldownMessage() : current,
+    );
+
+    const intervalId = window.setInterval(() => {
+      setCooldownMs((remaining) => (remaining <= 1000 ? 0 : remaining - 1000));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [cooldownMs]);
+
+  const resetCooldown = () => {
+    retryCountRef.current = 0;
+    setCooldownMs(0);
+  };
+
+  const applyCooldown = (severity: 'soft' | 'hard') => {
+    retryCountRef.current = Math.min(retryCountRef.current + 1, 6);
+    const baseDelay = severity === 'hard' ? 4000 : 2000;
+    const exponential = baseDelay * Math.pow(2, retryCountRef.current - 1);
+    const jitter = Math.round(Math.random() * 500);
+    const nextDelay = Math.min(exponential + jitter, 60000);
+    setCooldownMs(nextDelay);
+  };
+
+  const getCooldownMessage = () => {
+    if (cooldownMs <= 0) {
+      return null;
+    }
+    const seconds = Math.ceil(cooldownMs / 1000);
+    return `Too many attempts. Please wait ${seconds}s before trying again.`;
+  };
 
   const handlePasswordLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (cooldownMs > 0) {
+      setError(getCooldownMessage());
+      return;
+    }
+
     setError(null);
 
     startTransition(async () => {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) {
-        setError(signInError.message);
+        const status = 'status' in signInError ? signInError.status : undefined;
+        if (status === 429) {
+          applyCooldown('hard');
+          setError(getCooldownMessage());
+        } else {
+          applyCooldown('soft');
+          setError(signInError.message);
+        }
         return;
       }
 
+      resetCooldown();
       router.replace(redirectTo && redirectTo !== '/login' ? redirectTo : '/admin');
     });
   };
 
   const handleMagicLink = async () => {
+    if (cooldownMs > 0) {
+      setError(getCooldownMessage());
+      return;
+    }
+
     setError(null);
     const { error: otpError } = await supabase.auth.signInWithOtp({ email });
     if (otpError) {
-      setError(otpError.message);
+      const status = 'status' in otpError ? otpError.status : undefined;
+      if (status === 429) {
+        applyCooldown('hard');
+        setError(getCooldownMessage());
+      } else {
+        applyCooldown('soft');
+        setError(otpError.message);
+      }
       return;
     }
+    resetCooldown();
     setMagicLinkSent(true);
   };
 
@@ -78,10 +147,10 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || cooldownMs > 0}
         className="w-full rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600"
       >
-        {isPending ? 'Signing in…' : 'Sign in'}
+        {cooldownMs > 0 ? `Try again in ${Math.ceil(cooldownMs / 1000)}s` : isPending ? 'Signing in…' : 'Sign in'}
       </button>
 
       <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
@@ -92,9 +161,10 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           <button
             type="button"
             onClick={handleMagicLink}
+            disabled={cooldownMs > 0}
             className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-emerald-400"
           >
-            Email me a login link
+            {cooldownMs > 0 ? `Wait ${Math.ceil(cooldownMs / 1000)}s` : 'Email me a login link'}
           </button>
         )}
       </div>

@@ -45,7 +45,18 @@ export async function ensureUserRecord(authUser: User | null | undefined) {
     },
     include: {
       memberships: true,
+      owners: true,
     },
+  });
+
+  // Attach existing owner records (if any) to the Supabase user so downstream
+  // preference updates can scope correctly.
+  await prisma.owner.updateMany({
+    where: {
+      email: authUser.email,
+      OR: [{ userId: null }, { userId: authUser.id }],
+    },
+    data: { userId: authUser.id },
   });
 
   return user;

@@ -1,3 +1,23 @@
+## Development notes
+
+### Supabase auth rate limiting
+
+Supabase enforces strict rate limits on the password grant endpoint. The app now:
+
+- Applies exponential backoff with jitter after failed sign-ins or 429 responses.
+- Disables the password and magic-link buttons during the cooldown window to reduce repeated submissions.
+
+To avoid hitting shared limits:
+
+- Reuse the Supabase session that is already persisted by the auth helpers instead of logging out/in repeatedly during development.
+- Stagger automated end-to-end tests or point them at a separate Supabase project; do not run the full auth flow in tight loops.
+- Debounced UI actions are already in place, but keep an eye on extensions or scripts that may trigger background requests.
+- If multiple developers are working simultaneously, consider provisioning per-developer Supabase projects or feature-branch environments.
+
+If you still see 429 responses, wait for the cooldown (usually ~60 s) or adjust the rate-limit settings in the Supabase dashboard.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

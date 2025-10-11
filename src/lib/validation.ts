@@ -6,15 +6,39 @@ const isoDate = (label: string) =>
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, `${label} must be in YYYY-MM-DD format`);
 
-export const BookingCreateSchema = z.object({
-  propertyId: z.number().int().positive(),
-  createdByOwnershipId: z.number().int().positive(),
-  startDate: isoDate('Start date'),
-  endDate: isoDate('End date'),
-  guestName: z.string().min(1, 'Guest name is required'),
-  guestEmail: z.string().email('Guest email must be valid'),
-  notes: z.string().max(500).optional(),
+export const BookingParticipantInputSchema = z.object({
+  role: z.enum(['OWNER', 'FAMILY', 'GUEST', 'CARETAKER', 'SERVICE'], {
+    errorMap: () => ({ message: 'Invalid participant role' }),
+  }),
+  userId: z.string().uuid().optional(),
+  ownershipId: z.number().int().positive().optional(),
+  displayName: z.string().min(1, 'Participant name is required'),
+  email: z.string().email('Email must be valid').optional(),
+  nights: z.number().int().min(0).optional(),
 });
+
+export const BookingCreateSchema = z
+  .object({
+    propertyId: z.number().int().positive(),
+    createdByOwnershipId: z.number().int().positive().optional(),
+    requestorOwnershipId: z.number().int().positive().optional(),
+    requestorUserId: z.string().uuid().optional(),
+    startDate: isoDate('Start date'),
+    endDate: isoDate('End date'),
+    guestName: z.string().min(1, 'Guest name is required').optional(),
+    guestEmail: z.string().email('Guest email must be valid').optional(),
+    notes: z.string().max(500).optional(),
+    participants: z.array(BookingParticipantInputSchema).min(1).optional(),
+  })
+  .refine((data) => {
+    if (data.participants && data.participants.length > 0) {
+      return true;
+    }
+    return Boolean(data.guestName);
+  }, {
+    message: 'At least one participant is required',
+    path: ['participants'],
+  });
 
 export const BookingVoteSchema = z.object({
   bookingId: z.number().int().positive(),
@@ -69,6 +93,7 @@ export const AvailabilityQuerySchema = z.object({
 });
 
 export type BookingCreate = z.infer<typeof BookingCreateSchema>;
+export type BookingParticipantInput = z.infer<typeof BookingParticipantInputSchema>;
 export type BookingVoteInput = z.infer<typeof BookingVoteSchema>;
 export type BookingListQuery = z.infer<typeof BookingListQuerySchema>;
 export type AvailabilityQuery = z.infer<typeof AvailabilityQuerySchema>;

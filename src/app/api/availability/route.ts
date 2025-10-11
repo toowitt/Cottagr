@@ -57,6 +57,15 @@ export async function GET(request: NextRequest) {
             { endDate: { gt: fromDate } },
           ],
         },
+        select: {
+          id: true,
+          startDate: true,
+          endDate: true,
+          status: true,
+          requestNotes: true,
+          guestName: true,
+          guestEmail: true,
+        },
       }),
       prisma.blackout.findMany({
         where: {
@@ -72,6 +81,41 @@ export async function GET(request: NextRequest) {
     // Generate day-by-day availability
     const days = [];
     const currentDate = new Date(fromDate);
+
+    const items: Array<{
+      type: 'booking' | 'blackout';
+      id: number;
+      startDate: string;
+      endDate: string;
+      title: string;
+      subtitle?: string;
+      status?: string;
+    }> = [];
+
+    for (const booking of bookings) {
+      const title = booking.guestName ?? 'Booking';
+      const subtitle = booking.guestEmail ?? booking.requestNotes ?? undefined;
+
+      items.push({
+        type: 'booking',
+        id: booking.id,
+        startDate: booking.startDate.toISOString(),
+        endDate: booking.endDate.toISOString(),
+        title,
+        subtitle,
+        status: booking.status,
+      });
+    }
+
+    for (const blackout of blackouts) {
+      items.push({
+        type: 'blackout',
+        id: blackout.id,
+        startDate: blackout.startDate.toISOString(),
+        endDate: blackout.endDate.toISOString(),
+        title: blackout.reason ?? 'Unavailable',
+      });
+    }
 
     while (currentDate < toDate) {
       // Normalize to UTC midnight for consistent comparison
@@ -99,12 +143,12 @@ export async function GET(request: NextRequest) {
       currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
 
-    return NextResponse.json({ days });
+    return NextResponse.json({ days, items });
 
   } catch (error) {
     console.error('Error fetching availability:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }
