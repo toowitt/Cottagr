@@ -6,10 +6,13 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node -e \"process.exit(0)\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "next build",
     "dev": "next dev -H 0.0.0.0 -p 3000",
     "dev:prepare": "prisma generate || true",
+    "check-env": "node scripts/check-env.mjs",
+    "test:e2e": "playwright test",
     "start": "next start -H 0.0.0.0 -p 3000",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
@@ -22,26 +25,32 @@
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/supabase-js": "^2.45.0",
     "lucide-react": "^0.542.0",
     "next": "^15.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@supabase/auth-helpers-react": "^0.5.0",
-    "@supabase/supabase-js": "^2.45.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.19.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
+    "jsdom": "^27.0.0",
     "prisma": "^6.15.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }
