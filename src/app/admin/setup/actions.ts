@@ -1,6 +1,6 @@
 'use server';
 
-import { createServerSupabaseActionClient } from '@/lib/supabase/server';
+import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
@@ -21,8 +21,11 @@ const slugify = (value: string) =>
 async function requireOwnerAdmin(contextMessage: string) {
   const supabase = await createServerSupabaseActionClient();
   const {
-    data: { user },
+    data: userData,
+    error: authError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(authError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect(`/login?redirect=/admin/setup&error=${encodeURIComponent(contextMessage)}`);
@@ -92,8 +95,11 @@ const CreateOrganizationSchema = z.object({
 export async function setupCreateOrganization(formData: FormData) {
   const supabase = await createServerSupabaseActionClient();
   const {
-    data: { user },
+    data: userData,
+    error: authError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(authError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect('/login?redirect=/admin/setup');

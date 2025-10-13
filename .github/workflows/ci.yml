@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install dependencies
+        run: npm ci
+      - name: Dev prepare
+        run: npm run dev:prepare
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test
+      - name: Env sanity
+        run: node scripts/check-env.mjs
+        env:
+          NODE_ENV: test
+          NEXT_PUBLIC_APP_NAME: Cottagr
+          DATABASE_URL: postgres://user:pass@localhost:5432/ci
+      - name: Build
+        run: npm run build

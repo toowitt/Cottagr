@@ -233,8 +233,8 @@ export async function POST(request: NextRequest) {
     const totalAmount = property.nightlyRate * nights + property.cleaningFee;
     const policySnapshot = property.approvalPolicy
       ? {
-          strategy: property.approvalPolicy,
-        }
+        strategy: property.approvalPolicy,
+      }
       : null;
 
     const booking = await prisma.$transaction(async (tx) => {
@@ -272,7 +272,8 @@ export async function POST(request: NextRequest) {
 
       const createdBooking = await tx.booking.create({
         // Cast to satisfy the Prisma client type regardless of schema version.
-        data: bookingCreateData as any,
+        // Use a safe double-cast via unknown to avoid `any`.
+        data: bookingCreateData as unknown as Prisma.BookingCreateInput,
       });
 
       if (supportsParticipantCreate) {

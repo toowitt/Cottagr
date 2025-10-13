@@ -1,0 +1,19 @@
+{
+    "name": "Cottagr Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:0-20",
+    "forwardPorts": [
+        3000,
+        5432
+    ],
+    "postCreateCommand": "corepack enable && npm ci || pnpm i || yarn",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "Prisma.prisma",
+                "bradlc.vscode-tailwindcss"
+            ]
+        }
+    }
+}

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 
@@ -12,8 +12,11 @@ export const metadata = {
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const supabase = await createServerSupabaseClient();
   const {
-    data: { user },
+    data: userData,
+    error: authError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(authError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect('/login?redirect=/admin');

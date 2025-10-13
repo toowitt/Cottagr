@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
@@ -19,6 +19,14 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
   const [cooldownMs, setCooldownMs] = useState(0);
   const retryCountRef = useRef(0);
 
+  const getCooldownMessage = useCallback(() => {
+    if (cooldownMs <= 0) {
+      return null;
+    }
+    const seconds = Math.ceil(cooldownMs / 1000);
+    return `Too many attempts. Please wait ${seconds}s before trying again.`;
+  }, [cooldownMs]);
+
   useEffect(() => {
     if (cooldownMs <= 0) {
       setError((current) =>
@@ -36,7 +44,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [cooldownMs]);
+  }, [cooldownMs, getCooldownMessage]);
 
   const resetCooldown = () => {
     retryCountRef.current = 0;
@@ -50,14 +58,6 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     const jitter = Math.round(Math.random() * 500);
     const nextDelay = Math.min(exponential + jitter, 60000);
     setCooldownMs(nextDelay);
-  };
-
-  const getCooldownMessage = () => {
-    if (cooldownMs <= 0) {
-      return null;
-    }
-    const seconds = Math.ceil(cooldownMs / 1000);
-    return `Too many attempts. Please wait ${seconds}s before trying again.`;
   };
 
   const handlePasswordLogin = async (event: React.FormEvent<HTMLFormElement>) => {

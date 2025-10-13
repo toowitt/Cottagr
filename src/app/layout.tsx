@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import SiteHeader from '@/components/SiteHeader';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import SupabaseProvider from '@/components/SupabaseProvider';
 
@@ -17,11 +17,18 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();
   const {
-    data: { session },
+    data: sessionData,
+    error: sessionError,
   } = await supabase.auth.getSession();
+  handleSupabaseAuthError(sessionError);
+  const session = sessionData?.session ?? null;
+
   const {
-    data: { user },
+    data: userData,
+    error: userError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(userError);
+  const user = userData?.user ?? null;
 
   if (user) {
     await ensureUserRecord(user);
