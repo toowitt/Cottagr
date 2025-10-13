@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createServerSupabaseActionClient } from '@/lib/supabase/server';
+import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
@@ -25,8 +25,11 @@ function resolveAllowedOrganizationIds(
 export async function sendGuestInvite(formData: FormData) {
   const supabase = await createServerSupabaseActionClient();
   const {
-    data: { user },
+    data: userData,
+    error: authError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(authError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect('/login?redirect=/admin/guests');
@@ -92,23 +95,29 @@ export async function sendGuestInvite(formData: FormData) {
     },
   });
 
-  if (error || !data?.action_link || !data?.expires_at) {
+  const linkProperties = data?.properties ?? null;
+  const actionLink = linkProperties?.action_link ?? null;
+  const linkPropertiesWithExpiry = linkProperties as (Record<string, unknown> & { expires_at?: string | null }) | null;
+  const linkExpiryIso =
+    typeof linkPropertiesWithExpiry?.expires_at === 'string' ? linkPropertiesWithExpiry.expires_at : null;
+
+  if (error || !actionLink) {
     console.error('Guest invite magic link generation failed', { error, data });
     const reason = error?.message ?? 'Unable to generate magic link';
     redirect(`/admin/guests?error=${encodeURIComponent(reason)}`);
   }
 
-  const expiry = new Date(data.expires_at);
   const now = new Date();
+  const expiryFromSupabase = linkExpiryIso ? new Date(linkExpiryIso) : null;
   // If Supabase returns very short expiry, override with requested window
   const requestedExpiry = new Date(now.getTime() + parsed.data.expiresInDays * 24 * 60 * 60 * 1000);
-  const expiresAt = expiry > now ? expiry : requestedExpiry;
+  const expiresAt = expiryFromSupabase && expiryFromSupabase > now ? expiryFromSupabase : requestedExpiry;
 
   await prisma.guestInvite.create({
     data: {
       email: parsed.data.email,
       name: parsed.data.name ?? null,
-      actionLink: data.action_link,
+      actionLink,
       expiresAt,
       propertyId,
       invitedByOwnershipId: null,
@@ -122,8 +131,11 @@ export async function sendGuestInvite(formData: FormData) {
 export async function markInviteConsumed(inviteId: number) {
   const supabase = await createServerSupabaseActionClient();
   const {
-    data: { user },
+    data: userData,
+    error: authError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(authError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect('/login?redirect=/admin/guests');

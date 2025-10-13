@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { AuthSessionMissingError } from '@supabase/supabase-js';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
 
 const buildRedirect = (request: Request) => {
@@ -13,7 +14,10 @@ const buildRedirect = (request: Request) => {
 
 const signOutHandler = async (request: Request) => {
   const supabase = await createRouteSupabaseClient();
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  if (error && !(error instanceof AuthSessionMissingError)) {
+    console.error('Supabase sign out failed', error);
+  }
   const response = NextResponse.redirect(buildRedirect(request), { status: 303 });
   const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/^https?:\/\//, '').split('.')[0];
   const supabaseCookieName = projectRef ? `sb-${projectRef}-auth-token` : 'sb-auth-token';

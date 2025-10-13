@@ -8,7 +8,7 @@ const isoDate = (label: string) =>
 
 export const BookingParticipantInputSchema = z.object({
   role: z.enum(['OWNER', 'FAMILY', 'GUEST', 'CARETAKER', 'SERVICE'], {
-    errorMap: () => ({ message: 'Invalid participant role' }),
+    message: 'Invalid participant role',
   }),
   userId: z.string().uuid().optional(),
   ownershipId: z.number().int().positive().optional(),

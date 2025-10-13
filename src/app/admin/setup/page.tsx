@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import ConfirmSubmitButton from '@/components/ConfirmSubmitButton';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
@@ -47,8 +47,11 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
 
   const supabase = await createServerSupabaseClient();
   const {
-    data: { user },
+    data: userData,
+    error: authError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(authError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect('/login?redirect=/admin/setup');

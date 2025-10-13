@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createServerSupabaseActionClient } from '@/lib/supabase/server';
+import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { prisma } from '@/lib/prisma';
 
@@ -24,8 +24,11 @@ function parseCheckbox(value: FormDataEntryValue | null) {
 export async function updateOwnershipPreferences(formData: FormData) {
   const supabase = await createServerSupabaseActionClient();
   const {
-    data: { user },
+    data: userData,
+    error: authError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(authError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect('/login?redirect=/admin/profile');
