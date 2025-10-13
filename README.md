@@ -16,6 +16,18 @@ To avoid hitting shared limits:
 
 If you still see 429 responses, wait for the cooldown (usually ~60 s) or adjust the rate-limit settings in the Supabase dashboard.
 
+### Email confirmations & SMTP
+
+- Copy `.env.example` to `.env.local` and provide values for `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO` (defaults to `http://localhost:3000/admin/setup` for local onboarding).
+- In the Supabase dashboard, enable email confirmations and update the Site URL/Auth redirect to match `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO`.
+- Provide SMTP credentials (e.g., Mailpit or another sandbox) via the Supabase project settings. The `.env.example` file lists the `SUPABASE_SMTP_*` variables you can mirror in Supabase to send confirmation emails during development.
+- Run `npm run check-env` to verify the required variables are present before starting the app.
+
+### Testing
+
+- Run `npm test` for vitest + React Testing Library coverage of the auth UI (Supabase calls are mocked).
+- Run `npm run test:e2e` to smoke-test the auth toggles via Playwright (`npx playwright install` may be required once per machine). The test runner boots `npm run dev` automatically; ensure your `.env.local` is populated so the app can start.
+
 ---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).

@@ -1,9 +1,9 @@
-
+import { bookingInclude, serializeBooking } from '@/app/api/bookings/utils';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { BookingStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 
@@ -26,6 +26,8 @@ const monthFormatter = new Intl.DateTimeFormat('en-CA', {
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+type SerializedBooking = ReturnType<typeof serializeBooking>;
+
 type CalendarBooking = {
   id: number;
   propertyName: string;
@@ -45,8 +47,11 @@ type UpcomingBlackout = Awaited<ReturnType<typeof prisma.blackout.findMany>>[num
 export default async function AdminDashboard() {
   const supabase = await createServerSupabaseClient();
   const {
-    data: { user },
+    data: userData,
+    error: userError,
   } = await supabase.auth.getUser();
+  handleSupabaseAuthError(userError);
+  const user = userData?.user ?? null;
 
   if (!user) {
     redirect('/login?redirect=/admin');
@@ -146,35 +151,29 @@ export default async function AdminDashboard() {
     propertyIds.length === 0
       ? []
       : await prisma.booking.findMany({
-          where: {
-            propertyId: { in: propertyIds },
-            status: BookingStatus.approved,
-            startDate: { lt: calendarGridEnd },
-            endDate: { gt: calendarGridStart },
-          },
-          orderBy: { startDate: 'asc' },
-          select: {
-            id: true,
-            startDate: true,
-            endDate: true,
-            guestName: true,
-            property: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        });
+        where: {
+          propertyId: { in: propertyIds },
+          status: BookingStatus.approved,
+          startDate: { lt: calendarGridEnd },
+          endDate: { gt: calendarGridStart },
+        },
+        orderBy: { startDate: 'asc' },
+        include: bookingInclude,
+      });
 
-  const bookingsForCalendar: CalendarBooking[] = rawApprovedBookings.map((booking) => {
+  // serialize bookings returned from Prisma
+  const approvedBookings: SerializedBooking[] = rawApprovedBookings.map(serializeBooking);
+
+  const bookingsForCalendar: CalendarBooking[] = approvedBookings.map((booking) => {
     const guestLabel = booking.guestName?.trim() || 'Owner stay';
+    const start = new Date(booking.startDate);
+    const end = new Date(booking.endDate);
     return {
       id: booking.id,
       propertyName: booking.property?.name ?? 'Property',
       guestLabel,
-      startIso: booking.startDate.toISOString().slice(0, 10),
-      endIso: booking.endDate.toISOString().slice(0, 10),
+      startIso: start.toISOString().slice(0, 10),
+      endIso: end.toISOString().slice(0, 10),
     };
   });
 

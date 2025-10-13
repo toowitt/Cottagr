@@ -29,6 +29,10 @@ export async function ensureUserRecord(authUser: User | null | undefined) {
   }
 
   const name = parseName(authUser.user_metadata);
+  const providedFirstName = name.firstName?.trim();
+  const providedLastName = name.lastName?.trim();
+  const fallbackFirstName =
+    authUser.email.split('@')[0]?.replace(/[^a-zA-Z0-9]+/g, ' ').trim() || 'Owner';
 
   const user = await prisma.user.upsert({
     where: { id: authUser.id },
@@ -49,15 +53,33 @@ export async function ensureUserRecord(authUser: User | null | undefined) {
     },
   });
 
-  // Attach existing owner records (if any) to the Supabase user so downstream
-  // preference updates can scope correctly.
-  await prisma.owner.updateMany({
-    where: {
-      email: authUser.email,
-      OR: [{ userId: null }, { userId: authUser.id }],
-    },
-    data: { userId: authUser.id },
+  const existingOwner = await prisma.owner.findUnique({
+    where: { email: authUser.email },
   });
+
+  if (existingOwner) {
+    const resolvedFirstName = providedFirstName || existingOwner.firstName || fallbackFirstName;
+    const resolvedLastName = providedLastName ?? existingOwner.lastName ?? null;
+    await prisma.owner.update({
+      where: { id: existingOwner.id },
+      data: {
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        userId: authUser.id,
+      },
+    });
+  } else {
+    const resolvedFirstName = providedFirstName || fallbackFirstName;
+    const resolvedLastName = providedLastName ?? null;
+    await prisma.owner.create({
+      data: {
+        email: authUser.email,
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        userId: authUser.id,
+      },
+    });
+  }
 
   return user;
 }

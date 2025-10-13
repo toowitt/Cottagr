@@ -164,7 +164,7 @@ export default function AdminBookingsPage() {
     notes: '',
     ownershipIds: [] as number[],
   });
-  const [rangeAnchor, setRangeAnchor] = useState<string | null>(null);
+  const [, setRangeAnchor] = useState<string | null>(null);
   const [requestSubmitting, setRequestSubmitting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [votingOwnershipId, setVotingOwnershipId] = useState<number | null>(null);
@@ -244,135 +244,135 @@ export default function AdminBookingsPage() {
     SERVICE: 'Service provider',
   };
 
-const eventLabels: Record<string, string> = {
-  request_created: 'Request created',
-  request_updated: 'Request updated',
-  vote_cast: 'Vote cast',
-  status_changed: 'Status changed',
-  auto_action: 'Automatic action',
-  note: 'Note',
-};
+  const eventLabels: Record<string, string> = {
+    request_created: 'Request created',
+    request_updated: 'Request updated',
+    vote_cast: 'Vote cast',
+    status_changed: 'Status changed',
+    auto_action: 'Automatic action',
+    note: 'Note',
+  };
 
-const formatDateTime = (value: string | null) => (value ? new Date(value).toLocaleString() : '—');
-function formatISODate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+  const formatDateTime = (value: string | null) => (value ? new Date(value).toLocaleString() : '—');
+  function formatISODate(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
-interface CalendarCell {
-  date: Date;
-  iso: string;
-  inCurrentMonth: boolean;
-  isToday: boolean;
-  available: boolean;
-  items: {
-    type: 'booking' | 'blackout';
-    id: number;
-    title: string;
-    subtitle?: string;
-    status?: string;
-  }[];
-}
-
-const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function buildCalendarCells(
-  month: Date,
-  availability: {
-    days: { date: string; available: boolean }[];
+  interface CalendarCell {
+    date: Date;
+    iso: string;
+    inCurrentMonth: boolean;
+    isToday: boolean;
+    available: boolean;
     items: {
       type: 'booking' | 'blackout';
       id: number;
-      startDate: string;
-      endDate: string;
       title: string;
       subtitle?: string;
       status?: string;
     }[];
-  } | null,
-): CalendarCell[] {
-  const cells: CalendarCell[] = [];
-  const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
-  const startWeekday = startOfMonth.getDay();
-  const gridStart = new Date(startOfMonth);
-  gridStart.setDate(startOfMonth.getDate() - startWeekday);
-
-  const todayIso = formatISODate(new Date());
-
-  for (let index = 0; index < 42; index += 1) {
-    const date = new Date(gridStart);
-    date.setDate(gridStart.getDate() + index);
-    const iso = formatISODate(date);
-
-    const available = availability?.days.find((entry) => entry.date === iso)?.available ?? true;
-    const itemsForDay = availability?.items.filter((item) => {
-      const start = item.startDate.slice(0, 10);
-      const end = item.endDate.slice(0, 10);
-      return iso >= start && iso < end;
-    }) ?? [];
-
-    cells.push({
-      date,
-      iso,
-      inCurrentMonth: date.getMonth() === month.getMonth(),
-      isToday: iso === todayIso,
-      available,
-      items: itemsForDay.map((item) => ({
-        type: item.type,
-        id: item.id,
-        title: item.title,
-        subtitle: item.subtitle,
-        status: item.status,
-      })),
-    });
   }
 
-  return cells;
-}
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function goToPreviousMonthHandler(setCalendarMonth: React.Dispatch<React.SetStateAction<Date>>) {
-  return () => {
-    setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  };
-}
+  function buildCalendarCells(
+    month: Date,
+    availability: {
+      days: { date: string; available: boolean }[];
+      items: {
+        type: 'booking' | 'blackout';
+        id: number;
+        startDate: string;
+        endDate: string;
+        title: string;
+        subtitle?: string;
+        status?: string;
+      }[];
+    } | null,
+  ): CalendarCell[] {
+    const cells: CalendarCell[] = [];
+    const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+    const startWeekday = startOfMonth.getDay();
+    const gridStart = new Date(startOfMonth);
+    gridStart.setDate(startOfMonth.getDate() - startWeekday);
 
-function goToNextMonthHandler(setCalendarMonth: React.Dispatch<React.SetStateAction<Date>>) {
-  return () => {
-    setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  };
-}
+    const todayIso = formatISODate(new Date());
 
-const getVotingSummary = (
-  booking: Booking,
-  property: Property | null,
-) => {
-  if (!property) {
-    return {
-      total: 0,
-      approvals: 0,
-      rejections: 0,
-      threshold: 0,
+    for (let index = 0; index < 42; index += 1) {
+      const date = new Date(gridStart);
+      date.setDate(gridStart.getDate() + index);
+      const iso = formatISODate(date);
+
+      const available = availability?.days.find((entry) => entry.date === iso)?.available ?? true;
+      const itemsForDay = availability?.items.filter((item) => {
+        const start = item.startDate.slice(0, 10);
+        const end = item.endDate.slice(0, 10);
+        return iso >= start && iso < end;
+      }) ?? [];
+
+      cells.push({
+        date,
+        iso,
+        inCurrentMonth: date.getMonth() === month.getMonth(),
+        isToday: iso === todayIso,
+        available,
+        items: itemsForDay.map((item) => ({
+          type: item.type,
+          id: item.id,
+          title: item.title,
+          subtitle: item.subtitle,
+          status: item.status,
+        })),
+      });
+    }
+
+    return cells;
+  }
+
+  function goToPreviousMonthHandler(setCalendarMonth: React.Dispatch<React.SetStateAction<Date>>) {
+    return () => {
+      setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
     };
   }
 
-  const total = property.ownerships.reduce((sum, ownership) => sum + ownership.votingPower, 0);
-  const approvals = booking.votes
-    .filter((vote) => vote.choice === 'approve')
-    .reduce((sum, vote) => sum + vote.ownership.votingPower, 0);
-  const rejections = booking.votes
-    .filter((vote) => vote.choice === 'reject')
-    .reduce((sum, vote) => sum + vote.ownership.votingPower, 0);
-  const threshold = Math.floor(total / 2) + 1;
+  function goToNextMonthHandler(setCalendarMonth: React.Dispatch<React.SetStateAction<Date>>) {
+    return () => {
+      setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    };
+  }
 
-  return {
-    total,
-    approvals,
-    rejections,
-    threshold,
+  const getVotingSummary = (
+    booking: Booking,
+    property: Property | null,
+  ) => {
+    if (!property) {
+      return {
+        total: 0,
+        approvals: 0,
+        rejections: 0,
+        threshold: 0,
+      };
+    }
+
+    const total = property.ownerships.reduce((sum, ownership) => sum + ownership.votingPower, 0);
+    const approvals = booking.votes
+      .filter((vote) => vote.choice === 'approve')
+      .reduce((sum, vote) => sum + vote.ownership.votingPower, 0);
+    const rejections = booking.votes
+      .filter((vote) => vote.choice === 'reject')
+      .reduce((sum, vote) => sum + vote.ownership.votingPower, 0);
+    const threshold = Math.floor(total / 2) + 1;
+
+    return {
+      total,
+      approvals,
+      rejections,
+      threshold,
+    };
   };
-};
 
   useEffect(() => {
     fetchProperties();
@@ -702,7 +702,7 @@ const getVotingSummary = (
       const formData = new FormData();
       formData.append('id', bookingId.toString());
       await confirmBooking(formData);
-      
+
       // Refresh bookings
       if (selectedPropertyId) {
         await fetchBookings(selectedPropertyId);
@@ -719,7 +719,7 @@ const getVotingSummary = (
       const formData = new FormData();
       formData.append('id', bookingId.toString());
       await cancelBooking(formData);
-      
+
       // Refresh bookings
       if (selectedPropertyId) {
         await fetchBookings(selectedPropertyId);
@@ -733,12 +733,12 @@ const getVotingSummary = (
 
   async function handleDelete(bookingId: number) {
     if (!confirm('Are you sure you want to delete this booking?')) return;
-    
+
     try {
       const formData = new FormData();
       formData.append('id', bookingId.toString());
       await deleteBooking(formData);
-      
+
       // Refresh bookings
       if (selectedPropertyId) {
         await fetchBookings(selectedPropertyId);
@@ -823,17 +823,15 @@ const getVotingSummary = (
             <div className="flex rounded-full border border-slate-700 bg-slate-900/60 p-1 text-xs text-slate-300">
               <button
                 onClick={() => setViewMode('list')}
-                className={`rounded-full px-3 py-1 transition ${
-                  viewMode === 'list' ? 'bg-emerald-500 text-black' : ''
-                }`}
+                className={`rounded-full px-3 py-1 transition ${viewMode === 'list' ? 'bg-emerald-500 text-black' : ''
+                  }`}
               >
                 List
               </button>
               <button
                 onClick={() => setViewMode('calendar')}
-                className={`rounded-full px-3 py-1 transition ${
-                  viewMode === 'calendar' ? 'bg-emerald-500 text-black' : ''
-                }`}
+                className={`rounded-full px-3 py-1 transition ${viewMode === 'calendar' ? 'bg-emerald-500 text-black' : ''
+                  }`}
               >
                 Calendar
               </button>
@@ -966,10 +964,10 @@ const getVotingSummary = (
         )}
       </div>
       {error && (
-      <div className="bg-red-800 text-red-200 p-4 rounded mb-6">
-        {error}
-      </div>
-    )}
+        <div className="bg-red-800 text-red-200 p-4 rounded mb-6">
+          {error}
+        </div>
+      )}
 
       {viewMode === 'calendar' && (
         <div className="mb-6 space-y-4 mx-auto w-full max-w-6xl">
@@ -1276,7 +1274,7 @@ const getVotingSummary = (
       {showQuickForm && (
         <div className="bg-gray-800 p-6 rounded-lg mb-6">
           <h2 className="text-xl font-semibold mb-4">Quick Create</h2>
-          
+
           {!selectedPropertyId && (
             <p className="text-yellow-400 mb-4">Please select a property first</p>
           )}
@@ -1364,224 +1362,224 @@ const getVotingSummary = (
         <div className="bg-gray-800 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-            <thead className="bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Property
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Guest
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Dates
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {bookings.length === 0 ? (
+              <thead className="bg-gray-700">
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-400">
-                    No bookings found
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Guest
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Dates
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                bookings.map((booking) => {
-                  const propertyDetails =
-                    booking.property ??
-                    properties.find((property) => property.id === booking.propertyId) ??
-                    null;
-                  const isExpanded = expandedBookingId === booking.id;
-                  const stayNights = Math.ceil(
-                    (new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) /
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {bookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-400">
+                      No bookings found
+                    </td>
+                  </tr>
+                ) : (
+                  bookings.map((booking) => {
+                    const propertyDetails =
+                      booking.property ??
+                      properties.find((property) => property.id === booking.propertyId) ??
+                      null;
+                    const isExpanded = expandedBookingId === booking.id;
+                    const stayNights = Math.ceil(
+                      (new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) /
                       (1000 * 60 * 60 * 24),
-                  );
-                  const primaryParticipant = booking.participants.find((participant) => participant.role !== 'OWNER');
-                  const displayGuestName = booking.guestName ?? primaryParticipant?.displayName ?? '—';
-                  const displayGuestEmail = booking.guestEmail ?? primaryParticipant?.email ?? '—';
+                    );
+                    const primaryParticipant = booking.participants.find((participant) => participant.role !== 'OWNER');
+                    const displayGuestName = booking.guestName ?? primaryParticipant?.displayName ?? '—';
+                    const displayGuestEmail = booking.guestEmail ?? primaryParticipant?.email ?? '—';
 
-                  return (
-                    <Fragment key={booking.id}>
-                      <tr className="hover:bg-gray-700">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-white">
-                            {propertyDetails?.name ?? 'Unknown property'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-white">{displayGuestName}</div>
-                          <div className="text-sm text-gray-400">{displayGuestEmail}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-white">
-                            {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
-                          </div>
-                          <div className="text-sm text-gray-400">{stayNights} nights</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                            {booking.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                          {booking.totalFormatted ?? `$${(booking.totalAmount / 100).toFixed(2)}`}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                          <button
-                            onClick={() => setExpandedBookingId(isExpanded ? null : booking.id)}
-                            className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded text-xs"
-                          >
-                            {isExpanded ? 'Hide details' : 'Details'}
-                          </button>
-                          {booking.status === 'pending' && (
-                            <button
-                              onClick={() => handleConfirm(booking.id)}
-                              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
-                            >
-                              Confirm
-                            </button>
-                          )}
-                          {booking.status !== 'cancelled' && (
-                            <button
-                              onClick={() => handleCancel(booking.id)}
-                              className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(booking.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={6} className="bg-slate-900/60 px-6 py-5">
-                            <div className="grid gap-6 lg:grid-cols-2">
-                              <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                                <header className="flex items-center justify-between">
-                                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Participants</h3>
-                                  <span className="text-xs text-slate-500">{booking.participants.length} total</span>
-                                </header>
-                                {booking.participants.length === 0 ? (
-                                  <p className="text-sm text-slate-400">No participants recorded.</p>
-                                ) : (
-                                  <div className="space-y-3">
-                                    {booking.participants.map((participant) => {
-                                      const ownershipOwner = participant.ownership?.owner;
-                                      const roleLabel = roleLabels[participant.role] ?? participant.role;
-                                      const ownerName = ownershipOwner
-                                        ? [ownershipOwner.firstName, ownershipOwner.lastName].filter(Boolean).join(' ') || ownershipOwner.email
-                                        : null;
-
-                                      return (
-                                        <div
-                                          key={participant.id}
-                                          className="rounded-xl border border-slate-800 bg-slate-900/60 p-3"
-                                        >
-                                          <div className="flex items-start justify-between">
-                                            <div>
-                                              <p className="text-sm font-medium text-white">{participant.displayName}</p>
-                                              {participant.email ? (
-                                                <p className="text-xs text-slate-400">{participant.email}</p>
-                                              ) : null}
-                                            </div>
-                                            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
-                                              {roleLabel}
-                                            </span>
-                                          </div>
-                                          <div className="mt-2 flex justify-between text-xs text-slate-500">
-                                            <span>{participant.nights} nights</span>
-                                            {ownerName ? <span>Owner: {ownerName}</span> : null}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-
-                                <div className="grid gap-2 text-xs text-slate-400">
-                                  <div className="flex justify-between">
-                                    <span>Submitted</span>
-                                    <span>{formatDateTime(booking.submittedAt)}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Decision</span>
-                                    <span>{formatDateTime(booking.decisionAt)}</span>
-                                  </div>
-                                </div>
-
-                                {booking.requestNotes ? (
-                                  <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-100">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">Request notes</p>
-                                    <p className="mt-1 text-sm leading-relaxed">{booking.requestNotes}</p>
-                                  </div>
-                                ) : null}
-
-                                {booking.decisionSummary ? (
-                                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200">Decision</p>
-                                    <p className="mt-1 text-sm leading-relaxed">{booking.decisionSummary}</p>
-                                  </div>
-                                ) : null}
-                              </div>
-
-                              <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Timeline</h3>
-                                {booking.timeline.length === 0 ? (
-                                  <p className="text-sm text-slate-400">No timeline events recorded.</p>
-                                ) : (
-                                  <ol className="space-y-3 text-sm text-slate-200">
-                                    {booking.timeline.map((event) => {
-                                      const actorUser = event.actor.user;
-                                      const actorOwnership = event.actor.ownership;
-                                      const actorOwner = actorOwnership?.owner;
-                                      const actorName =
-                                        (actorUser
-                                          ? [actorUser.firstName, actorUser.lastName].filter(Boolean).join(' ') || actorUser.email
-                                          : null) ??
-                                        (actorOwner
-                                          ? [actorOwner.firstName, actorOwner.lastName].filter(Boolean).join(' ') || actorOwner.email
-                                          : null);
-
-                                      return (
-                                        <li key={event.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
-                                          <div className="flex items-start justify-between text-xs uppercase tracking-wide text-slate-400">
-                                            <span>{eventLabels[event.type] ?? event.type}</span>
-                                            <span>{new Date(event.createdAt).toLocaleString()}</span>
-                                          </div>
-                                          {event.message ? (
-                                            <p className="mt-2 text-sm text-slate-200 leading-relaxed">{event.message}</p>
-                                          ) : null}
-                                          {actorName ? (
-                                            <p className="mt-1 text-xs text-slate-500">By {actorName}</p>
-                                          ) : null}
-                                        </li>
-                                      );
-                                    })}
-                                  </ol>
-                                )}
-                              </div>
+                    return (
+                      <Fragment key={booking.id}>
+                        <tr className="hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-white">
+                              {propertyDetails?.name ?? 'Unknown property'}
                             </div>
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-white">{displayGuestName}</div>
+                            <div className="text-sm text-gray-400">{displayGuestEmail}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-white">
+                              {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                            </div>
+                            <div className="text-sm text-gray-400">{stayNights} nights</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                              {booking.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                            {booking.totalFormatted ?? `$${(booking.totalAmount / 100).toFixed(2)}`}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                            <button
+                              onClick={() => setExpandedBookingId(isExpanded ? null : booking.id)}
+                              className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded text-xs"
+                            >
+                              {isExpanded ? 'Hide details' : 'Details'}
+                            </button>
+                            {booking.status === 'pending' && (
+                              <button
+                                onClick={() => handleConfirm(booking.id)}
+                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                              >
+                                Confirm
+                              </button>
+                            )}
+                            {booking.status !== 'cancelled' && (
+                              <button
+                                onClick={() => handleCancel(booking.id)}
+                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDelete(booking.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                            >
+                              Delete
+                            </button>
+                          </td>
                         </tr>
-                      )}
-                    </Fragment>
-                  );
-                })
-              )}
-            </tbody>
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan={6} className="bg-slate-900/60 px-6 py-5">
+                              <div className="grid gap-6 lg:grid-cols-2">
+                                <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                                  <header className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Participants</h3>
+                                    <span className="text-xs text-slate-500">{booking.participants.length} total</span>
+                                  </header>
+                                  {booking.participants.length === 0 ? (
+                                    <p className="text-sm text-slate-400">No participants recorded.</p>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      {booking.participants.map((participant) => {
+                                        const ownershipOwner = participant.ownership?.owner;
+                                        const roleLabel = roleLabels[participant.role] ?? participant.role;
+                                        const ownerName = ownershipOwner
+                                          ? [ownershipOwner.firstName, ownershipOwner.lastName].filter(Boolean).join(' ') || ownershipOwner.email
+                                          : null;
+
+                                        return (
+                                          <div
+                                            key={participant.id}
+                                            className="rounded-xl border border-slate-800 bg-slate-900/60 p-3"
+                                          >
+                                            <div className="flex items-start justify-between">
+                                              <div>
+                                                <p className="text-sm font-medium text-white">{participant.displayName}</p>
+                                                {participant.email ? (
+                                                  <p className="text-xs text-slate-400">{participant.email}</p>
+                                                ) : null}
+                                              </div>
+                                              <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
+                                                {roleLabel}
+                                              </span>
+                                            </div>
+                                            <div className="mt-2 flex justify-between text-xs text-slate-500">
+                                              <span>{participant.nights} nights</span>
+                                              {ownerName ? <span>Owner: {ownerName}</span> : null}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+
+                                  <div className="grid gap-2 text-xs text-slate-400">
+                                    <div className="flex justify-between">
+                                      <span>Submitted</span>
+                                      <span>{formatDateTime(booking.submittedAt)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Decision</span>
+                                      <span>{formatDateTime(booking.decisionAt)}</span>
+                                    </div>
+                                  </div>
+
+                                  {booking.requestNotes ? (
+                                    <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-100">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">Request notes</p>
+                                      <p className="mt-1 text-sm leading-relaxed">{booking.requestNotes}</p>
+                                    </div>
+                                  ) : null}
+
+                                  {booking.decisionSummary ? (
+                                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-100">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200">Decision</p>
+                                      <p className="mt-1 text-sm leading-relaxed">{booking.decisionSummary}</p>
+                                    </div>
+                                  ) : null}
+                                </div>
+
+                                <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Timeline</h3>
+                                  {booking.timeline.length === 0 ? (
+                                    <p className="text-sm text-slate-400">No timeline events recorded.</p>
+                                  ) : (
+                                    <ol className="space-y-3 text-sm text-slate-200">
+                                      {booking.timeline.map((event) => {
+                                        const actorUser = event.actor.user;
+                                        const actorOwnership = event.actor.ownership;
+                                        const actorOwner = actorOwnership?.owner;
+                                        const actorName =
+                                          (actorUser
+                                            ? [actorUser.firstName, actorUser.lastName].filter(Boolean).join(' ') || actorUser.email
+                                            : null) ??
+                                          (actorOwner
+                                            ? [actorOwner.firstName, actorOwner.lastName].filter(Boolean).join(' ') || actorOwner.email
+                                            : null);
+
+                                        return (
+                                          <li key={event.id} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                                            <div className="flex items-start justify-between text-xs uppercase tracking-wide text-slate-400">
+                                              <span>{eventLabels[event.type] ?? event.type}</span>
+                                              <span>{new Date(event.createdAt).toLocaleString()}</span>
+                                            </div>
+                                            {event.message ? (
+                                              <p className="mt-2 text-sm text-slate-200 leading-relaxed">{event.message}</p>
+                                            ) : null}
+                                            {actorName ? (
+                                              <p className="mt-1 text-xs text-slate-500">By {actorName}</p>
+                                            ) : null}
+                                          </li>
+                                        );
+                                      })}
+                                    </ol>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })
+                )}
+              </tbody>
             </table>
           </div>
         </div>
