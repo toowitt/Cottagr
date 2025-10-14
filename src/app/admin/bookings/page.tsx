@@ -164,7 +164,7 @@ export default function AdminBookingsPage() {
     notes: '',
     ownershipIds: [] as number[],
   });
-  const [, setRangeAnchor] = useState<string | null>(null);
+  const [rangeAnchor, setRangeAnchor] = useState<string | null>(null);
   const [requestSubmitting, setRequestSubmitting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [votingOwnershipId, setVotingOwnershipId] = useState<number | null>(null);
@@ -214,26 +214,26 @@ export default function AdminBookingsPage() {
       setShowRequestComposer(true);
       setExpandedBookingId(null);
       setViewMode('calendar');
-      setRangeAnchor((anchor) => {
-        if (!anchor) {
-          setRequestFormData((prev) => ({
-            ...prev,
-            startDate: isoDate,
-            endDate: isoDate,
-          }));
-          return isoDate;
-        }
 
-        const [start, end] = anchor <= isoDate ? [anchor, isoDate] : [isoDate, anchor];
+      if (!rangeAnchor) {
         setRequestFormData((prev) => ({
           ...prev,
-          startDate: start,
-          endDate: end,
+          startDate: isoDate,
+          endDate: isoDate,
         }));
-        return null;
-      });
+        setRangeAnchor(isoDate);
+        return;
+      }
+
+      const [start, end] = rangeAnchor <= isoDate ? [rangeAnchor, isoDate] : [isoDate, rangeAnchor];
+      setRequestFormData((prev) => ({
+        ...prev,
+        startDate: start,
+        endDate: end,
+      }));
+      setRangeAnchor(null);
     },
-    [handleCalendarItemClick, setExpandedBookingId, setRangeAnchor, setRequestFormData, setShowRequestComposer, setViewMode],
+    [handleCalendarItemClick, rangeAnchor, setExpandedBookingId, setRangeAnchor, setRequestFormData, setShowRequestComposer, setViewMode],
   );
 
   const roleLabels: Record<string, string> = {
