@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BookingStatus, Prisma } from '@prisma/client';
+import { BookingStatus, Prisma, type Booking } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BookingCreateSchema, BookingListQuerySchema } from '@/lib/validation';
 import {
@@ -29,6 +29,10 @@ const bookingRelationFields = new Set(
 const supportsRequestorOwnershipId = bookingScalarFields.has('requestorOwnershipId');
 const supportsRequestorOwnershipRelation = bookingRelationFields.has('requestorOwnership');
 const supportsRequestorUserId = bookingScalarFields.has('requestorUserId');
+const supportsCreatedByOwnershipId = bookingScalarFields.has('createdByOwnershipId');
+const supportsCreatedByOwnershipRelation = bookingRelationFields.has('createdByOwnership');
+const supportsRequestorRelation = bookingRelationFields.has('requestor');
+const supportsPropertyRelation = bookingRelationFields.has('property');
 const supportsPolicySnapshot = bookingScalarFields.has('policySnapshot');
 const supportsTimelineCreate = Prisma.dmmf.datamodel.models.some((model) => model.name === 'BookingTimelineEvent');
 const supportsParticipantCreate = Prisma.dmmf.datamodel.models.some((model) => model.name === 'BookingParticipant');
@@ -236,11 +240,11 @@ export async function POST(request: NextRequest) {
         strategy: property.approvalPolicy,
       }
       : null;
+    const normalizedPolicySnapshot =
+      policySnapshot === null ? Prisma.JsonNull : policySnapshot;
 
     const booking = await prisma.$transaction(async (tx) => {
-      const bookingCreateData: Record<string, unknown> = {
-        propertyId,
-        createdByOwnershipId: createdByOwnershipId ?? null,
+      const baseBookingFields = {
         startDate: start,
         endDate: end,
         guestName: guestName ?? null,
@@ -248,33 +252,45 @@ export async function POST(request: NextRequest) {
         requestNotes: notes ?? null,
         status: BookingStatus.pending,
         totalAmount,
+        ...(supportsPolicySnapshot ? { policySnapshot: normalizedPolicySnapshot } : {}),
       };
 
-      if (supportsPolicySnapshot) {
-        Object.assign(bookingCreateData, { policySnapshot });
-      }
+      let createdBooking: Booking;
 
-      if (supportsRequestorOwnershipRelation && effectiveRequestorOwnershipId) {
-        Object.assign(bookingCreateData, {
-          requestorOwnership: { connect: { id: effectiveRequestorOwnershipId } },
-        });
-      } else if (supportsRequestorOwnershipId) {
-        Object.assign(bookingCreateData, {
-          requestorOwnershipId: effectiveRequestorOwnershipId,
-        });
-      }
+      const canUseUnchecked = supportsCreatedByOwnershipId && supportsRequestorOwnershipId;
+      const shouldUseRelationalCreate = !canUseUnchecked && supportsPropertyRelation;
 
-      if (supportsRequestorUserId) {
-        Object.assign(bookingCreateData, {
-          requestorUserId: resolvedRequestorUserId,
-        });
-      }
+      if (shouldUseRelationalCreate) {
+        const relationalData: Prisma.BookingCreateInput = {
+          ...baseBookingFields,
+          property: { connect: { id: propertyId } },
+          ...(supportsCreatedByOwnershipRelation && createdByOwnershipId
+            ? { createdByOwnership: { connect: { id: createdByOwnershipId } } }
+            : {}),
+          ...(supportsRequestorOwnershipRelation && effectiveRequestorOwnershipId
+            ? { requestorOwnership: { connect: { id: effectiveRequestorOwnershipId } } }
+            : {}),
+          ...(supportsRequestorRelation && resolvedRequestorUserId
+            ? { requestor: { connect: { id: resolvedRequestorUserId } } }
+            : {}),
+        };
 
-      const createdBooking = await tx.booking.create({
-        // Cast to satisfy the Prisma client type regardless of schema version.
-        // Use a safe double-cast via unknown to avoid `any`.
-        data: bookingCreateData as unknown as Prisma.BookingCreateInput,
-      });
+        createdBooking = await tx.booking.create({ data: relationalData });
+      } else {
+        const uncheckedData: Prisma.BookingUncheckedCreateInput = {
+          ...baseBookingFields,
+          propertyId,
+          ...(supportsCreatedByOwnershipId
+            ? { createdByOwnershipId: createdByOwnershipId ?? null }
+            : {}),
+          ...(supportsRequestorOwnershipId
+            ? { requestorOwnershipId: effectiveRequestorOwnershipId }
+            : {}),
+          ...(supportsRequestorUserId ? { requestorUserId: resolvedRequestorUserId } : {}),
+        };
+
+        createdBooking = await tx.booking.create({ data: uncheckedData });
+      }
 
       if (supportsParticipantCreate) {
         for (const participant of participants) {
