@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
@@ -29,7 +29,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
   const [cooldownMs, setCooldownMs] = useState(0);
   const retryCountRef = useRef(0);
 
-  const getCooldownMessage = useCallback(() => {
+  const cooldownMessage = useMemo(() => {
     if (cooldownMs <= 0) {
       return null;
     }
@@ -46,7 +46,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     }
 
     setError((current) =>
-      !current || current.startsWith('Too many attempts.') ? getCooldownMessage() : current,
+      !current || current.startsWith('Too many attempts.') ? cooldownMessage : current,
     );
 
     const intervalId = window.setInterval(() => {
@@ -54,7 +54,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [cooldownMs, getCooldownMessage]);
+  }, [cooldownMessage, cooldownMs]);
 
   const resetCooldown = () => {
     retryCountRef.current = 0;
@@ -91,7 +91,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
   const handleAuthSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (cooldownMs > 0) {
-      setError(getCooldownMessage());
+      setError(cooldownMessage);
       return;
     }
 
@@ -137,7 +137,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           const status = 'status' in signUpError ? signUpError.status : undefined;
           if (status === 429) {
             applyCooldown('hard');
-            setError(getCooldownMessage());
+            setError(cooldownMessage);
           } else {
             applyCooldown('soft');
             setError(signUpError.message);
@@ -174,7 +174,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
         const status = 'status' in signInError ? signInError.status : undefined;
         if (status === 429) {
           applyCooldown('hard');
-          setError(getCooldownMessage());
+          setError(cooldownMessage);
         } else {
           applyCooldown('soft');
           setError(signInError.message);
@@ -189,7 +189,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
 
   const handleMagicLink = async () => {
     if (cooldownMs > 0) {
-      setError(getCooldownMessage());
+      setError(cooldownMessage);
       return;
     }
 
@@ -204,7 +204,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
       const status = 'status' in otpError ? otpError.status : undefined;
       if (status === 429) {
         applyCooldown('hard');
-        setError(getCooldownMessage());
+        setError(cooldownMessage);
       } else {
         applyCooldown('soft');
         setError(otpError.message);
