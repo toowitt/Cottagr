@@ -111,13 +111,51 @@ describe('LoginForm', () => {
       });
     });
 
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/auth/ensure-user', { method: 'POST' });
-    });
-
     expect(
       await screen.findByText(/Check new@example.com to confirm your account/i),
     ).toBeInTheDocument();
     expect(routerReplace).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('sign-up with immediate session ensures user and redirects', async () => {
+    signUp.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: '123',
+          email: 'new@example.com',
+        },
+        session: {
+          access_token: 'access-token',
+        },
+      },
+      error: null,
+    });
+
+    render(<LoginForm redirectTo="/admin/setup" />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: /sign up/i }));
+    await user.type(screen.getByLabelText(/email/i), 'new@example.com');
+    await user.type(screen.getByLabelText(/name/i), 'New Owner');
+    await user.type(screen.getByLabelText(/create a password/i), 'secret123');
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(signUp).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/auth/ensure-user', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer access-token',
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(routerReplace).toHaveBeenCalledWith('/admin/setup');
+    });
   });
 });

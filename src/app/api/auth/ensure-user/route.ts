@@ -1,15 +1,32 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { createRouteSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 
-export async function POST() {
+const getBearerToken = (authorization: string | null) => {
+  if (!authorization) {
+    return null;
+  }
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+};
+
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createRouteSupabaseClient();
+    const accessToken = getBearerToken(request.headers.get('authorization'));
+
     const {
       data: userData,
       error: userError,
-    } = await supabase.auth.getUser();
-    handleSupabaseAuthError(userError);
+    } = accessToken ? await supabase.auth.getUser(accessToken) : await supabase.auth.getUser();
+
+    if (accessToken && userError) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    if (!accessToken) {
+      handleSupabaseAuthError(userError);
+    }
     const user = userData?.user ?? null;
 
     if (!user) {
