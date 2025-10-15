@@ -145,9 +145,13 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           return;
         }
 
-        if (data?.user) {
+        if (data?.user && data.session) {
+          const accessToken = data.session.access_token;
           try {
-            const response = await fetch('/api/auth/ensure-user', { method: 'POST' });
+            const response = await fetch('/api/auth/ensure-user', {
+              method: 'POST',
+              headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+            });
             if (!response.ok) {
               console.warn('ensure-user endpoint responded with', response.status);
             }
