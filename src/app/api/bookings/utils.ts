@@ -98,91 +98,23 @@ const serializeOwner = (ownership: BookingWithRelations['createdByOwnership'] | 
       role: ownership.role,
       shareBps: ownership.shareBps,
       votingPower: ownership.votingPower,
-        owner: (() => {
-          const maybe = ownership as unknown as { owner?: { id: number; email?: string; firstName?: string; lastName?: string } } | null;
-          const o = maybe?.owner ?? null;
-          return o
-            ? {
-                id: o.id,
-                email: o.email ?? null,
-                firstName: o.firstName ?? null,
-                lastName: o.lastName ?? null,
-              }
-            : null;
-        })(),
+      owner: ownership.owner
+        ? {
+          id: ownership.owner.id,
+          email: ownership.owner.email,
+          firstName: ownership.owner.firstName,
+          lastName: ownership.owner.lastName,
+        }
+        : null,
     }
     : null;
 
 export const serializeBooking = (booking: BookingWithRelations) => {
-  // Local, permissive type for serialization to avoid depending on compile-time Prisma include shapes.
-  type MaybeOwner = { id: number; email?: string | null; firstName?: string | null; lastName?: string | null } | null;
-  type MaybeOwnership = {
-    id: number;
-    role: string;
-    shareBps: number;
-    votingPower: number;
-    owner?: MaybeOwner | null;
-  } | null;
-
-  type BookingForSerialize = {
-    id: number;
-    propertyId: number;
-    startDate: Date;
-    endDate: Date;
-    status: string;
-    decisionSummary?: string | null;
-    requestNotes?: string | null;
-    totalAmount: number;
-    guestName?: string | null;
-    guestEmail?: string | null;
-    submittedAt?: Date | null;
-    decisionAt?: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-    policySnapshot?: unknown;
-    property?: { id: number; name: string; slug: string; location?: string | null } | null;
-    createdByOwnership?: MaybeOwnership | null;
-    votes?:
-      | Array<{
-          id: number;
-          choice: string;
-          rationale?: string | null;
-          createdAt: Date;
-          ownershipId?: number;
-          ownership?: { role?: string; votingPower?: number; shareBps?: number; owner?: MaybeOwner } | null;
-        }>
-      | undefined;
-    participants?:
-      | Array<{
-          id: number;
-          role: string;
-          displayName: string;
-          email?: string | null;
-          nights?: number | null;
-          user?: { id: number; email?: string; firstName?: string; lastName?: string } | null;
-          ownership?: MaybeOwnership | null;
-        }>
-      | undefined;
-    timeline?:
-      | Array<{
-          id: number;
-          eventType: string;
-          message?: string | null;
-          payload?: unknown;
-          createdAt: Date;
-          actorUser?: { id: number; email?: string; firstName?: string; lastName?: string } | null;
-          actorOwnership?: MaybeOwnership | null;
-        }>
-      | undefined;
-    usageSnapshots?: Array<{ id: number; participantRole: string; participantKey: string; season: string; nights: number; calculatedAt: Date }> | undefined;
-  };
-
-  const b = booking as unknown as BookingForSerialize;
-  const nights = calculateNights(b.startDate, b.endDate);
-  const participants = (b.participants ?? []) as NonNullable<BookingForSerialize['participants']>;
-  const timeline = (b.timeline ?? []) as NonNullable<BookingForSerialize['timeline']>;
-  const usageSnapshots = (b.usageSnapshots ?? []) as NonNullable<BookingForSerialize['usageSnapshots']>;
-  const votes = (b.votes ?? []) as NonNullable<BookingForSerialize['votes']>;
+  const nights = calculateNights(booking.startDate, booking.endDate);
+  const participants = booking.participants ?? [];
+  const timeline = booking.timeline ?? [];
+  const usageSnapshots = booking.usageSnapshots ?? [];
+  const votes = booking.votes ?? [];
 
   return {
     id: booking.id,
@@ -217,18 +149,19 @@ export const serializeBooking = (booking: BookingWithRelations) => {
       rationale: vote.rationale,
       createdAt: vote.createdAt.toISOString(),
       ownershipId: vote.ownershipId,
-      owner: (() => {
-        const maybe = vote as unknown as {
-          ownership?: { owner?: { id: number; firstName?: string; lastName?: string; email?: string } };
-        };
-        const o = maybe?.ownership?.owner ?? null;
-        return o ? { id: o.id, firstName: o.firstName ?? null, lastName: o.lastName ?? null, email: o.email ?? null } : null;
-      })(),
-          ownership: (() => {
-            const maybe = vote as unknown as { ownership?: { role?: string; votingPower?: number; shareBps?: number } };
-            const ow = maybe?.ownership ?? null;
-            return { role: ow?.role ?? null, votingPower: ow?.votingPower ?? null, shareBps: ow?.shareBps ?? null };
-          })(),
+      owner: vote.ownership.owner
+        ? {
+          id: vote.ownership.owner.id,
+          firstName: vote.ownership.owner.firstName,
+          lastName: vote.ownership.owner.lastName,
+          email: vote.ownership.owner.email,
+        }
+        : null,
+      ownership: {
+        role: vote.ownership.role,
+        votingPower: vote.ownership.votingPower,
+        shareBps: vote.ownership.shareBps,
+      },
     })),
     participants: participants.map((participant) => ({
       id: participant.id,
@@ -244,21 +177,22 @@ export const serializeBooking = (booking: BookingWithRelations) => {
           lastName: participant.user.lastName,
         }
         : null,
-            ownership: (() => {
-              const maybe = participant.ownership as unknown as
-                | { id: number; role: string; shareBps: number; votingPower: number; owner?: { id: number; email?: string; firstName?: string; lastName?: string } }
-                | null
-                | undefined;
-              if (!maybe) return null;
-              const o = maybe.owner ?? null;
-              return {
-                id: maybe.id,
-                role: maybe.role,
-                shareBps: maybe.shareBps,
-                votingPower: maybe.votingPower,
-                owner: o ? { id: o.id, email: o.email ?? null, firstName: o.firstName ?? null, lastName: o.lastName ?? null } : null,
-              };
-            })(),
+      ownership: participant.ownership
+        ? {
+          id: participant.ownership.id,
+          role: participant.ownership.role,
+          shareBps: participant.ownership.shareBps,
+          votingPower: participant.ownership.votingPower,
+          owner: participant.ownership.owner
+            ? {
+              id: participant.ownership.owner.id,
+              email: participant.ownership.owner.email,
+              firstName: participant.ownership.owner.firstName,
+              lastName: participant.ownership.owner.lastName,
+            }
+            : null,
+        }
+        : null,
     })),
     timeline: timeline.map((event) => ({
       id: event.id,
@@ -275,21 +209,22 @@ export const serializeBooking = (booking: BookingWithRelations) => {
             lastName: event.actorUser.lastName,
           }
           : null,
-              ownership: (() => {
-                const maybe = event.actorOwnership as unknown as
-                  | { id: number; role: string; shareBps: number; votingPower: number; owner?: { id: number; email?: string; firstName?: string; lastName?: string } }
-                  | null
-                  | undefined;
-                if (!maybe) return null;
-                const o = maybe.owner ?? null;
-                return {
-                  id: maybe.id,
-                  role: maybe.role,
-                  shareBps: maybe.shareBps,
-                  votingPower: maybe.votingPower,
-                  owner: o ? { id: o.id, email: o.email ?? null, firstName: o.firstName ?? null, lastName: o.lastName ?? null } : null,
-                };
-              })(),
+        ownership: event.actorOwnership
+          ? {
+            id: event.actorOwnership.id,
+            role: event.actorOwnership.role,
+            shareBps: event.actorOwnership.shareBps,
+            votingPower: event.actorOwnership.votingPower,
+            owner: event.actorOwnership.owner
+              ? {
+                id: event.actorOwnership.owner.id,
+                email: event.actorOwnership.owner.email,
+                firstName: event.actorOwnership.owner.firstName,
+                lastName: event.actorOwnership.owner.lastName,
+              }
+              : null,
+          }
+          : null,
       },
     })),
     usageSnapshots: usageSnapshots.map((snapshot) => ({
