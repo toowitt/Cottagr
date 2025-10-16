@@ -24,3 +24,6 @@ build = ["sh", "-c", "npm run build"]
 
 [nix]
 channel = "stable-25_05"
+
+[agent]
+expertMode = true
