@@ -52,8 +52,9 @@ src/
 
 ## Theme System
 The app implements a clean light/dark mode system without hydration errors:
-- **CSS Variables**: All colors defined in `globals.css` using CSS custom properties
-- **Data Attributes**: Uses `data-theme="light|dark"` attribute for theme switching
+- **Dual Theme Support**: Uses both `data-theme` attribute (for CSS variables) and `dark` class (for Tailwind)
+- **CSS Variables**: Core colors defined in `globals.css` using CSS custom properties
+- **Tailwind Dark Mode**: Landing page components use Tailwind's `dark:` utility classes
 - **Smooth Transitions**: 200ms cubic-bezier transitions on all color changes
 - **Persistence**: Theme preference stored in localStorage as `cottagr-theme`
 - **System Detection**: CSS media query fallback for `prefers-color-scheme: dark`
