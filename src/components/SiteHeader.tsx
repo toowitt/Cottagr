@@ -31,7 +31,7 @@ interface SiteHeaderProps {
 }
 
 export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderProps) {
-  const { theme, toggleTheme, isReady } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [showAuthenticatedNav, setShowAuthenticatedNav] = useState(initialAuthenticated);
   const supabase = useSupabaseClient();
 
@@ -66,7 +66,7 @@ export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderP
     };
   }, [supabase]);
 
-  const isDark = (isReady ? theme : 'light') === 'dark';
+  const isDark = theme === 'dark';
   const navLinks = useMemo(
     () => (showAuthenticatedNav ? authenticatedLinks : marketingLinks),
     [showAuthenticatedNav],
