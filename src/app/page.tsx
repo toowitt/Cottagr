@@ -116,7 +116,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-[var(--background-secondary)] px-4 py-20">
+      <section id="features" className="bg-[var(--background-secondary)] px-4 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl">
@@ -171,7 +171,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="px-4 py-20">
+      <section id="how-it-works" className="px-4 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl">
@@ -246,8 +246,54 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="px-4 py-20">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl">
+            Simple, transparent pricing
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-[var(--muted)]">
+            One flat fee per cottage, no matter how many owners or guests you have.
+          </p>
+          <div className="mt-12 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-8">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-[var(--foreground)]">$29</div>
+              <div className="text-[var(--muted)]">per cottage, per month</div>
+              <div className="mt-4 text-sm text-[var(--muted)]">
+                Currently in beta - join the waitlist for early access
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="bg-[var(--background-secondary)] px-4 py-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl">
+              Frequently asked questions
+            </h2>
+          </div>
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">How many owners can use one cottage account?</h3>
+              <p className="mt-2 text-[var(--muted)]">Unlimited. Whether you have 2 owners or 20, everyone gets full access to the booking system, expense tracking, and knowledge hub.</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">Can guests access the system?</h3>
+              <p className="mt-2 text-[var(--muted)]">Yes, through secure guest invites. They can see relevant checklists and property info without accessing owner-only features like expenses or voting.</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">What happens if owners disagree on bookings?</h3>
+              <p className="mt-2 text-[var(--muted)]">Cottagr's voting system handles conflicts automatically based on your fairness rules. No more endless group texts or hurt feelings.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
-      <section className="bg-[var(--background-secondary)] px-4 py-20">
+      <section className="px-4 py-20">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl">
             Ready to eliminate cottage chaos?
