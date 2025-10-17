@@ -252,7 +252,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
             value={name}
             onChange={(event) => setName(event.target.value)}
             className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            placeholder="Ada Lovelace"
+            placeholder="Sam Smith"
             autoComplete="name"
           />
         </div>
