@@ -8,64 +8,42 @@ type ThemeContextValue = {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
-  isReady: boolean;
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 const STORAGE_KEY = 'cottagr-theme';
 
-function isTheme(value: unknown): value is Theme {
-  return value === 'light' || value === 'dark';
-}
-
-function getPreferredTheme(): Theme {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-
-  try {
-    const storedValue = window.localStorage.getItem(STORAGE_KEY);
-    if (isTheme(storedValue)) {
-      return storedValue;
-    }
-  } catch (error) {
-    console.warn('Unable to read theme preference from localStorage.', error);
-  }
-
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light');
-  const [isReady, setIsReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const initial = getPreferredTheme();
-    setThemeState(initial);
-    setIsReady(true);
+    setMounted(true);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'dark' || stored === 'light') {
+      setThemeState(stored);
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setThemeState(prefersDark ? 'dark' : 'light');
+    }
   }, []);
 
   useEffect(() => {
-    if (!isReady) {
-      return;
-    }
+    if (!mounted) return;
 
     const root = document.documentElement;
-    root.classList.remove('theme-light', 'theme-dark', 'light', 'dark');
+    
     if (theme === 'dark') {
-      root.classList.add('theme-dark', 'dark');
+      root.classList.add('dark');
+      root.classList.remove('light');
     } else {
-      root.classList.add('theme-light', 'light');
+      root.classList.add('light');
+      root.classList.remove('dark');
     }
 
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch (error) {
-      console.warn('Unable to store theme preference in localStorage.', error);
-    }
-  }, [isReady, theme]);
+    localStorage.setItem(STORAGE_KEY, theme);
+  }, [theme, mounted]);
 
   const toggleTheme = () => {
     setThemeState((current) => (current === 'dark' ? 'light' : 'dark'));
@@ -76,9 +54,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       theme,
       toggleTheme,
       setTheme: setThemeState,
-      isReady,
     }),
-    [isReady, theme],
+    [theme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
