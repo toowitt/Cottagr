@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
+    <html lang="en" className="h-full">
       <head>
         <ThemeScript />
       </head>

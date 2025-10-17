@@ -5,11 +5,18 @@ export function ThemeScript() {
         const stored = localStorage.getItem('cottagr-theme');
         const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         document.documentElement.setAttribute('data-theme', theme);
-      } catch (e) {}
+        document.documentElement.style.colorScheme = theme;
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.style.colorScheme = 'light';
+      }
     })();
   `;
 
   return (
-    <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+    <script 
+      dangerouslySetInnerHTML={{ __html: themeScript }} 
+      suppressHydrationWarning
+    />
   );
 }
