@@ -46,6 +46,16 @@ async function main() {
         color: '#f59e0b',
       },
     }),
+    prisma.blogCategory.upsert({
+      where: { slug: 'taxes' },
+      update: {},
+      create: {
+        name: 'Taxes',
+        slug: 'taxes',
+        description: 'Tax implications and considerations for cottage ownership',
+        color: '#ef4444',
+      },
+    }),
   ]);
 
   console.log(`Created ${categories.length} categories`);
