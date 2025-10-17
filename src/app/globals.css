@@ -24,13 +24,13 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --background: #0a0e1a;
-    --background-secondary: #0f1729;
+    --background: #000000;
+    --background-secondary: #0a0a0a;
     --foreground: #f1f5f9;
     --muted: #94a3b8;
     --muted-foreground: #cbd5e1;
-    --border: #1e293b;
-    --card: #0f1729;
+    --border: #1a1a1a;
+    --card: #0a0a0a;
     --card-foreground: #f1f5f9;
     --accent: #34d399;
     --accent-strong: #10b981;
