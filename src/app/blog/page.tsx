@@ -15,9 +15,10 @@ function formatDate(value: Date | null | undefined) {
 export default async function BlogPage({
   searchParams,
 }: {
-  searchParams: { category?: string };
+  searchParams: Promise<{ category?: string }>;
 }) {
-  const categorySlug = searchParams.category;
+  const params = await searchParams;
+  const categorySlug = params.category;
 
   const [articles, categories] = await Promise.all([
     prisma.blogArticle.findMany({
