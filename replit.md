@@ -41,7 +41,6 @@ src/
 │   └── globals.css  # Global styles with CSS variables
 ├── components/      # Reusable React components
 │   ├── ThemeProvider.tsx  # Client-side theme management
-│   ├── ThemeScript.tsx    # Flash-prevention script
 │   └── SiteHeader.tsx     # Header with theme toggle
 └── lib/            # Utility functions and clients
     ├── auth/       # Authentication helpers
@@ -52,13 +51,14 @@ src/
 ```
 
 ## Theme System
-The app implements a sophisticated light/dark mode system:
-- **Zero Flash**: ThemeScript runs before React hydration to prevent theme flash
+The app implements a clean light/dark mode system without hydration errors:
 - **CSS Variables**: All colors defined in `globals.css` using CSS custom properties
-- **Smooth Transitions**: 200ms cubic-bezier transitions on color changes
+- **Data Attributes**: Uses `data-theme="light|dark"` attribute for theme switching
+- **Smooth Transitions**: 200ms cubic-bezier transitions on all color changes
 - **Persistence**: Theme preference stored in localStorage as `cottagr-theme`
-- **System Detection**: Falls back to `prefers-color-scheme` media query
+- **System Detection**: CSS media query fallback for `prefers-color-scheme: dark`
 - **Toggle**: Moon/Sun icon button in the site header
+- **No Hydration Errors**: Theme applied after React mount for clean server-side rendering
 
 ## Environment Variables
 The following environment variables are required and stored securely in Replit Secrets:
