@@ -4,6 +4,14 @@
 Cottagr is a comprehensive cottage/vacation property management system built with Next.js, Supabase, and Prisma. It provides families with a single operating system for managing stays, expenses, and shared knowledge about their properties.
 
 ## Recent Changes
+**October 17, 2025** - Theme System Overhaul
+- Implemented seamless light/dark mode with zero flash on load
+- Created blocking theme script that runs before page render
+- Simplified CSS architecture using CSS custom properties
+- Added smooth 200ms transitions for all theme-related properties
+- Updated login page and core components to use theme-aware colors
+- Integrated system preference detection with localStorage persistence
+
 **October 16, 2025** - Migrated from Vercel to Replit
 - Updated port configuration from 3000 to 5000 for Replit compatibility
 - Configured development and production workflows
@@ -28,8 +36,13 @@ src/
 │   ├── bookings/    # Booking management
 │   ├── expenses/    # Expense tracking
 │   ├── knowledge-hub/ # Shared knowledge base
-│   └── login/       # Authentication
+│   ├── login/       # Authentication
+│   ├── layout.tsx   # Root layout with theme support
+│   └── globals.css  # Global styles with CSS variables
 ├── components/      # Reusable React components
+│   ├── ThemeProvider.tsx  # Client-side theme management
+│   ├── ThemeScript.tsx    # Flash-prevention script
+│   └── SiteHeader.tsx     # Header with theme toggle
 └── lib/            # Utility functions and clients
     ├── auth/       # Authentication helpers
     ├── supabase/   # Supabase client configurations
@@ -37,6 +50,15 @@ src/
     ├── prisma.ts   # Prisma client setup
     └── validation.ts # Zod schemas
 ```
+
+## Theme System
+The app implements a sophisticated light/dark mode system:
+- **Zero Flash**: ThemeScript runs before React hydration to prevent theme flash
+- **CSS Variables**: All colors defined in `globals.css` using CSS custom properties
+- **Smooth Transitions**: 200ms cubic-bezier transitions on color changes
+- **Persistence**: Theme preference stored in localStorage as `cottagr-theme`
+- **System Detection**: Falls back to `prefers-color-scheme` media query
+- **Toggle**: Moon/Sun icon button in the site header
 
 ## Environment Variables
 The following environment variables are required and stored securely in Replit Secrets:
