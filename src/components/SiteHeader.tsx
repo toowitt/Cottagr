@@ -8,11 +8,11 @@ import { Moon, SunMedium } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
 const marketingLinks = [
-  { href: '#features', label: 'Features' },
-  { href: '#how-it-works', label: 'How it works' },
+  { href: '/#features', label: 'Features' },
+  { href: '/#how', label: 'How it works' },
   { href: '/bookings', label: 'Bookings' },
-  { href: '#pricing', label: 'Pricing' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '/#pricing', label: 'Pricing' },
+  { href: '/#faq', label: 'FAQ' },
 ];
 
 const authenticatedLinks = [
