@@ -232,7 +232,7 @@ export default function CottagrLandingPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="scroll-mt-32 border-t border-white/10 bg-white py-20 dark:bg-[#050b17]">
+      <section id="how" className="scroll-mt-32 border-t border-white/10 bg-white py-20 dark:bg-black">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900 dark:text-white">How it works</h2>
@@ -263,9 +263,9 @@ export default function CottagrLandingPage() {
             ].map((s) => (
               <li
                 key={s.n}
-                className="card-sheen rounded-[24px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_30px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#0f1d33] dark:text-white"
+                className="card-sheen rounded-[24px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_30px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white"
               >
-                <div className="text-5xl font-black text-blue-500 dark:text-blue-400">{s.n}</div>
+                <div className="text-5xl font-black text-emerald-500 dark:text-emerald-400">{s.n}</div>
                 <h3 className="mt-3 text-lg font-semibold">{s.t}</h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-white/70">{s.d}</p>
               </li>
