@@ -103,10 +103,10 @@ export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderP
           <button
             type="button"
             onClick={toggleTheme}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.18)] transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-white dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.9)] dark:hover:bg-white/10 dark:focus:ring-offset-gray-900"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-default bg-card text-muted-foreground shadow-custom transition-all duration-200 ease-in-out hover:bg-background-secondary hover:text-foreground hover:shadow-custom-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background active:scale-95"
             aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
           >
-            {isDark ? <SunMedium className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {isDark ? <SunMedium className="h-5 w-5 transition-transform duration-200" /> : <Moon className="h-5 w-5 transition-transform duration-200" />}
           </button>
           {showAuthenticatedNav ? (
             <form action="/logout" method="post">
