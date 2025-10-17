@@ -4,6 +4,15 @@
 Cottagr is a comprehensive cottage/vacation property management system built with Next.js, Supabase, and Prisma. It provides families with a single operating system for managing stays, expenses, and shared knowledge about their properties.
 
 ## Recent Changes
+**October 17, 2025** - CottagrBlog Implementation
+- Built native blog functionality inside the authenticated area
+- Created blog database schema with categories, tags, and article management
+- Implemented admin interface for creating and managing blog articles
+- Created public blog listing and article reading pages with dark mode support
+- Added 4 default categories: Legalities, How-Tos, Wills & Inheritance, Family Transitions
+- Seeded sample article about cottage co-ownership
+- Integrated blog navigation in header for authenticated users
+
 **October 17, 2025** - Theme System Implementation
 - Implemented automatic light/dark mode based on OS preferences
 - Tailwind dark mode responds to system `prefers-color-scheme` media query
@@ -31,7 +40,16 @@ Cottagr is a comprehensive cottage/vacation property management system built wit
 src/
 ├── app/              # Next.js App Router pages
 │   ├── admin/       # Admin dashboard and management
+│   │   ├── blog/    # Blog article management
+│   │   ├── bookings/
+│   │   ├── expenses/
+│   │   └── knowledge-hub/
 │   ├── api/         # API routes
+│   │   ├── blog/    # Blog API endpoints
+│   │   ├── bookings/
+│   │   └── expenses/
+│   ├── blog/        # Public blog pages
+│   │   └── [slug]/  # Individual article pages
 │   ├── bookings/    # Booking management
 │   ├── expenses/    # Expense tracking
 │   ├── knowledge-hub/ # Shared knowledge base
@@ -39,8 +57,7 @@ src/
 │   ├── layout.tsx   # Root layout with theme support
 │   └── globals.css  # Global styles with CSS variables
 ├── components/      # Reusable React components
-│   ├── ThemeProvider.tsx  # Client-side theme management
-│   └── SiteHeader.tsx     # Header with theme toggle
+│   └── SiteHeader.tsx     # Header with navigation
 └── lib/            # Utility functions and clients
     ├── auth/       # Authentication helpers
     ├── supabase/   # Supabase client configurations
@@ -88,6 +105,31 @@ Key commands:
 - `npm run db:generate` - Generate Prisma client
 - `npm run db:migrate` - Run migrations
 - `npm run db:seed` - Seed the database
+- `npx tsx prisma/seed-blog.ts` - Seed blog categories and sample article
+
+## Blog Feature (CottagrBlog)
+CottagrBlog is a native content management system for cottage-related articles:
+
+**Features:**
+- Article management with draft, published, and archived states
+- Category system for organizing content (Legalities, How-Tos, etc.)
+- Tag support for flexible content organization
+- Reading time estimation
+- View count tracking
+- Related articles suggestions
+- Dark mode support
+
+**Admin Access:**
+- Manage articles at `/admin/blog`
+- Create categories and articles
+- Publish, unpublish, archive, or delete content
+- Edit existing articles with markdown support
+
+**Public Access:**
+- Browse articles at `/blog`
+- Filter by category
+- Read individual articles at `/blog/[slug]`
+- View related articles
 
 ## Security Notes
 - Environment variables are properly separated (NEXT_PUBLIC_* for client, others for server)
