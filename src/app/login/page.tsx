@@ -25,16 +25,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-slate-950 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background-secondary to-background">
       <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-12">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl shadow-black/40">
+        <div className="rounded-3xl border border-default bg-card p-8 shadow-2xl">
           <h1 className="text-3xl font-semibold">Welcome to Cottagr</h1>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-muted">
             Sign in to access your cottage dashboard or create a new owner profile to get started.
           </p>
 
           {message === 'signed-out' ? (
-            <div className="mt-4 rounded-lg border border-slate-700 bg-slate-900/70 px-4 py-3 text-sm text-slate-300">
+            <div className="mt-4 rounded-lg border border-default bg-card px-4 py-3 text-sm text-muted-foreground">
               You have been signed out.
             </div>
           ) : null}
