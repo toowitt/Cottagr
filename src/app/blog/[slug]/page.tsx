@@ -16,11 +16,12 @@ function formatDate(value: Date | null | undefined) {
 export default async function BlogArticlePage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
+  const { slug } = await params;
   const article = await prisma.blogArticle.findUnique({
     where: { 
-      slug: params.slug,
+      slug,
       status: ArticleStatus.PUBLISHED,
     },
     include: {

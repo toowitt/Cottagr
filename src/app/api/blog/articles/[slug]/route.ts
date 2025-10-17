@@ -4,10 +4,10 @@ import { ArticleStatus } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     const article = await prisma.blogArticle.findUnique({
       where: { slug },
@@ -73,10 +73,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
     const body = await request.json();
     const { title, excerpt, content, featuredImage, status, categoryId, tags } = body;
 
@@ -145,10 +145,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     const article = await prisma.blogArticle.findUnique({
       where: { slug }
