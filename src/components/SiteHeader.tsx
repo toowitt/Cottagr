@@ -20,6 +20,7 @@ const authenticatedLinks = [
   { href: '/admin/expenses', label: 'Expenses' },
   { href: '/admin/blackouts', label: 'Blackouts' },
   { href: '/admin/knowledge-hub', label: 'Knowledge Hub' },
+  { href: '/blog', label: 'Blog' },
   { href: '/admin/guests', label: 'Guests' },
   { href: '/admin/profile', label: 'Preferences' },
 ];
