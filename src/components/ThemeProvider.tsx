@@ -44,6 +44,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode}) {
       root.classList.remove('dark');
     }
     
+    console.log('[ThemeProvider] Mounted - Initial theme:', initialTheme);
+    console.log('[ThemeProvider] HTML classes:', root.className);
+    console.log('[ThemeProvider] localStorage value:', localStorage.getItem('cottagr-theme'));
+    console.log('[ThemeProvider] System prefers dark:', window.matchMedia('(prefers-color-scheme: dark)').matches);
   }, []);
 
   // Update theme when changed
@@ -64,7 +68,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode}) {
   }, [theme, mounted]);
 
   const toggleTheme = () => {
-    setThemeState((current) => (current === 'dark' ? 'light' : 'dark'));
+    setThemeState((current) => {
+      const newTheme = current === 'dark' ? 'light' : 'dark';
+      console.log('[ThemeProvider] Toggle theme:', current, '->', newTheme);
+      return newTheme;
+    });
   };
 
   const value = useMemo<ThemeContextValue>(
