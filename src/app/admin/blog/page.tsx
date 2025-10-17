@@ -9,6 +9,7 @@ import {
   createCategoryAction,
 } from './actions';
 import { CheckCircle2, FolderOpen, PlusCircle, BookOpen, Archive } from 'lucide-react';
+import BlogArticleForm from '@/components/BlogArticleForm';
 
 function formatDate(value: Date | null | undefined) {
   if (!value) return '—';
@@ -54,64 +55,9 @@ export default async function AdminBlogPage() {
           <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
             <PlusCircle className="h-5 w-5 text-emerald-400" /> New Article
           </h2>
-          <form action={createArticleAction} className="mt-4 grid gap-3">
-            <input
-              type="text"
-              name="title"
-              required
-              placeholder="Article title"
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <input
-              type="text"
-              name="slug"
-              required
-              placeholder="URL slug (e.g., cottage-inheritance-guide)"
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <select
-              name="categoryId"
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            >
-              <option value="">No category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-            <textarea
-              name="excerpt"
-              placeholder="Short excerpt (optional)"
-              rows={2}
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <textarea
-              name="content"
-              required
-              placeholder="Article content (supports markdown)"
-              rows={6}
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                name="status"
-                value="DRAFT"
-                className="flex-1 rounded-xl border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
-              >
-                Save as Draft
-              </button>
-              <button
-                type="submit"
-                name="status"
-                value="PUBLISHED"
-                className="flex-1 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400"
-              >
-                Publish Now
-              </button>
-            </div>
-          </form>
+          <div className="mt-4">
+            <BlogArticleForm categories={categories} />
+          </div>
         </section>
 
         <section className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
