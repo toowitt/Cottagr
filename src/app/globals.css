@@ -7,47 +7,93 @@
 :root,
 [data-theme="light"] {
   --background: #ffffff;
-  --background-secondary: #f8fafc;
-  --foreground: #0f172a;
-  --muted: #64748b;
-  --muted-foreground: #475569;
-  --border: #e2e8f0;
+  --background-secondary: #f9fafb;
+  --background-tertiary: #f3f4f6;
+  --foreground: #111827;
+  --foreground-secondary: #374151;
+  --muted: #6b7280;
+  --muted-foreground: #4b5563;
+  --border: #e5e7eb;
+  --border-muted: #f3f4f6;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --accent: #34d399;
-  --accent-strong: #22c55e;
-  --warning: #fbbf24;
-  --danger: #f43f5e;
+  --card-foreground: #111827;
+  --card-border: #f3f4f6;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-muted: #d1fae5;
+  --warning: #f59e0b;
+  --warning-muted: #fef3c7;
+  --danger: #ef4444;
+  --danger-muted: #fecaca;
+  --success: #10b981;
+  --success-muted: #d1fae5;
+  --info: #3b82f6;
+  --info-muted: #dbeafe;
+  --shadow: rgba(0, 0, 0, 0.04);
+  --shadow-md: rgba(0, 0, 0, 0.06);
+  --shadow-lg: rgba(0, 0, 0, 0.1);
   --radius: 0.75rem;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --background: #0a0e1a;
-  --background-secondary: #0f1729;
-  --foreground: #f1f5f9;
+  --background: #0f172a;
+  --background-secondary: #1e293b;
+  --background-tertiary: #334155;
+  --foreground: #f8fafc;
+  --foreground-secondary: #e2e8f0;
   --muted: #94a3b8;
   --muted-foreground: #cbd5e1;
-  --border: #1e293b;
-  --card: #0f1729;
-  --card-foreground: #f1f5f9;
-  --accent: #34d399;
-  --accent-strong: #10b981;
+  --border: #334155;
+  --border-muted: #1e293b;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --card-border: #334155;
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --accent-muted: rgba(16, 185, 129, 0.15);
+  --warning: #f59e0b;
+  --warning-muted: rgba(245, 158, 11, 0.15);
+  --danger: #ef4444;
+  --danger-muted: rgba(239, 68, 68, 0.15);
+  --success: #10b981;
+  --success-muted: rgba(16, 185, 129, 0.15);
+  --info: #3b82f6;
+  --info-muted: rgba(59, 130, 246, 0.15);
+  --shadow: rgba(0, 0, 0, 0.2);
+  --shadow-md: rgba(0, 0, 0, 0.3);
+  --shadow-lg: rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
-    --background: #0a0e1a;
-    --background-secondary: #0f1729;
-    --foreground: #f1f5f9;
+    --background: #0f172a;
+    --background-secondary: #1e293b;
+    --background-tertiary: #334155;
+    --foreground: #f8fafc;
+    --foreground-secondary: #e2e8f0;
     --muted: #94a3b8;
     --muted-foreground: #cbd5e1;
-    --border: #1e293b;
-    --card: #0f1729;
-    --card-foreground: #f1f5f9;
-    --accent: #34d399;
-    --accent-strong: #10b981;
+    --border: #334155;
+    --border-muted: #1e293b;
+    --card: #1e293b;
+    --card-foreground: #f8fafc;
+    --card-border: #334155;
+    --accent: #10b981;
+    --accent-hover: #34d399;
+    --accent-muted: rgba(16, 185, 129, 0.15);
+    --warning: #f59e0b;
+    --warning-muted: rgba(245, 158, 11, 0.15);
+    --danger: #ef4444;
+    --danger-muted: rgba(239, 68, 68, 0.15);
+    --success: #10b981;
+    --success-muted: rgba(16, 185, 129, 0.15);
+    --info: #3b82f6;
+    --info-muted: rgba(59, 130, 246, 0.15);
+    --shadow: rgba(0, 0, 0, 0.2);
+    --shadow-md: rgba(0, 0, 0, 0.3);
+    --shadow-lg: rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -76,8 +122,34 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
 
+/* Text Colors */
+.text-foreground {
+  color: var(--foreground);
+}
+
+.text-foreground-secondary {
+  color: var(--foreground-secondary);
+}
+
 .text-muted {
   color: var(--muted);
+}
+
+.text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+/* Background Colors */
+.bg-background {
+  background-color: var(--background);
+}
+
+.bg-background-secondary {
+  background-color: var(--background-secondary);
+}
+
+.bg-background-tertiary {
+  background-color: var(--background-tertiary);
 }
 
 .bg-card {
@@ -85,18 +157,143 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--card-foreground);
 }
 
-.bg-background-secondary {
-  background-color: var(--background-secondary);
+/* Border Colors */
+.border-default {
+  border-color: var(--border);
 }
 
-.text-foreground {
+.border-muted {
+  border-color: var(--border-muted);
+}
+
+.border-card {
+  border-color: var(--card-border);
+}
+
+/* Accent Colors */
+.text-accent {
+  color: var(--accent);
+}
+
+.bg-accent {
+  background-color: var(--accent);
+}
+
+.bg-accent-hover:hover {
+  background-color: var(--accent-hover);
+}
+
+.bg-accent-muted {
+  background-color: var(--accent-muted);
+}
+
+/* Status Colors */
+.text-warning {
+  color: var(--warning);
+}
+
+.bg-warning {
+  background-color: var(--warning);
+}
+
+.bg-warning-muted {
+  background-color: var(--warning-muted);
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.bg-danger {
+  background-color: var(--danger);
+}
+
+.bg-danger-muted {
+  background-color: var(--danger-muted);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+.bg-success {
+  background-color: var(--success);
+}
+
+.bg-success-muted {
+  background-color: var(--success-muted);
+}
+
+.text-info {
+  color: var(--info);
+}
+
+.bg-info {
+  background-color: var(--info);
+}
+
+.bg-info-muted {
+  background-color: var(--info-muted);
+}
+
+/* Shadow Utilities */
+.shadow-custom {
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.shadow-custom-md {
+  box-shadow: 0 4px 6px -1px var(--shadow-md), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+}
+
+.shadow-custom-lg {
+  box-shadow: 0 10px 15px -3px var(--shadow-lg), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced Form Styling */
+input, textarea, select {
+  background-color: var(--background);
+  border-color: var(--border);
   color: var(--foreground);
 }
 
-.text-muted {
-  color: var(--muted);
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted);
 }
 
-.border-default {
-  border-color: var(--border);
+/* Button Enhancements */
+button:focus {
+  outline: none;
+}
+
+/* Enhanced Cards */
+.card {
+  background-color: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.card-elevated {
+  box-shadow: 0 4px 6px -1px var(--shadow-md), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+}
+
+/* Hover Effects */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px var(--shadow-lg), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Code Blocks */
+code, pre {
+  background-color: var(--background-tertiary);
+  color: var(--foreground-secondary);
+  border: 1px solid var(--border-muted);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--accent-muted);
+  color: var(--foreground);
 }
