@@ -5,12 +5,11 @@ Cottagr is a comprehensive cottage/vacation property management system built wit
 
 ## Recent Changes
 **October 17, 2025** - Theme System Implementation
-- Implemented seamless light/dark mode switching
-- Dual theme support: CSS variables and Tailwind dark mode classes
-- ThemeProvider manages theme state with localStorage persistence
+- Implemented automatic light/dark mode based on OS preferences
+- Tailwind dark mode responds to system `prefers-color-scheme` media query
+- CSS variables automatically update based on OS theme setting
 - Smooth 200ms transitions for all theme-related properties
-- Theme controlled by user preference, independent of OS settings
-- Fixed race condition where OS dark mode preference was overriding user choice
+- No manual toggle - theme follows OS preferences automatically
 
 **October 16, 2025** - Migrated from Vercel to Replit
 - Updated port configuration from 3000 to 5000 for Replit compatibility
@@ -51,15 +50,13 @@ src/
 ```
 
 ## Theme System
-The app implements a clean light/dark mode system:
-- **Dual Theme Support**: Uses both `data-theme` attribute (for CSS variables) and `dark` class (for Tailwind)
-- **CSS Variables**: Core colors defined in `globals.css` using CSS custom properties
-- **Tailwind Dark Mode**: Components use Tailwind's `dark:` utility classes
+The app implements automatic light/dark mode based on OS preferences:
+- **OS Integration**: Automatically follows system `prefers-color-scheme` setting
+- **CSS Variables**: Core colors defined in `globals.css` with media query overrides
+- **Tailwind Dark Mode**: Uses `media` strategy to respond to OS preferences
 - **Smooth Transitions**: 200ms cubic-bezier transitions on all color changes
-- **Persistence**: Theme preference stored in localStorage as `cottagr-theme`
-- **User Control**: Theme controlled by user choice, independent of OS preferences
-- **Toggle**: Moon/Sun icon button in the site header
-- **No Hydration Errors**: Theme applied client-side with `suppressHydrationWarning`
+- **No Manual Toggle**: Theme changes when user switches OS light/dark mode
+- **Clean Implementation**: No JavaScript theme management, purely CSS-based
 
 ## Environment Variables
 The following environment variables are required and stored securely in Replit Secrets:

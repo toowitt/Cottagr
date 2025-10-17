@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
-import { Moon, SunMedium } from 'lucide-react';
-import { useTheme } from '@/components/ThemeProvider';
 
 const marketingLinks = [
   { href: '/#features', label: 'Features' },
@@ -31,7 +29,6 @@ interface SiteHeaderProps {
 }
 
 export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderProps) {
-  const { theme, toggleTheme } = useTheme();
   const [showAuthenticatedNav, setShowAuthenticatedNav] = useState(initialAuthenticated);
   const supabase = useSupabaseClient();
 
@@ -66,7 +63,6 @@ export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderP
     };
   }, [supabase]);
 
-  const isDark = theme === 'dark';
   const navLinks = useMemo(
     () => (showAuthenticatedNav ? authenticatedLinks : marketingLinks),
     [showAuthenticatedNav],
@@ -100,14 +96,6 @@ export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderP
             </Link>
           ))}
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.18)] transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-white dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.9)] dark:hover:bg-white/10 dark:focus:ring-offset-gray-900"
-            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-          >
-            {isDark ? <SunMedium className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
           {showAuthenticatedNav ? (
             <form action="/logout" method="post">
               <button
