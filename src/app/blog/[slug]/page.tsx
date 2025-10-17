@@ -114,23 +114,10 @@ export default async function BlogArticlePage({
             </div>
           </header>
 
-          <div className="prose prose-slate mt-12 max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-emerald-600 dark:prose-a:text-emerald-400">
-            {article.content.split('\n').map((paragraph, idx) => {
-              if (!paragraph.trim()) return null;
-              
-              if (paragraph.startsWith('# ')) {
-                return <h1 key={idx}>{paragraph.slice(2)}</h1>;
-              }
-              if (paragraph.startsWith('## ')) {
-                return <h2 key={idx}>{paragraph.slice(3)}</h2>;
-              }
-              if (paragraph.startsWith('### ')) {
-                return <h3 key={idx}>{paragraph.slice(4)}</h3>;
-              }
-              
-              return <p key={idx}>{paragraph}</p>;
-            })}
-          </div>
+          <div 
+            className="prose prose-slate mt-12 max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-emerald-600 dark:prose-a:text-emerald-400"
+            dangerouslySetInnerHTML={{ __html: article.content }}
+          />
         </article>
 
         {relatedArticles.length > 0 && (
