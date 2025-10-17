@@ -25,15 +25,27 @@ function getInitialTheme(): Theme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children }: { children: React.ReactNode}) {
   const [theme, setThemeState] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
+  // Initialize theme on mount
   useEffect(() => {
     setMounted(true);
-    setThemeState(getInitialTheme());
+    const initialTheme = getInitialTheme();
+    setThemeState(initialTheme);
+    
+    // Apply theme immediately
+    const root = document.documentElement;
+    root.setAttribute('data-theme', initialTheme);
+    if (initialTheme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
   }, []);
 
+  // Update theme when changed
   useEffect(() => {
     if (!mounted) return;
 
