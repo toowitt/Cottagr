@@ -74,7 +74,7 @@ export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderP
   const logoHref = showAuthenticatedNav ? '/admin' : '/';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 transition-colors dark:border-gray-800 dark:bg-gray-900/70 dark:supports-[backdrop-filter]:bg-gray-900/60">
+    <header className="sticky top-0 z-50 border-b border-default bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70 transition-colors">
       <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4">
         {/* Logo (bigger) */}
         <Link href={logoHref} className="flex items-center">
@@ -94,7 +94,7 @@ export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderP
             <Link
               key={item.href}
               href={item.href}
-              className="text-slate-600 transition-colors hover:text-slate-900 dark:text-gray-300 dark:hover:text-white"
+              className="text-muted-foreground transition-colors hover:text-foreground"
             >
               {item.label}
             </Link>
