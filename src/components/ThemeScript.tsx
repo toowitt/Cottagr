@@ -4,7 +4,7 @@ export function ThemeScript() {
       try {
         const stored = localStorage.getItem('cottagr-theme');
         const theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.classList.add(theme);
+        document.documentElement.setAttribute('data-theme', theme);
       } catch (e) {}
     })();
   `;
