@@ -10,7 +10,7 @@ type LoginFormProps = {
 
 type AuthMode = 'sign-in' | 'sign-up';
 
-const MIN_PASSWORD_LENGTH = 6;
+const MIN_PASSWORD_LENGTH = 8;
 const SIGN_IN_FALLBACK_REDIRECT = '/admin';
 const SIGN_UP_FALLBACK_REDIRECT = '/admin/setup';
 const EMAIL_REDIRECT_OVERRIDE = process.env.NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO;
@@ -269,7 +269,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          placeholder={mode === 'sign-up' ? 'At least 6 characters' : '••••••••'}
+          placeholder={mode === 'sign-up' ? 'At least 8 characters' : '••••••••'}
           autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
         />
       </div>
