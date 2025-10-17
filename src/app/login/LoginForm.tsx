@@ -24,7 +24,6 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [cooldownMs, setCooldownMs] = useState(0);
   const retryCountRef = useRef(0);
@@ -84,7 +83,6 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     setMode(nextMode);
     setError(null);
     setStatusMessage(null);
-    setMagicLinkSent(false);
     resetCooldown();
   };
 
@@ -191,33 +189,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     });
   };
 
-  const handleMagicLink = async () => {
-    if (cooldownMs > 0) {
-      setError(cooldownMessage);
-      return;
-    }
-
-    setError(null);
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      setError('Email is required');
-      return;
-    }
-    const { error: otpError } = await supabase.auth.signInWithOtp({ email: trimmedEmail });
-    if (otpError) {
-      const status = 'status' in otpError ? otpError.status : undefined;
-      if (status === 429) {
-        applyCooldown('hard');
-        setError(cooldownMessage);
-      } else {
-        applyCooldown('soft');
-        setError(otpError.message);
-      }
-      return;
-    }
-    resetCooldown();
-    setMagicLinkSent(true);
-  };
+  
 
   return (
     <form className="mt-6 space-y-6" onSubmit={handleAuthSubmit}>
@@ -244,11 +216,11 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
 
       <div className="space-y-1">
         <p className="text-sm font-medium text-slate-200">
-          {mode === 'sign-in' ? 'Use your email and password or request a magic link.' : 'Create your owner account.'}
+          {mode === 'sign-in' ? 'Use your email and password to sign in.' : 'Create your owner account.'}
         </p>
         <p className="text-xs text-slate-400">
           {mode === 'sign-in'
-            ? 'Forgot your password? Use the magic link below to get back in.'
+            ? 'Enter your credentials to access your account.'
             : 'We will send a confirmation email before finishing setup.'}
         </p>
       </div>
@@ -321,23 +293,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
               : 'Sign in'}
       </button>
 
-      {mode === 'sign-in' ? (
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
-          <p className="text-xs text-slate-400">Prefer a magic link?</p>
-          {magicLinkSent ? (
-            <p className="text-xs text-emerald-300">Magic link sent! Check your inbox.</p>
-          ) : (
-            <button
-              type="button"
-              onClick={handleMagicLink}
-              disabled={cooldownMs > 0}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-emerald-400"
-            >
-              {cooldownMs > 0 ? `Wait ${Math.ceil(cooldownMs / 1000)}s` : 'Email me a login link'}
-            </button>
-          )}
-        </div>
-      ) : null}
+      
     </form>
   );
 }
