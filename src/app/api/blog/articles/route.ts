@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ArticleStatus } from '@prisma/client';
+import { ArticleStatus, Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'PUBLISHED';
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
-    const where: any = {};
+    const where: Prisma.BlogArticleWhereInput = {};
     
     if (status === 'PUBLISHED') {
       where.status = ArticleStatus.PUBLISHED;
