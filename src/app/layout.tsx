@@ -2,7 +2,6 @@ import './globals.css';
 import type { Metadata } from 'next';
 import SiteHeader from '@/components/SiteHeader';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { ThemeScript } from '@/components/ThemeScript';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import SupabaseProvider from '@/components/SupabaseProvider';
@@ -36,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body className="min-h-full antialiased">
         <ThemeProvider>
           <SupabaseProvider initialSession={session}>

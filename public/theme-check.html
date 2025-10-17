@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Theme Diagnostic</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .info { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Theme Diagnostic Check</h1>
+    <div id="results"></div>
+    <script>
+        function checkTheme() {
+            const results = document.getElementById('results');
+            
+            // Check parent window
+            try {
+                const parentHTML = window.parent.document.documentElement;
+                const hasDataTheme = parentHTML.getAttribute('data-theme');
+                const hasDarkClass = parentHTML.classList.contains('dark');
+                const localStorage = window.parent.localStorage.getItem('cottagr-theme');
+                
+                results.innerHTML = `
+                    <div class="info">
+                        <strong>data-theme attribute:</strong> ${hasDataTheme || 'NOT SET'}
+                    </div>
+                    <div class="info">
+                        <strong>Has 'dark' class:</strong> ${hasDarkClass ? 'YES' : 'NO'}
+                    </div>
+                    <div class="info">
+                        <strong>localStorage theme:</strong> ${localStorage || 'NOT SET'}
+                    </div>
+                    <div class="info">
+                        <strong>All HTML classes:</strong> ${parentHTML.className || 'NONE'}
+                    </div>
+                    <div class="info">
+                        <strong>System prefers dark:</strong> ${window.matchMedia('(prefers-color-scheme: dark)').matches ? 'YES' : 'NO'}
+                    </div>
+                `;
+            } catch(e) {
+                results.innerHTML = `<div class="info" style="color: red;">Error: ${e.message}</div>`;
+            }
+        }
+        
+        setTimeout(checkTheme, 1000);
+        setInterval(checkTheme, 3000);
+    </script>
+</body>
+</html>
