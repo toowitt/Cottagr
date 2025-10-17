@@ -4,13 +4,13 @@
 Cottagr is a comprehensive cottage/vacation property management system built with Next.js, Supabase, and Prisma. It provides families with a single operating system for managing stays, expenses, and shared knowledge about their properties.
 
 ## Recent Changes
-**October 17, 2025** - Theme System Overhaul
-- Implemented seamless light/dark mode with zero flash on load
-- Created blocking theme script that runs before page render
-- Simplified CSS architecture using CSS custom properties
-- Added smooth 200ms transitions for all theme-related properties
-- Updated login page and core components to use theme-aware colors
-- Integrated system preference detection with localStorage persistence
+**October 17, 2025** - Theme System Implementation
+- Implemented seamless light/dark mode switching
+- Dual theme support: CSS variables and Tailwind dark mode classes
+- ThemeProvider manages theme state with localStorage persistence
+- Smooth 200ms transitions for all theme-related properties
+- Theme controlled by user preference, independent of OS settings
+- Fixed race condition where OS dark mode preference was overriding user choice
 
 **October 16, 2025** - Migrated from Vercel to Replit
 - Updated port configuration from 3000 to 5000 for Replit compatibility
@@ -51,15 +51,15 @@ src/
 ```
 
 ## Theme System
-The app implements a clean light/dark mode system without hydration errors:
+The app implements a clean light/dark mode system:
 - **Dual Theme Support**: Uses both `data-theme` attribute (for CSS variables) and `dark` class (for Tailwind)
 - **CSS Variables**: Core colors defined in `globals.css` using CSS custom properties
-- **Tailwind Dark Mode**: Landing page components use Tailwind's `dark:` utility classes
+- **Tailwind Dark Mode**: Components use Tailwind's `dark:` utility classes
 - **Smooth Transitions**: 200ms cubic-bezier transitions on all color changes
 - **Persistence**: Theme preference stored in localStorage as `cottagr-theme`
-- **System Detection**: CSS media query fallback for `prefers-color-scheme: dark`
+- **User Control**: Theme controlled by user choice, independent of OS preferences
 - **Toggle**: Moon/Sun icon button in the site header
-- **No Hydration Errors**: Theme applied after React mount for clean server-side rendering
+- **No Hydration Errors**: Theme applied client-side with `suppressHydrationWarning`
 
 ## Environment Variables
 The following environment variables are required and stored securely in Replit Secrets:
