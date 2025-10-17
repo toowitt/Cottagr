@@ -37,9 +37,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className="h-full">
-      <head>
-        <ThemeScript />
-      </head>
       <body className="min-h-full antialiased">
         <ThemeProvider>
           <SupabaseProvider initialSession={session}>
