@@ -4,12 +4,19 @@
 Cottagr is a comprehensive cottage/vacation property management system built with Next.js, Supabase, and Prisma. It provides families with a single operating system for managing stays, expenses, and shared knowledge about their properties.
 
 ## Recent Changes
+**October 17, 2025** - WYSIWYG Editor & Taxes Category
+- Integrated react-quill WYSIWYG editor for rich text article creation
+- Added custom dark mode styling for the editor with emerald accent colors
+- Blog articles now support full HTML formatting (headings, lists, bold, italic, links)
+- Added Taxes category for tax-related cottage ownership content
+- Updated blog article display to properly render HTML content
+
 **October 17, 2025** - CottagrBlog Implementation
 - Built native blog functionality inside the authenticated area
 - Created blog database schema with categories, tags, and article management
 - Implemented admin interface for creating and managing blog articles
 - Created public blog listing and article reading pages with dark mode support
-- Added 4 default categories: Legalities, How-Tos, Wills & Inheritance, Family Transitions
+- Added 5 default categories: Legalities, How-Tos, Wills & Inheritance, Family Transitions, Taxes
 - Seeded sample article about cottage co-ownership
 - Integrated blog navigation in header for authenticated users
 
@@ -111,25 +118,36 @@ Key commands:
 CottagrBlog is a native content management system for cottage-related articles:
 
 **Features:**
+- WYSIWYG editor (react-quill) for rich text article creation
 - Article management with draft, published, and archived states
-- Category system for organizing content (Legalities, How-Tos, etc.)
+- Category system for organizing content (Legalities, How-Tos, Taxes, etc.)
 - Tag support for flexible content organization
 - Reading time estimation
 - View count tracking
 - Related articles suggestions
-- Dark mode support
+- Full dark mode support with custom styling
+
+**Rich Text Editing:**
+- Headings (H1, H2, H3)
+- Bold, italic, underline, strikethrough
+- Ordered and unordered lists
+- Text indentation
+- Hyperlinks
+- Clean paste and formatting tools
 
 **Admin Access:**
 - Manage articles at `/admin/blog`
-- Create categories and articles
+- Create categories and articles with WYSIWYG editor
 - Publish, unpublish, archive, or delete content
-- Edit existing articles with markdown support
+- Auto-generate URL slugs from titles
+- Visual HTML editing with toolbar
 
 **Public Access:**
 - Browse articles at `/blog`
-- Filter by category
+- Filter by category (5 categories available)
 - Read individual articles at `/blog/[slug]`
 - View related articles
+- Properly formatted HTML content display
 
 ## Security Notes
 - Environment variables are properly separated (NEXT_PUBLIC_* for client, others for server)
