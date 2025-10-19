@@ -91,30 +91,64 @@ export const calculateNights = (start: Date, end: Date) => {
   return Math.max(1, Math.ceil((endUTC - startUTC) / (1000 * 60 * 60 * 24)));
 };
 
-const serializeOwner = (ownership: BookingWithRelations['createdByOwnership'] | null) =>
-  ownership
-    ? {
-      ownershipId: ownership.id,
-      role: ownership.role,
-      shareBps: ownership.shareBps,
-      votingPower: ownership.votingPower,
-      owner: ownership.owner
-        ? {
-          id: ownership.owner.id,
-          email: ownership.owner.email,
-          firstName: ownership.owner.firstName,
-          lastName: ownership.owner.lastName,
-        }
-        : null,
-    }
-    : null;
+const serializeOwner = (ownership: BookingWithRelations['createdByOwnership'] | null) => {
+  if (!ownership) {
+    return null;
+  }
+
+  const { owner } = ownership as Prisma.OwnershipGetPayload<{ include: { owner: true } }>;
+
+  return {
+    ownershipId: ownership.id,
+    role: ownership.role,
+    shareBps: ownership.shareBps,
+    votingPower: ownership.votingPower,
+    owner: owner
+      ? {
+        id: owner.id,
+        email: owner.email,
+        firstName: owner.firstName,
+        lastName: owner.lastName,
+      }
+      : null,
+  };
+};
 
 export const serializeBooking = (booking: BookingWithRelations) => {
   const nights = calculateNights(booking.startDate, booking.endDate);
-  const participants = booking.participants ?? [];
-  const timeline = booking.timeline ?? [];
+  const participants =
+    (booking.participants ?? []) as Prisma.BookingParticipantGetPayload<{
+      include: {
+        ownership: { include: { owner: true } };
+        user: {
+          select: {
+            id: true;
+            email: true;
+            firstName: true;
+            lastName: true;
+          };
+        };
+      };
+    }>[];
+  const timeline =
+    (booking.timeline ?? []) as Prisma.BookingTimelineEventGetPayload<{
+      include: {
+        actorOwnership: { include: { owner: true } };
+        actorUser: {
+          select: {
+            id: true;
+            email: true;
+            firstName: true;
+            lastName: true;
+          };
+        };
+      };
+    }>[];
   const usageSnapshots = booking.usageSnapshots ?? [];
-  const votes = booking.votes ?? [];
+  const votes =
+    (booking.votes ?? []) as Prisma.BookingVoteGetPayload<{
+      include: { ownership: { include: { owner: true } } };
+    }>[];
 
   return {
     id: booking.id,
