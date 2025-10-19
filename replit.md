@@ -40,6 +40,7 @@ Cottagr is a comprehensive cottage/vacation property management system built wit
 - **Database**: Prisma ORM with PostgreSQL (Supabase)
 - **Styling**: Tailwind CSS 4
 - **UI Components**: Lucide React icons
+- **Rich Text Editor**: react-quill-new (React 18 compatible)
 - **Testing**: Vitest for unit tests, Playwright for E2E tests
 
 ## Project Structure
