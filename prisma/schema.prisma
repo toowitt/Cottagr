@@ -96,6 +96,7 @@ model User {
   requestedBookings Booking[] @relation("BookingRequestor")
   bookingParticipants BookingParticipant[]
   bookingTimelineEvents BookingTimelineEvent[]
+  blogArticles BlogArticle[]
 }
 
 model Organization {
@@ -183,7 +184,7 @@ model Booking {
   id                   Int           @id @default(autoincrement())
   propertyId           Int
   createdByOwnershipId Int?
-  requestorUserId      String?
+  requestorUserId      String?       @db.Uuid
   requestorOwnershipId Int?
   startDate            DateTime
   endDate              DateTime
@@ -227,7 +228,7 @@ model BookingParticipant {
   id             Int                    @id @default(autoincrement())
   bookingId      Int
   role           BookingParticipantRole
-  userId         String?
+  userId         String?                @db.Uuid
   ownershipId    Int?
   displayName    String
   email          String?
@@ -247,7 +248,7 @@ model BookingTimelineEvent {
   eventType        BookingTimelineEventType
   message          String?
   payload          Json?
-  actorUserId      String?
+  actorUserId      String?                  @db.Uuid
   actorOwnershipId Int?
   createdAt        DateTime                 @default(now())
   booking          Booking                  @relation(fields: [bookingId], references: [id])
@@ -460,4 +461,67 @@ model ChecklistDocument {
   document    KnowledgeDocument  @relation(fields: [documentId], references: [id])
 
   @@unique([checklistId, documentId])
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model BlogArticle {
+  id              Int           @id @default(autoincrement())
+  title           String
+  slug            String        @unique
+  excerpt         String?
+  content         String        @db.Text
+  featuredImage   String?
+  status          ArticleStatus @default(DRAFT)
+  publishedAt     DateTime?
+  readingTimeMin  Int?
+  authorId        String?       @db.Uuid
+  categoryId      Int?
+  viewCount       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  author          User?         @relation(fields: [authorId], references: [id])
+  category        BlogCategory? @relation(fields: [categoryId], references: [id])
+  tags            ArticleTag[]
+
+  @@index([status, publishedAt])
+  @@index([slug])
+  @@index([categoryId])
+}
+
+model BlogCategory {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  slug        String        @unique
+  description String?
+  color       String?       @default("#10b981")
+  icon        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  articles    BlogArticle[]
+}
+
+model BlogTag {
+  id        Int          @id @default(autoincrement())
+  name      String       @unique
+  slug      String       @unique
+  createdAt DateTime     @default(now())
+  articles  ArticleTag[]
+}
+
+model ArticleTag {
+  id        Int         @id @default(autoincrement())
+  articleId Int
+  tagId     Int
+  createdAt DateTime    @default(now())
+  article   BlogArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       BlogTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, tagId])
+  @@index([articleId])
+  @@index([tagId])
 }

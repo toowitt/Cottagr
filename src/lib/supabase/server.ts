@@ -6,6 +6,7 @@ import {
   createServerActionClient,
   createRouteHandlerClient,
 } from '@supabase/auth-helpers-nextjs';
+import { AUTH_COOKIE_DOMAIN, AUTH_COOKIE_OPTIONS } from '@/lib/auth/config';
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>;
 
@@ -18,14 +19,20 @@ const withCookieStore = async () => {
   };
 };
 
+const cookieOptions = {
+  ...AUTH_COOKIE_OPTIONS,
+  ...(AUTH_COOKIE_DOMAIN ? { domain: AUTH_COOKIE_DOMAIN } : {}),
+  path: '/',
+} as const;
+
 export const createServerSupabaseClient = async () =>
-  createServerComponentClient(await withCookieStore());
+  createServerComponentClient(await withCookieStore(), { cookieOptions });
 
 export const createServerSupabaseActionClient = async () =>
-  createServerActionClient(await withCookieStore());
+  createServerActionClient(await withCookieStore(), { cookieOptions });
 
 export const createRouteSupabaseClient = async () =>
-  createRouteHandlerClient(await withCookieStore());
+  createRouteHandlerClient(await withCookieStore(), { cookieOptions });
 
 const isInvalidRefreshTokenError = (error: AuthApiError) =>
   error.code === 'refresh_token_not_found' || error.code === 'session_not_found';

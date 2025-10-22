@@ -2,43 +2,27 @@ import { Prisma } from '@prisma/client';
 import { formatCents } from '@/lib/money';
 import type { BookingParticipantInput } from '@/lib/validation';
 
-const bookingModel = Prisma.dmmf.datamodel.models.find((model) => model.name === 'Booking');
-const bookingRelations = new Set(
-  bookingModel?.fields.filter((field) => field.kind === 'object').map((field) => field.name) ?? []
-);
-
-const include: Prisma.BookingInclude = {};
-
-if (bookingRelations.has('property')) {
-  include.property = {
+export const bookingInclude = {
+  property: {
     select: {
       id: true,
       name: true,
       slug: true,
       location: true,
     },
-  };
-}
-
-if (bookingRelations.has('createdByOwnership')) {
-  include.createdByOwnership = {
+  },
+  createdByOwnership: {
     include: { owner: true },
-  };
-}
-
-if (bookingRelations.has('votes')) {
-  include.votes = {
+  },
+  votes: {
     include: {
       ownership: {
         include: { owner: true },
       },
     },
-    orderBy: { createdAt: 'asc' },
-  };
-}
-
-if (bookingRelations.has('participants')) {
-  include.participants = {
+    orderBy: { createdAt: 'asc' as const },
+  },
+  participants: {
     include: {
       ownership: {
         include: { owner: true },
@@ -52,12 +36,9 @@ if (bookingRelations.has('participants')) {
         },
       },
     },
-    orderBy: { createdAt: 'asc' },
-  };
-}
-
-if (bookingRelations.has('timeline')) {
-  include.timeline = {
+    orderBy: { createdAt: 'asc' as const },
+  },
+  timeline: {
     include: {
       actorOwnership: {
         include: { owner: true },
@@ -71,17 +52,12 @@ if (bookingRelations.has('timeline')) {
         },
       },
     },
-    orderBy: { createdAt: 'asc' },
-  };
-}
-
-if (bookingRelations.has('usageSnapshots')) {
-  include.usageSnapshots = {
-    orderBy: { calculatedAt: 'desc' },
-  };
-}
-
-export const bookingInclude = include;
+    orderBy: { createdAt: 'asc' as const },
+  },
+  usageSnapshots: {
+    orderBy: { calculatedAt: 'desc' as const },
+  },
+} satisfies Prisma.BookingInclude;
 
 export type BookingWithRelations = Prisma.BookingGetPayload<{ include: typeof bookingInclude }>;
 

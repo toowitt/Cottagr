@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Session } from '@supabase/supabase-js';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function SupabaseProvider({
   children,
@@ -12,7 +12,7 @@ export default function SupabaseProvider({
   children: React.ReactNode;
   initialSession?: Session | null;
 }) {
-  const [supabaseClient] = useState(() => createClientComponentClient());
+  const [supabaseClient] = useState(() => createSupabaseBrowserClient());
 
   return (
     <SessionContextProvider supabaseClient={supabaseClient} initialSession={initialSession}>

@@ -1,36 +1,39 @@
 import { NextResponse } from 'next/server';
 import { AuthSessionMissingError } from '@supabase/supabase-js';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
+import { APP_URL, AUTH_COOKIE_DOMAIN, AUTH_COOKIE_OPTIONS } from '@/lib/auth/config';
 
-const buildRedirect = (request: Request) => {
-  const originHeader = request.headers.get('origin');
-  const requestUrl = new URL(request.url);
-  const origin = originHeader ?? `${requestUrl.protocol}//${requestUrl.host}`;
-  const safeOrigin = origin.replace('0.0.0.0', 'localhost');
-  const redirectUrl = new URL('/login', safeOrigin);
+const buildRedirect = () => {
+  const redirectUrl = new URL('/login', APP_URL);
   redirectUrl.searchParams.set('message', 'signed-out');
   return redirectUrl;
 };
 
-const signOutHandler = async (request: Request) => {
+const signOutHandler = async () => {
   const supabase = await createRouteSupabaseClient();
   const { error } = await supabase.auth.signOut();
   if (error && !(error instanceof AuthSessionMissingError)) {
     console.error('Supabase sign out failed', error);
   }
-  const response = NextResponse.redirect(buildRedirect(request), { status: 303 });
+  const response = NextResponse.redirect(buildRedirect(), { status: 303 });
   const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/^https?:\/\//, '').split('.')[0];
   const supabaseCookieName = projectRef ? `sb-${projectRef}-auth-token` : 'sb-auth-token';
 
-  response.cookies.set('auth', '', { path: '/', maxAge: 0 });
-  response.cookies.set(supabaseCookieName, '', { path: '/', maxAge: 0 });
+  const cookieOptions = {
+    ...AUTH_COOKIE_OPTIONS,
+    ...(AUTH_COOKIE_DOMAIN ? { domain: AUTH_COOKIE_DOMAIN } : {}),
+    path: '/',
+  } as const;
+
+  response.cookies.set('auth', '', { ...cookieOptions, maxAge: 0 });
+  response.cookies.set(supabaseCookieName, '', { ...cookieOptions, maxAge: 0 });
   return response;
 };
 
-export async function POST(request: Request) {
-  return signOutHandler(request);
+export async function POST() {
+  return signOutHandler();
 }
 
-export async function GET(request: Request) {
-  return signOutHandler(request);
+export async function GET() {
+  return signOutHandler();
 }
