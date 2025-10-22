@@ -34,24 +34,41 @@ export async function ensureUserRecord(authUser: User | null | undefined) {
   const fallbackFirstName =
     authUser.email.split('@')[0]?.replace(/[^a-zA-Z0-9]+/g, ' ').trim() || 'Owner';
 
-  const user = await prisma.user.upsert({
+  let user = await prisma.user.findUnique({
     where: { id: authUser.id },
-    update: {
-      email: authUser.email,
-      firstName: name.firstName ?? undefined,
-      lastName: name.lastName ?? undefined,
-    },
-    create: {
-      id: authUser.id,
-      email: authUser.email,
-      firstName: name.firstName,
-      lastName: name.lastName,
-    },
     include: {
       memberships: true,
       owners: true,
     },
   });
+
+  if (user) {
+    user = await prisma.user.update({
+      where: { id: authUser.id },
+      data: {
+        email: authUser.email,
+        firstName: name.firstName ?? undefined,
+        lastName: name.lastName ?? undefined,
+      },
+      include: {
+        memberships: true,
+        owners: true,
+      },
+    });
+  } else {
+    user = await prisma.user.create({
+      data: {
+        id: authUser.id,
+        email: authUser.email,
+        firstName: name.firstName ?? null,
+        lastName: name.lastName ?? null,
+      },
+      include: {
+        memberships: true,
+        owners: true,
+      },
+    });
+  }
 
   const existingOwner = await prisma.owner.findUnique({
     where: { email: authUser.email },
