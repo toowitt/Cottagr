@@ -43,6 +43,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
   const successKey = typeof params.success === 'string' ? params.success : undefined;
   const errorMessage = typeof params.error === 'string' ? params.error : undefined;
   const editPropertyId = typeof params.editProperty === 'string' ? parseInt(params.editProperty, 10) : null;
+  const editOwnerId = typeof params.editOwner === 'string' ? parseInt(params.editOwner, 10) : null;
   const organizationNameParam = typeof params.name === 'string' ? params.name : undefined;
 
   const supabase = await createServerSupabaseClient();
@@ -621,83 +622,149 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                         </p>
                       ) : (
                         <ul className="space-y-3 text-sm text-slate-200">
-                          {property.ownerships.map((ownership) => (
-                            <li
-                              key={ownership.id}
-                              className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 shadow-inner shadow-black/20"
-                            >
-                              <div className="flex flex-col gap-2 border-b border-slate-800 pb-3 text-slate-100 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                  <p className="font-semibold">
-                                    {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
-                                  </p>
-                                  <p className="text-xs text-slate-400">{ownership.owner.email}</p>
-                                </div>
-                                <div className="text-xs text-slate-400">
-                                  Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
-                                </div>
-                              </div>
+                          {property.ownerships.map((ownership) => {
+                            const isEditing = editOwnerId === ownership.id;
+                            const focusParam = `owners-${property.id}`;
+                            const focusQuery = `focus=${encodeURIComponent(focusParam)}`;
 
-                              <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                                <form
-                                  action={setupUpdateOwnership.bind(null, ownership.id)}
-                                  className="grid flex-1 gap-3 md:grid-cols-4"
-                                >
-                                  <input type="hidden" name="propertyId" value={property.id} />
-                                  <label className="text-xs text-slate-400">
-                                    <span className="mb-1 block uppercase tracking-wide">Share (bps)</span>
-                                    <input
-                                      type="number"
-                                      name="shareBps"
-                                      min="0"
-                                      max="10000"
-                                      defaultValue={ownership.shareBps}
-                                      className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                    />
-                                  </label>
-                                  <label className="text-xs text-slate-400">
-                                    <span className="mb-1 block uppercase tracking-wide">Power</span>
-                                    <input
-                                      type="number"
-                                      name="votingPower"
-                                      min="0"
-                                      defaultValue={ownership.votingPower}
-                                      className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                    />
-                                  </label>
-                                  <label className="text-xs text-slate-400">
-                                    <span className="mb-1 block uppercase tracking-wide">Role</span>
-                                    <select
-                                      name="role"
-                                      defaultValue={ownership.role}
-                                      className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                    >
-                                      <option value="PRIMARY">Primary</option>
-                                      <option value="OWNER">Owner</option>
-                                      <option value="CARETAKER">Caretaker</option>
-                                    </select>
-                                  </label>
-                                  <div className="flex items-end">
-                                    <button
-                                      type="submit"
-                                      className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-500"
-                                    >
-                                      Save
-                                    </button>
+                            return (
+                              <li
+                                key={ownership.id}
+                                className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 shadow-inner shadow-black/20"
+                              >
+                                <div className="flex flex-col gap-2 border-b border-slate-800 pb-3 text-slate-100 md:flex-row md:items-center md:justify-between">
+                                  <div>
+                                    <p className="font-semibold">
+                                      {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
+                                    </p>
+                                    <p className="text-xs text-slate-400">{ownership.owner.email}</p>
                                   </div>
-                                </form>
-                                <form action={setupRemoveOwnership.bind(null, ownership.id)} className="md:self-end">
-                                  <input type="hidden" name="propertyId" value={property.id} />
-                                  <ConfirmSubmitButton
-                                    className="text-xs text-rose-300 hover:text-rose-200"
-                                    confirmText="Remove this owner from the property?"
-                                  >
-                                    Remove
-                                  </ConfirmSubmitButton>
-                                </form>
-                              </div>
-                            </li>
-                          ))}
+                                  <div className="text-xs text-slate-400">
+                                    Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
+                                  </div>
+                                </div>
+
+                                <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                                  {isEditing ? (
+                                    <form
+                                      action={setupUpdateOwnership.bind(null, ownership.id)}
+                                      className="grid flex-1 gap-3 md:grid-cols-6"
+                                    >
+                                      <input type="hidden" name="propertyId" value={property.id} />
+                                      <label className="text-xs text-slate-400">
+                                        <span className="mb-1 block uppercase tracking-wide">First name</span>
+                                        <input
+                                          type="text"
+                                          name="firstName"
+                                          defaultValue={ownership.owner.firstName ?? ''}
+                                          className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                          required
+                                        />
+                                      </label>
+                                      <label className="text-xs text-slate-400">
+                                        <span className="mb-1 block uppercase tracking-wide">Last name</span>
+                                        <input
+                                          type="text"
+                                          name="lastName"
+                                          defaultValue={ownership.owner.lastName ?? ''}
+                                          className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        />
+                                      </label>
+                                      <label className="text-xs text-slate-400">
+                                        <span className="mb-1 block uppercase tracking-wide">Email</span>
+                                        <input
+                                          type="email"
+                                          name="email"
+                                          defaultValue={ownership.owner.email}
+                                          className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                          required
+                                        />
+                                      </label>
+                                      <label className="text-xs text-slate-400">
+                                        <span className="mb-1 block uppercase tracking-wide">Share (bps)</span>
+                                        <input
+                                          type="number"
+                                          name="shareBps"
+                                          min="0"
+                                          max="10000"
+                                          defaultValue={ownership.shareBps}
+                                          className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        />
+                                      </label>
+                                      <label className="text-xs text-slate-400">
+                                        <span className="mb-1 block uppercase tracking-wide">Power</span>
+                                        <input
+                                          type="number"
+                                          name="votingPower"
+                                          min="0"
+                                          defaultValue={ownership.votingPower}
+                                          className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        />
+                                      </label>
+                                      <label className="text-xs text-slate-400">
+                                        <span className="mb-1 block uppercase tracking-wide">Role</span>
+                                        <select
+                                          name="role"
+                                          defaultValue={ownership.role}
+                                          className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                        >
+                                          <option value="PRIMARY">Primary</option>
+                                          <option value="OWNER">Owner</option>
+                                          <option value="CARETAKER">Caretaker</option>
+                                        </select>
+                                      </label>
+                                      <div className="flex items-end gap-2">
+                                        <button
+                                          type="submit"
+                                          className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-500"
+                                        >
+                                          Save
+                                        </button>
+                                        <Link
+                                          href={`/admin/setup?${focusQuery}`}
+                                          className="w-full rounded-lg border border-slate-700 px-3 py-2 text-center text-xs font-semibold text-slate-200 transition hover:border-slate-500 hover:text-slate-100"
+                                        >
+                                          Cancel
+                                        </Link>
+                                      </div>
+                                    </form>
+                                  ) : (
+                                    <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                      <div className="grid gap-2 text-xs text-slate-300 md:grid-cols-3">
+                                        <span>
+                                          Share: <strong>{(ownership.shareBps / 100).toFixed(2)}%</strong>
+                                        </span>
+                                        <span>
+                                          Voting power: <strong>{ownership.votingPower}</strong>
+                                        </span>
+                                        <span>
+                                          Role: <strong>{ownership.role}</strong>
+                                        </span>
+                                      </div>
+                                      <div className="flex gap-2 md:justify-end">
+                                        <Link
+                                          href={`/admin/setup?${focusQuery}&editOwner=${ownership.id}`}
+                                          className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-500"
+                                        >
+                                          Edit owner
+                                        </Link>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <form action={setupRemoveOwnership.bind(null, ownership.id)} className="md:self-end">
+                                    <input type="hidden" name="propertyId" value={property.id} />
+                                    <ConfirmSubmitButton
+                                      className="text-xs text-rose-300 hover:text-rose-200"
+                                      confirmText="Remove this owner from the property?"
+                                    >
+                                      Remove
+                                    </ConfirmSubmitButton>
+                                  </form>
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </section>

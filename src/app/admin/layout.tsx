@@ -32,7 +32,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   if (adminMemberships.length === 0) {
     return (
-      <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <div className="min-h-screen bg-background text-foreground">
         <main className="mx-auto max-w-4xl px-4 py-8">
           <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-sm text-emerald-900 dark:text-emerald-100">
             <h1 className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">No admin access yet</h1>
@@ -57,7 +57,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
   );

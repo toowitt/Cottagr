@@ -101,7 +101,7 @@ export default function CottagrLandingPage() {
 
       <section className="border-t border-slate-200 bg-transparent py-20 dark:border-white/10">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:items-center">
-          <div className="space-y-6 rounded-[30px] border border-slate-200 bg-white/95 p-8 text-slate-900 shadow-[0_35px_110px_-60px_rgba(15,23,42,0.18)] dark:border-white/15 dark:bg-[#0f1d33] dark:text-white">
+          <div className="space-y-6 rounded-[30px] border border-slate-200 bg-white/95 p-8 text-slate-900 shadow-[0_35px_110px_-60px_rgba(15,23,42,0.18)] dark:border-white/15 dark:bg-white/5 dark:text-white">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/40 px-3 py-1 text-xs uppercase tracking-[0.25em] text-slate-500 dark:border-white/20 dark:bg-white/10 dark:text-white/60">
               Why families trust Cottagr
             </div>
@@ -133,7 +133,7 @@ export default function CottagrLandingPage() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="rounded-3xl border border-slate-200 bg-white/95 p-6 text-slate-900 shadow-[0_32px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/15 dark:bg-[#111f38] dark:text-white"
+                className="rounded-3xl border border-slate-200 bg-white/95 p-6 text-slate-900 shadow-[0_32px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/15 dark:bg-white/5 dark:text-white"
               >
                 <div className="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-white">
                   <span className="rounded-2xl bg-emerald-500/15 p-2 text-emerald-500 dark:text-emerald-300">{item.icon}</span>
@@ -146,7 +146,7 @@ export default function CottagrLandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white py-10 text-slate-900 dark:border-white/10 dark:bg-[#0b1426] dark:text-white">
+      <section className="border-y border-slate-200 bg-white py-10 text-slate-900 dark:border-white/10 dark:bg-black dark:text-white">
         <div className="mx-auto grid max-w-6xl gap-6 px-6 sm:grid-cols-3">
           {[ 
             {
@@ -167,7 +167,7 @@ export default function CottagrLandingPage() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-[0_34px_110px_-80px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-[#101e37] dark:text-white"
+              className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-[0_34px_110px_-80px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-white/5 dark:text-white"
             >
               <div className="text-4xl font-semibold text-slate-900 dark:text-white">{stat.value}</div>
               <p className="mt-2 text-sm font-medium uppercase tracking-[0.25em] text-slate-500 dark:text-white/40">{stat.label}</p>
@@ -232,7 +232,7 @@ export default function CottagrLandingPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="scroll-mt-32 border-t border-white/10 bg-white py-20 dark:bg-[#050b17]">
+      <section id="how" className="scroll-mt-32 border-t border-white/10 bg-white py-20 dark:bg-black">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900 dark:text-white">How it works</h2>
@@ -263,9 +263,9 @@ export default function CottagrLandingPage() {
             ].map((s) => (
               <li
                 key={s.n}
-                className="card-sheen rounded-[24px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_30px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#0f1d33] dark:text-white"
+                className="card-sheen rounded-[24px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_30px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white"
               >
-                <div className="text-5xl font-black text-blue-500 dark:text-blue-400">{s.n}</div>
+                <div className="text-5xl font-black text-emerald-500 dark:text-emerald-400">{s.n}</div>
                 <h3 className="mt-3 text-lg font-semibold">{s.t}</h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-white/70">{s.d}</p>
               </li>

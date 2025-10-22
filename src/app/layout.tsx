@@ -1,7 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import SiteHeader from '@/components/SiteHeader';
-import { ThemeProvider } from '@/components/ThemeProvider';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import SupabaseProvider from '@/components/SupabaseProvider';
@@ -35,14 +34,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="en" className="h-full theme-light light" suppressHydrationWarning>
-      <body className="min-h-full bg-background text-foreground antialiased transition-colors">
-        <ThemeProvider>
-          <SupabaseProvider initialSession={session}>
-            <SiteHeader initialAuthenticated={Boolean(user)} />
-            <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
-          </SupabaseProvider>
-        </ThemeProvider>
+    <html lang="en" className="h-full">
+      <body className="min-h-full antialiased">
+        <SupabaseProvider initialSession={session}>
+          <SiteHeader initialAuthenticated={Boolean(user)} />
+          <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
+        </SupabaseProvider>
       </body>
     </html>
   );
