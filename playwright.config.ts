@@ -1,18 +1,32 @@
-import { defineConfig } from '@playwright/test';
-
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/e2e',
-  timeout: 30_000,
+  testDir: './tests',
   use: {
-    baseURL,
-    headless: true,
+    baseURL: 'http://localhost:5000',
   },
   webServer: {
     command: 'npm run dev',
-    url: baseURL,
+    url: 'http://localhost:5000',
     reuseExistingServer: true,
-    timeout: 120_000,
+    timeout: 180_000,
   },
+  projects: [
+    {
+      name: 'Desktop Chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'iPhone 13',
+      use: { ...devices['iPhone 13'] },
+    },
+    {
+      name: 'Pixel 7',
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'iPad',
+      use: { ...devices['iPad (gen 9)'] },
+    },
+  ],
 });

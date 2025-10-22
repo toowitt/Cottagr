@@ -8,6 +8,7 @@ import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
+import { APP_URL } from '@/lib/auth/config';
 
 const inviteSchema = z.object({
   propertyId: z.coerce.number().int().positive().optional(),
@@ -82,17 +83,13 @@ export async function sendGuestInvite(formData: FormData) {
   }
 
   const serviceClient = createSupabaseServiceClient();
-  const siteUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 
-     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5000');
+  const inviteRedirectUrl = new URL('/login', APP_URL).toString();
 
   const { data, error } = await serviceClient.auth.admin.generateLink({
     type: 'magiclink',
     email: parsed.data.email,
     options: {
-      redirectTo: `${siteUrl}/login`,
+      redirectTo: inviteRedirectUrl,
     },
   });
 

@@ -4,6 +4,7 @@ import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -77,11 +78,20 @@ async function ensureOwnershipAccess(ownershipId: number, allowedOrgIds: Set<num
           organizationId: true,
         },
       },
+      owner: {
+        select: {
+          id: true,
+        },
+      },
     },
   });
 
   if (!ownership || !ownership.property.organizationId || !allowedOrgIds.has(ownership.property.organizationId)) {
     redirect(`/admin/setup?error=${encodeURIComponent('You do not have access to that owner.')}`);
+  }
+
+  if (!ownership.owner) {
+    redirect(`/admin/setup?error=${encodeURIComponent('Owner record not found.')}`);
   }
 
   return ownership;
@@ -214,6 +224,9 @@ const OwnerSchema = z.object({
 
 const OwnershipUpdateSchema = z.object({
   propertyId: z.coerce.number().int().positive(),
+  firstName: z.string().min(1, 'First name required'),
+  lastName: z.string().optional(),
+  email: z.string().email('Valid email required'),
   shareBps: z.coerce.number().int().min(0).max(10000),
   votingPower: z.coerce.number().int().min(0),
   role: z.enum(['PRIMARY', 'OWNER', 'CARETAKER']).default('OWNER'),
@@ -402,6 +415,14 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
     redirect(`/admin/setup?error=${encodeURIComponent('Owner does not match property.')}`);
   }
 
+  if (!ownership.owner) {
+    redirect(
+      `/admin/setup?error=${encodeURIComponent('Owner record not found.')}&focus=${encodeURIComponent(
+        `owners-${parsed.data.propertyId}`,
+      )}`,
+    );
+  }
+
   const siblingShare = await prisma.ownership.aggregate({
     where: {
       propertyId: ownership.property.id,
@@ -417,6 +438,45 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
         `owners-${ownership.property.id}`,
       )}`,
     );
+  }
+
+  const trimmedFirstName = parsed.data.firstName.trim();
+  if (!trimmedFirstName) {
+    redirect(
+      `/admin/setup?error=${encodeURIComponent('First name is required.')}&focus=${encodeURIComponent(
+        `owners-${ownership.property.id}`,
+      )}`,
+    );
+  }
+
+  const trimmedLastName = parsed.data.lastName?.trim() || null;
+  const normalizedEmail = parsed.data.email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    redirect(
+      `/admin/setup?error=${encodeURIComponent('Email is required.')}&focus=${encodeURIComponent(
+        `owners-${ownership.property.id}`,
+      )}`,
+    );
+  }
+
+  try {
+    await prisma.owner.update({
+      where: { id: ownership.owner.id },
+      data: {
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        email: normalizedEmail,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      redirect(
+        `/admin/setup?error=${encodeURIComponent('Another owner already uses that email.')}&focus=${encodeURIComponent(
+          `owners-${ownership.property.id}`,
+        )}`,
+      );
+    }
+    throw error;
   }
 
   await prisma.ownership.update({

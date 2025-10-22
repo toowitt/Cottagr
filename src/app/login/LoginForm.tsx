@@ -1,8 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/forms';
+import { Input } from '@/components/ui';
+import { AUTH_REDIRECT_URL, APP_URL } from '@/lib/auth/config';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/cn';
 
 type LoginFormProps = {
   redirectTo?: string;
@@ -13,20 +20,61 @@ type AuthMode = 'sign-in' | 'sign-up';
 const MIN_PASSWORD_LENGTH = 8;
 const SIGN_IN_FALLBACK_REDIRECT = '/admin';
 const SIGN_UP_FALLBACK_REDIRECT = '/admin/setup';
-const EMAIL_REDIRECT_OVERRIDE = process.env.NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO;
+const EMAIL_REDIRECT_BASE = process.env.NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO ?? AUTH_REDIRECT_URL;
+
+const formSchema = z
+  .object({
+    mode: z.enum(['sign-in', 'sign-up']),
+    email: z
+      .string()
+      .min(1, 'Email is required.')
+      .email('Enter a valid email address.'),
+    password: z.string().min(1, 'Password is required.'),
+    name: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.mode === 'sign-up') {
+      if (!value.name?.trim()) {
+        ctx.addIssue({
+          path: ['name'],
+          code: z.ZodIssueCode.custom,
+          message: 'Name is required.',
+        });
+      }
+      if (value.password.length < MIN_PASSWORD_LENGTH) {
+        ctx.addIssue({
+          path: ['password'],
+          code: z.ZodIssueCode.custom,
+          message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`,
+        });
+      }
+    }
+  });
+
+type LoginFormValues = z.infer<typeof formSchema>;
 
 export default function LoginForm({ redirectTo }: LoginFormProps) {
   const router = useRouter();
-  const supabase = createClientComponentClient();
-  const [isPending, startTransition] = useTransition();
-  const [mode, setMode] = useState<AuthMode>('sign-in');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [cooldownMs, setCooldownMs] = useState(0);
   const retryCountRef = useRef(0);
+
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(formSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      mode: 'sign-in',
+      email: '',
+      password: '',
+      name: '',
+    },
+  });
+
+  const mode = form.watch('mode') as AuthMode;
+  const rootError = form.formState.errors.root?.message;
 
   const cooldownMessage = useMemo(() => {
     if (cooldownMs <= 0) {
@@ -38,33 +86,65 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
 
   useEffect(() => {
     if (cooldownMs <= 0) {
-      setError((current) =>
-        current && current.startsWith('Too many attempts.') ? null : current,
-      );
+      retryCountRef.current = 0;
+      if (form.formState.errors.root?.type === 'cooldown') {
+        form.clearErrors('root');
+      }
       return undefined;
     }
 
-    setError((current) =>
-      !current || current.startsWith('Too many attempts.') ? cooldownMessage : current,
-    );
+    form.setError('root', {
+      type: 'cooldown',
+      message: cooldownMessage ?? 'Please wait before trying again.',
+    });
 
     const intervalId = window.setInterval(() => {
       setCooldownMs((remaining) => (remaining <= 1000 ? 0 : remaining - 1000));
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [cooldownMessage, cooldownMs]);
+  }, [cooldownMessage, cooldownMs, form]);
 
   const resetCooldown = () => {
     retryCountRef.current = 0;
     setCooldownMs(0);
+    if (form.formState.errors.root?.type === 'cooldown') {
+      form.clearErrors('root');
+    }
   };
 
   const buildRedirectTarget = (fallback: string, options?: { ignoreQuery?: boolean }) => {
     if (options?.ignoreQuery || !redirectTo || redirectTo === '/login') {
       return fallback;
     }
-    return redirectTo;
+
+    try {
+      const resolved = new URL(redirectTo, APP_URL);
+      if (resolved.origin !== APP_URL) {
+        return fallback;
+      }
+      const normalized = `${resolved.pathname}${resolved.search}${resolved.hash}`;
+      return normalized || fallback;
+    } catch (error) {
+      console.warn('Ignoring unsafe redirect parameter', error);
+      return fallback;
+    }
+  };
+
+  const buildEmailRedirectUrl = (targetPath: string) => {
+    try {
+      const base = new URL(EMAIL_REDIRECT_BASE);
+      base.searchParams.set('redirect_to', targetPath);
+      return base.toString();
+    } catch (error) {
+      console.error('Invalid email redirect base. Falling back to AUTH_REDIRECT_URL.', {
+        base: EMAIL_REDIRECT_BASE,
+        error,
+      });
+      const fallback = new URL(AUTH_REDIRECT_URL);
+      fallback.searchParams.set('redirect_to', targetPath);
+      return fallback.toString();
+    }
   };
 
   const applyCooldown = (severity: 'soft' | 'hard') => {
@@ -80,49 +160,46 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
     if (nextMode === mode) {
       return;
     }
-    setMode(nextMode);
-    setError(null);
+    form.setValue('mode', nextMode, { shouldDirty: false, shouldTouch: false, shouldValidate: false });
+    form.setValue('password', '', { shouldDirty: false, shouldTouch: false, shouldValidate: false });
+    if (nextMode === 'sign-in') {
+      form.setValue('name', '', { shouldDirty: false, shouldTouch: false, shouldValidate: false });
+    }
+    form.clearErrors();
     setStatusMessage(null);
     resetCooldown();
   };
 
-  const handleAuthSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (cooldownMs > 0) {
-      setError(cooldownMessage);
+  const onSubmit = form.handleSubmit(async (values) => {
+    if (cooldownMs > 0 || isSubmitting) {
+      if (cooldownMessage) {
+        form.setError('root', { type: 'cooldown', message: cooldownMessage });
+      }
       return;
     }
 
-    setError(null);
+    setIsSubmitting(true);
     setStatusMessage(null);
+    form.clearErrors('root');
 
-    startTransition(async () => {
-      const trimmedEmail = email.trim();
+    try {
+      const trimmedEmail = values.email.trim();
       if (!trimmedEmail) {
-        setError('Email is required');
+        form.setError('email', { type: 'manual', message: 'Email is required.' });
         return;
       }
 
-      if (mode === 'sign-up') {
-        const trimmedName = name.trim();
-        if (!trimmedName) {
-          setError('Name is required');
-          return;
-        }
-        if (password.length < MIN_PASSWORD_LENGTH) {
-          setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`);
-          return;
-        }
+      if (values.mode === 'sign-up') {
+        const trimmedName = values.name?.trim() ?? '';
         const redirectTarget = buildRedirectTarget(SIGN_UP_FALLBACK_REDIRECT, { ignoreQuery: true });
-        const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
-        const emailRedirectTo = EMAIL_REDIRECT_OVERRIDE ?? (origin ? `${origin}${redirectTarget}` : undefined);
+        const emailRedirectTo = buildEmailRedirectUrl(redirectTarget);
 
         const {
           data,
           error: signUpError,
         } = await supabase.auth.signUp({
           email: trimmedEmail,
-          password,
+          password: values.password,
           options: {
             data: {
               full_name: trimmedName,
@@ -135,10 +212,9 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           const status = 'status' in signUpError ? signUpError.status : undefined;
           if (status === 429) {
             applyCooldown('hard');
-            setError(cooldownMessage);
           } else {
             applyCooldown('soft');
-            setError(signUpError.message);
+            form.setError('root', { type: 'server', message: signUpError.message });
           }
           return;
         }
@@ -168,132 +244,179 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
         setStatusMessage(
           `Check ${trimmedEmail} to confirm your account. Once verified, we'll finish setting things up.`,
         );
+        form.reset(
+          {
+            mode: 'sign-in',
+            email: trimmedEmail,
+            password: '',
+            name: '',
+          },
+          { keepDefaultValues: false },
+        );
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password: values.password,
+      });
+
       if (signInError) {
         const status = 'status' in signInError ? signInError.status : undefined;
         if (status === 429) {
           applyCooldown('hard');
-          setError(cooldownMessage);
         } else {
           applyCooldown('soft');
-          setError(signInError.message);
+          form.setError('root', { type: 'server', message: signInError.message });
         }
         return;
       }
 
       resetCooldown();
       router.replace(buildRedirectTarget(SIGN_IN_FALLBACK_REDIRECT));
-    });
-  };
-
-  
+    } finally {
+      setIsSubmitting(false);
+    }
+  });
 
   return (
-    <form className="mt-6 space-y-6" onSubmit={handleAuthSubmit}>
-      <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/40 p-1 text-xs font-medium text-slate-300">
-        <button
-          type="button"
-          onClick={() => handleModeChange('sign-in')}
-          className={`w-full rounded-lg px-3 py-2 transition ${
-            mode === 'sign-in' ? 'bg-emerald-500 text-black shadow-inner shadow-emerald-500/40' : 'hover:text-slate-100'
-          }`}
-        >
-          Sign in
-        </button>
-        <button
-          type="button"
-          onClick={() => handleModeChange('sign-up')}
-          className={`w-full rounded-lg px-3 py-2 transition ${
-            mode === 'sign-up' ? 'bg-emerald-500 text-black shadow-inner shadow-emerald-500/40' : 'hover:text-slate-100'
-          }`}
-        >
-          Sign up
-        </button>
-      </div>
-
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-slate-200">
-          {mode === 'sign-in' ? 'Use your email and password to sign in.' : 'Create your owner account.'}
-        </p>
-        <p className="text-xs text-slate-400">
-          {mode === 'sign-in'
-            ? 'Enter your credentials to access your account.'
-            : 'We will send a confirmation email before finishing setup.'}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-slate-300" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          placeholder="you@example.com"
-        />
-      </div>
-
-      {mode === 'sign-up' ? (
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-slate-300" htmlFor="name">
-            Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            required={mode === 'sign-up'}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            placeholder="Sam Smith"
-            autoComplete="name"
-          />
+    <Form {...form}>
+      <form className="mt-6 space-y-6" onSubmit={onSubmit} noValidate>
+        <div className="grid gap-2 rounded-2xl border border-default bg-background-muted p-2 text-xs font-semibold text-muted-foreground md:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => handleModeChange('sign-in')}
+            className={cn(
+              'touch-target flex-1 rounded-xl px-4 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+              mode === 'sign-in'
+                ? 'bg-accent text-background shadow-soft'
+                : 'bg-transparent text-muted-foreground hover:text-foreground',
+            )}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('sign-up')}
+            className={cn(
+              'touch-target flex-1 rounded-xl px-4 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+              mode === 'sign-up'
+                ? 'bg-accent text-background shadow-soft'
+                : 'bg-transparent text-muted-foreground hover:text-foreground',
+            )}
+          >
+            Sign up
+          </button>
         </div>
-      ) : null}
 
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-slate-300" htmlFor="password">
-          {mode === 'sign-up' ? 'Create a password' : 'Password'}
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          placeholder={mode === 'sign-up' ? 'At least 8 characters' : '••••••••'}
-          autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            {mode === 'sign-in' ? 'Use your email and password to sign in.' : 'Create your owner account.'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {mode === 'sign-in'
+              ? 'Enter your credentials to access your account.'
+              : 'We will send a confirmation email before finishing setup.'}
+          </p>
+        </div>
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
 
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      {statusMessage ? <p className="text-sm text-emerald-300">{statusMessage}</p> : null}
+        {mode === 'sign-up' ? (
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full name</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Sam Smith"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
 
-      <button
-        type="submit"
-        disabled={isPending || cooldownMs > 0}
-        className="w-full rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600"
-      >
-        {cooldownMs > 0
-          ? `Try again in ${Math.ceil(cooldownMs / 1000)}s`
-          : isPending
-            ? mode === 'sign-up'
-              ? 'Creating account…'
-              : 'Signing in…'
-            : mode === 'sign-up'
-              ? 'Create account'
-              : 'Sign in'}
-      </button>
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{mode === 'sign-up' ? 'Create a password' : 'Password'}</FormLabel>
+              <FormDescription>
+                {mode === 'sign-up'
+                  ? `Use at least ${MIN_PASSWORD_LENGTH} characters, with a mix of letters and numbers.`
+                  : 'Keep your account secure by never sharing your password.'}
+              </FormDescription>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="password"
+                  autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
+                  placeholder={mode === 'sign-up' ? 'At least 8 characters' : '••••••••'}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      
-    </form>
+        {rootError ? (
+          <div className="rounded-lg border border-default bg-background-muted px-4 py-3 text-sm text-danger">
+            {rootError}
+          </div>
+        ) : null}
+
+        {statusMessage ? (
+          <div className="rounded-lg border border-default bg-background px-4 py-3 text-sm text-accent-strong">
+            {statusMessage}
+          </div>
+        ) : null}
+
+        <input type="hidden" {...form.register('mode')} />
+
+        <button
+          type="submit"
+          disabled={isSubmitting || cooldownMs > 0}
+          className={cn(
+            'touch-target w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-background shadow-strong transition-transform hover:-translate-y-0.5 hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+          )}
+        >
+          {cooldownMs > 0
+            ? `Try again in ${Math.ceil(cooldownMs / 1000)}s`
+            : isSubmitting
+              ? mode === 'sign-up'
+                ? 'Creating account…'
+                : 'Signing in…'
+              : mode === 'sign-up'
+                ? 'Create account'
+                : 'Sign in'}
+        </button>
+      </form>
+    </Form>
   );
 }

@@ -1,29 +1,29 @@
 -- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+CREATE SCHEMA IF NOT EXISTS "cottagr_dev";
 
 -- CreateEnum
-CREATE TYPE "public"."OwnershipRole" AS ENUM ('PRIMARY', 'OWNER', 'CARETAKER');
+CREATE TYPE "cottagr_dev"."OwnershipRole" AS ENUM ('PRIMARY', 'OWNER', 'CARETAKER');
 
 -- CreateEnum
-CREATE TYPE "public"."BookingStatus" AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
+CREATE TYPE "cottagr_dev"."BookingStatus" AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
 
 -- CreateEnum
-CREATE TYPE "public"."BookingVoteChoice" AS ENUM ('approve', 'reject', 'abstain');
+CREATE TYPE "cottagr_dev"."BookingVoteChoice" AS ENUM ('approve', 'reject', 'abstain');
 
 -- CreateEnum
-CREATE TYPE "public"."ExpenseStatus" AS ENUM ('pending', 'approved', 'reimbursed', 'rejected');
+CREATE TYPE "cottagr_dev"."ExpenseStatus" AS ENUM ('pending', 'approved', 'reimbursed', 'rejected');
 
 -- CreateEnum
-CREATE TYPE "public"."ExpenseApprovalChoice" AS ENUM ('approve', 'reject', 'abstain');
+CREATE TYPE "cottagr_dev"."ExpenseApprovalChoice" AS ENUM ('approve', 'reject', 'abstain');
 
 -- CreateEnum
-CREATE TYPE "public"."MembershipRole" AS ENUM ('OWNER_ADMIN', 'OWNER', 'GUEST_VIEWER');
+CREATE TYPE "cottagr_dev"."MembershipRole" AS ENUM ('OWNER_ADMIN', 'OWNER', 'GUEST_VIEWER');
 
 -- CreateEnum
-CREATE TYPE "public"."ChecklistStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+CREATE TYPE "cottagr_dev"."ChecklistStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 
 -- CreateTable
-CREATE TABLE "public"."Owner" (
+CREATE TABLE "cottagr_dev"."Owner" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE "public"."Owner" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."User" (
+CREATE TABLE "cottagr_dev"."User" (
     "id" UUID NOT NULL,
     "email" TEXT NOT NULL,
     "firstName" TEXT,
@@ -48,7 +48,7 @@ CREATE TABLE "public"."User" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Organization" (
+CREATE TABLE "cottagr_dev"."Organization" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
@@ -59,11 +59,11 @@ CREATE TABLE "public"."Organization" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Membership" (
+CREATE TABLE "cottagr_dev"."Membership" (
     "id" SERIAL NOT NULL,
     "userId" UUID NOT NULL,
     "organizationId" INTEGER NOT NULL,
-    "role" "public"."MembershipRole" NOT NULL DEFAULT 'OWNER',
+    "role" "cottagr_dev"."MembershipRole" NOT NULL DEFAULT 'OWNER',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -71,11 +71,11 @@ CREATE TABLE "public"."Membership" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Ownership" (
+CREATE TABLE "cottagr_dev"."Ownership" (
     "id" SERIAL NOT NULL,
     "propertyId" INTEGER NOT NULL,
     "ownerId" INTEGER NOT NULL,
-    "role" "public"."OwnershipRole" NOT NULL DEFAULT 'OWNER',
+    "role" "cottagr_dev"."OwnershipRole" NOT NULL DEFAULT 'OWNER',
     "shareBps" INTEGER NOT NULL DEFAULT 0,
     "votingPower" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -85,7 +85,7 @@ CREATE TABLE "public"."Ownership" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Property" (
+CREATE TABLE "cottagr_dev"."Property" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE "public"."Property" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Booking" (
+CREATE TABLE "cottagr_dev"."Booking" (
     "id" SERIAL NOT NULL,
     "propertyId" INTEGER NOT NULL,
     "createdByOwnershipId" INTEGER,
@@ -114,7 +114,7 @@ CREATE TABLE "public"."Booking" (
     "endDate" TIMESTAMP(3) NOT NULL,
     "guestName" TEXT,
     "guestEmail" TEXT,
-    "status" "public"."BookingStatus" NOT NULL DEFAULT 'pending',
+    "status" "cottagr_dev"."BookingStatus" NOT NULL DEFAULT 'pending',
     "decisionSummary" TEXT,
     "requestNotes" TEXT,
     "totalAmount" INTEGER NOT NULL,
@@ -125,11 +125,11 @@ CREATE TABLE "public"."Booking" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."BookingVote" (
+CREATE TABLE "cottagr_dev"."BookingVote" (
     "id" SERIAL NOT NULL,
     "bookingId" INTEGER NOT NULL,
     "ownershipId" INTEGER NOT NULL,
-    "choice" "public"."BookingVoteChoice" NOT NULL DEFAULT 'abstain',
+    "choice" "cottagr_dev"."BookingVoteChoice" NOT NULL DEFAULT 'abstain',
     "rationale" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "ownerId" INTEGER,
@@ -138,7 +138,7 @@ CREATE TABLE "public"."BookingVote" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Expense" (
+CREATE TABLE "cottagr_dev"."Expense" (
     "id" SERIAL NOT NULL,
     "propertyId" INTEGER NOT NULL,
     "createdByOwnershipId" INTEGER,
@@ -148,7 +148,7 @@ CREATE TABLE "public"."Expense" (
     "memo" TEXT,
     "amountCents" INTEGER NOT NULL,
     "incurredOn" TIMESTAMP(3) NOT NULL,
-    "status" "public"."ExpenseStatus" NOT NULL DEFAULT 'pending',
+    "status" "cottagr_dev"."ExpenseStatus" NOT NULL DEFAULT 'pending',
     "receiptUrl" TEXT,
     "decisionSummary" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -158,11 +158,11 @@ CREATE TABLE "public"."Expense" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ExpenseApproval" (
+CREATE TABLE "cottagr_dev"."ExpenseApproval" (
     "id" SERIAL NOT NULL,
     "expenseId" INTEGER NOT NULL,
     "ownershipId" INTEGER NOT NULL,
-    "choice" "public"."ExpenseApprovalChoice" NOT NULL DEFAULT 'abstain',
+    "choice" "cottagr_dev"."ExpenseApprovalChoice" NOT NULL DEFAULT 'abstain',
     "rationale" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -170,7 +170,7 @@ CREATE TABLE "public"."ExpenseApproval" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ExpenseAllocation" (
+CREATE TABLE "cottagr_dev"."ExpenseAllocation" (
     "id" SERIAL NOT NULL,
     "expenseId" INTEGER NOT NULL,
     "ownershipId" INTEGER NOT NULL,
@@ -181,7 +181,7 @@ CREATE TABLE "public"."ExpenseAllocation" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."SeasonPrice" (
+CREATE TABLE "cottagr_dev"."SeasonPrice" (
     "id" SERIAL NOT NULL,
     "propertyId" INTEGER NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
@@ -192,7 +192,7 @@ CREATE TABLE "public"."SeasonPrice" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Blackout" (
+CREATE TABLE "cottagr_dev"."Blackout" (
     "id" SERIAL NOT NULL,
     "propertyId" INTEGER NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
@@ -203,12 +203,12 @@ CREATE TABLE "public"."Blackout" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."KnowledgeChecklist" (
+CREATE TABLE "cottagr_dev"."KnowledgeChecklist" (
     "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
     "category" TEXT,
     "summary" TEXT,
-    "status" "public"."ChecklistStatus" NOT NULL DEFAULT 'DRAFT',
+    "status" "cottagr_dev"."ChecklistStatus" NOT NULL DEFAULT 'DRAFT',
     "versionCounter" INTEGER NOT NULL DEFAULT 1,
     "publishedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -218,7 +218,7 @@ CREATE TABLE "public"."KnowledgeChecklist" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ChecklistItem" (
+CREATE TABLE "cottagr_dev"."ChecklistItem" (
     "id" SERIAL NOT NULL,
     "checklistId" INTEGER NOT NULL,
     "position" INTEGER NOT NULL,
@@ -232,7 +232,7 @@ CREATE TABLE "public"."ChecklistItem" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ChecklistVersion" (
+CREATE TABLE "cottagr_dev"."ChecklistVersion" (
     "id" SERIAL NOT NULL,
     "checklistId" INTEGER NOT NULL,
     "version" INTEGER NOT NULL,
@@ -249,7 +249,7 @@ CREATE TABLE "public"."ChecklistVersion" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."KnowledgeDocument" (
+CREATE TABLE "cottagr_dev"."KnowledgeDocument" (
     "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -266,7 +266,7 @@ CREATE TABLE "public"."KnowledgeDocument" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."DocumentVersion" (
+CREATE TABLE "cottagr_dev"."DocumentVersion" (
     "id" SERIAL NOT NULL,
     "documentId" INTEGER NOT NULL,
     "version" INTEGER NOT NULL,
@@ -281,7 +281,7 @@ CREATE TABLE "public"."DocumentVersion" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ChecklistDocument" (
+CREATE TABLE "cottagr_dev"."ChecklistDocument" (
     "id" SERIAL NOT NULL,
     "checklistId" INTEGER NOT NULL,
     "documentId" INTEGER NOT NULL,
@@ -291,119 +291,119 @@ CREATE TABLE "public"."ChecklistDocument" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Owner_email_key" ON "public"."Owner"("email");
+CREATE UNIQUE INDEX "Owner_email_key" ON "cottagr_dev"."Owner"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Owner_userId_key" ON "public"."Owner"("userId");
+CREATE UNIQUE INDEX "Owner_userId_key" ON "cottagr_dev"."Owner"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
+CREATE UNIQUE INDEX "User_email_key" ON "cottagr_dev"."User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Organization_slug_key" ON "public"."Organization"("slug");
+CREATE UNIQUE INDEX "Organization_slug_key" ON "cottagr_dev"."Organization"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Membership_userId_organizationId_key" ON "public"."Membership"("userId", "organizationId");
+CREATE UNIQUE INDEX "Membership_userId_organizationId_key" ON "cottagr_dev"."Membership"("userId", "organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Ownership_propertyId_ownerId_key" ON "public"."Ownership"("propertyId", "ownerId");
+CREATE UNIQUE INDEX "Ownership_propertyId_ownerId_key" ON "cottagr_dev"."Ownership"("propertyId", "ownerId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Property_slug_key" ON "public"."Property"("slug");
+CREATE UNIQUE INDEX "Property_slug_key" ON "cottagr_dev"."Property"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BookingVote_bookingId_ownershipId_key" ON "public"."BookingVote"("bookingId", "ownershipId");
+CREATE UNIQUE INDEX "BookingVote_bookingId_ownershipId_key" ON "cottagr_dev"."BookingVote"("bookingId", "ownershipId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ExpenseApproval_expenseId_ownershipId_key" ON "public"."ExpenseApproval"("expenseId", "ownershipId");
+CREATE UNIQUE INDEX "ExpenseApproval_expenseId_ownershipId_key" ON "cottagr_dev"."ExpenseApproval"("expenseId", "ownershipId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ExpenseAllocation_expenseId_ownershipId_key" ON "public"."ExpenseAllocation"("expenseId", "ownershipId");
+CREATE UNIQUE INDEX "ExpenseAllocation_expenseId_ownershipId_key" ON "cottagr_dev"."ExpenseAllocation"("expenseId", "ownershipId");
 
 -- CreateIndex
-CREATE INDEX "ChecklistItem_checklistId_position_idx" ON "public"."ChecklistItem"("checklistId", "position");
+CREATE INDEX "ChecklistItem_checklistId_position_idx" ON "cottagr_dev"."ChecklistItem"("checklistId", "position");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ChecklistVersion_checklistId_version_key" ON "public"."ChecklistVersion"("checklistId", "version");
+CREATE UNIQUE INDEX "ChecklistVersion_checklistId_version_key" ON "cottagr_dev"."ChecklistVersion"("checklistId", "version");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "DocumentVersion_documentId_version_key" ON "public"."DocumentVersion"("documentId", "version");
+CREATE UNIQUE INDEX "DocumentVersion_documentId_version_key" ON "cottagr_dev"."DocumentVersion"("documentId", "version");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ChecklistDocument_checklistId_documentId_key" ON "public"."ChecklistDocument"("checklistId", "documentId");
+CREATE UNIQUE INDEX "ChecklistDocument_checklistId_documentId_key" ON "cottagr_dev"."ChecklistDocument"("checklistId", "documentId");
 
 -- AddForeignKey
-ALTER TABLE "public"."Owner" ADD CONSTRAINT "Owner_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Owner" ADD CONSTRAINT "Owner_userId_fkey" FOREIGN KEY ("userId") REFERENCES "cottagr_dev"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Membership" ADD CONSTRAINT "Membership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Membership" ADD CONSTRAINT "Membership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "cottagr_dev"."User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Membership" ADD CONSTRAINT "Membership_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Membership" ADD CONSTRAINT "Membership_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "cottagr_dev"."Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Ownership" ADD CONSTRAINT "Ownership_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "public"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Ownership" ADD CONSTRAINT "Ownership_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "cottagr_dev"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Ownership" ADD CONSTRAINT "Ownership_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "public"."Owner"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Ownership" ADD CONSTRAINT "Ownership_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "cottagr_dev"."Owner"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Property" ADD CONSTRAINT "Property_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Property" ADD CONSTRAINT "Property_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "cottagr_dev"."Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Booking" ADD CONSTRAINT "Booking_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "public"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Booking" ADD CONSTRAINT "Booking_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "cottagr_dev"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Booking" ADD CONSTRAINT "Booking_createdByOwnershipId_fkey" FOREIGN KEY ("createdByOwnershipId") REFERENCES "public"."Ownership"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Booking" ADD CONSTRAINT "Booking_createdByOwnershipId_fkey" FOREIGN KEY ("createdByOwnershipId") REFERENCES "cottagr_dev"."Ownership"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."BookingVote" ADD CONSTRAINT "BookingVote_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "public"."Booking"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."BookingVote" ADD CONSTRAINT "BookingVote_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "cottagr_dev"."Booking"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."BookingVote" ADD CONSTRAINT "BookingVote_ownershipId_fkey" FOREIGN KEY ("ownershipId") REFERENCES "public"."Ownership"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."BookingVote" ADD CONSTRAINT "BookingVote_ownershipId_fkey" FOREIGN KEY ("ownershipId") REFERENCES "cottagr_dev"."Ownership"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."BookingVote" ADD CONSTRAINT "BookingVote_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "public"."Owner"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."BookingVote" ADD CONSTRAINT "BookingVote_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "cottagr_dev"."Owner"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Expense" ADD CONSTRAINT "Expense_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "public"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Expense" ADD CONSTRAINT "Expense_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "cottagr_dev"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Expense" ADD CONSTRAINT "Expense_createdByOwnershipId_fkey" FOREIGN KEY ("createdByOwnershipId") REFERENCES "public"."Ownership"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Expense" ADD CONSTRAINT "Expense_createdByOwnershipId_fkey" FOREIGN KEY ("createdByOwnershipId") REFERENCES "cottagr_dev"."Ownership"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Expense" ADD CONSTRAINT "Expense_paidByOwnershipId_fkey" FOREIGN KEY ("paidByOwnershipId") REFERENCES "public"."Ownership"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Expense" ADD CONSTRAINT "Expense_paidByOwnershipId_fkey" FOREIGN KEY ("paidByOwnershipId") REFERENCES "cottagr_dev"."Ownership"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ExpenseApproval" ADD CONSTRAINT "ExpenseApproval_expenseId_fkey" FOREIGN KEY ("expenseId") REFERENCES "public"."Expense"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ExpenseApproval" ADD CONSTRAINT "ExpenseApproval_expenseId_fkey" FOREIGN KEY ("expenseId") REFERENCES "cottagr_dev"."Expense"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ExpenseApproval" ADD CONSTRAINT "ExpenseApproval_ownershipId_fkey" FOREIGN KEY ("ownershipId") REFERENCES "public"."Ownership"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ExpenseApproval" ADD CONSTRAINT "ExpenseApproval_ownershipId_fkey" FOREIGN KEY ("ownershipId") REFERENCES "cottagr_dev"."Ownership"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ExpenseAllocation" ADD CONSTRAINT "ExpenseAllocation_expenseId_fkey" FOREIGN KEY ("expenseId") REFERENCES "public"."Expense"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ExpenseAllocation" ADD CONSTRAINT "ExpenseAllocation_expenseId_fkey" FOREIGN KEY ("expenseId") REFERENCES "cottagr_dev"."Expense"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ExpenseAllocation" ADD CONSTRAINT "ExpenseAllocation_ownershipId_fkey" FOREIGN KEY ("ownershipId") REFERENCES "public"."Ownership"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ExpenseAllocation" ADD CONSTRAINT "ExpenseAllocation_ownershipId_fkey" FOREIGN KEY ("ownershipId") REFERENCES "cottagr_dev"."Ownership"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."SeasonPrice" ADD CONSTRAINT "SeasonPrice_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "public"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."SeasonPrice" ADD CONSTRAINT "SeasonPrice_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "cottagr_dev"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Blackout" ADD CONSTRAINT "Blackout_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "public"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."Blackout" ADD CONSTRAINT "Blackout_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "cottagr_dev"."Property"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ChecklistItem" ADD CONSTRAINT "ChecklistItem_checklistId_fkey" FOREIGN KEY ("checklistId") REFERENCES "public"."KnowledgeChecklist"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ChecklistItem" ADD CONSTRAINT "ChecklistItem_checklistId_fkey" FOREIGN KEY ("checklistId") REFERENCES "cottagr_dev"."KnowledgeChecklist"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ChecklistVersion" ADD CONSTRAINT "ChecklistVersion_checklistId_fkey" FOREIGN KEY ("checklistId") REFERENCES "public"."KnowledgeChecklist"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ChecklistVersion" ADD CONSTRAINT "ChecklistVersion_checklistId_fkey" FOREIGN KEY ("checklistId") REFERENCES "cottagr_dev"."KnowledgeChecklist"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."DocumentVersion" ADD CONSTRAINT "DocumentVersion_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "public"."KnowledgeDocument"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."DocumentVersion" ADD CONSTRAINT "DocumentVersion_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "cottagr_dev"."KnowledgeDocument"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ChecklistDocument" ADD CONSTRAINT "ChecklistDocument_checklistId_fkey" FOREIGN KEY ("checklistId") REFERENCES "public"."KnowledgeChecklist"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ChecklistDocument" ADD CONSTRAINT "ChecklistDocument_checklistId_fkey" FOREIGN KEY ("checklistId") REFERENCES "cottagr_dev"."KnowledgeChecklist"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."ChecklistDocument" ADD CONSTRAINT "ChecklistDocument_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "public"."KnowledgeDocument"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "cottagr_dev"."ChecklistDocument" ADD CONSTRAINT "ChecklistDocument_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "cottagr_dev"."KnowledgeDocument"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
