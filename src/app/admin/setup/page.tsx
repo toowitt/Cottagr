@@ -424,7 +424,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
         )}
 
         {hasProperties ? (
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/70">
             <table className="w-full text-sm text-slate-200">
               <thead className="bg-slate-900/80 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
