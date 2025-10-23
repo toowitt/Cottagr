@@ -9,7 +9,7 @@ import { Drawer } from '@/components/ui/Drawer';
 
 export interface AppNavItem {
   href: string;
-  label: string;
+  name: string;
   icon?: React.ComponentType<{ className?: string }>;
   badge?: ReactNode;
   ariaLabel?: string;
@@ -117,10 +117,10 @@ export function AppShell({
               'touch-target relative flex h-full flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
               isActive(pathname, item.href) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
-            aria-label={item.ariaLabel ?? item.label}
+            aria-label={item.ariaLabel ?? item.name}
           >
             {item.icon ? <item.icon className="h-5 w-5" aria-hidden /> : null}
-            <span>{item.label}</span>
+            <span>{item.name}</span>
             {item.badge ? (
               <span className="absolute right-5 top-2 inline-flex min-h-[1.25rem] min-w-[1.25rem] items-center justify-center rounded-full bg-accent-strong px-2 text-[10px] font-semibold text-background">
                 {item.badge}
@@ -142,7 +142,7 @@ function NavLink({
   isActive: boolean;
   onNavigate: () => void;
 }) {
-  const { href, label, icon: Icon, badge, ariaLabel } = item;
+  const { href, name, icon: Icon, badge, ariaLabel } = item;
 
   return (
     <Link
@@ -154,11 +154,11 @@ function NavLink({
           ? 'bg-background text-foreground shadow-soft'
           : 'text-muted-foreground hover:bg-background hover:text-foreground',
       )}
-      aria-label={ariaLabel ?? label}
+      aria-label={ariaLabel ?? name}
     >
       <span className="flex items-center gap-3">
         {Icon ? <Icon className="h-4 w-4 shrink-0" aria-hidden /> : null}
-        <span>{label}</span>
+        <span>{name}</span>
       </span>
       {badge ? (
         <span className="inline-flex min-h-[1.25rem] min-w-[1.25rem] items-center justify-center rounded-full bg-accent-subtle px-2 text-[11px] font-semibold text-foreground">
