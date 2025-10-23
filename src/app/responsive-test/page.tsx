@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 if (process.env.NODE_ENV === 'production') {
   notFound();
 }
-import { Calendar, ClipboardList, Home, MenuSquare, Newspaper as NewspaperIcon, Users } from 'lucide-react';
 import { AppShell } from '@/components/navigation/AppShell';
 import { Container, PageHeader, ResponsiveGrid } from '@/components/ui';
 import {
@@ -112,12 +111,12 @@ const columns: ResponsiveColumn<DemoRow>[] = [
 ];
 
 const navItems = [
-  { href: '/responsive-test', name: 'Dashboard', icon: MenuSquare },
-  { href: '#bookings', name: 'Bookings', icon: Calendar },
-  { href: '#owners', name: 'Owners', icon: Users },
-  { href: '#property', name: 'Properties', icon: Home },
-  { href: '/admin/blog', name: 'Blog', icon: NewspaperIcon },
-  { href: '#tasks', name: 'Tasks', icon: ClipboardList },
+  { href: '/responsive-test', name: 'Dashboard', icon: 'menu' },
+  { href: '#bookings', name: 'Bookings', icon: 'calendar' },
+  { href: '#owners', name: 'Owners', icon: 'owners' },
+  { href: '#property', name: 'Properties', icon: 'home' },
+  { href: '/admin/blog', name: 'Blog', icon: 'blog' },
+  { href: '#tasks', name: 'Tasks', icon: 'checklist' },
 ];
 
 const actions = [

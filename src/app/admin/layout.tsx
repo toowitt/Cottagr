@@ -1,16 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
-import {
-  HomeIcon,
-  CalendarDays,
-  Users as UsersIcon,
-  Banknote,
-  ClipboardCheck,
-  FileText,
-  Settings,
-  Newspaper,
-} from 'lucide-react';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
@@ -43,14 +33,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   if (adminMemberships.length === 0) {
     const navItems: AppNavItem[] = [
-      { name: 'Home', href: '/admin', icon: HomeIcon },
-      { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },
-      { name: 'Owners', href: '/admin/setup?section=owners', icon: UsersIcon },
-      { name: 'Expenses', href: '/admin/expenses', icon: Banknote },
-      { name: 'Tasks', href: '/admin/calendar', icon: ClipboardCheck },
-      { name: 'Documents', href: '/admin/knowledge-hub', icon: FileText },
-      { name: 'Blog', href: '/admin/blog', icon: Newspaper },
-      { name: 'Settings', href: '/admin/profile', icon: Settings },
+      { name: 'Home', href: '/admin', icon: 'home' },
+      { name: 'Bookings', href: '/admin/bookings', icon: 'bookings' },
+      { name: 'Owners', href: '/admin/setup?section=owners', icon: 'owners' },
+      { name: 'Expenses', href: '/admin/expenses', icon: 'expenses' },
+      { name: 'Tasks', href: '/admin/calendar', icon: 'tasks' },
+      { name: 'Documents', href: '/admin/knowledge-hub', icon: 'documents' },
+      { name: 'Blog', href: '/admin/blog', icon: 'blog' },
+      { name: 'Settings', href: '/admin/profile', icon: 'settings' },
     ];
 
     return (
@@ -79,14 +69,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   const navItems: AppNavItem[] = [
-    { name: 'Home', href: '/admin', icon: HomeIcon },
-    { name: 'Bookings', href: '/admin/bookings', icon: CalendarDays },
-    { name: 'Owners', href: '/admin/owners', icon: UsersIcon },
-    { name: 'Expenses', href: '/admin/expenses', icon: Banknote },
-    { name: 'Tasks', href: '/admin/calendar', icon: ClipboardCheck },
-    { name: 'Documents', href: '/admin/knowledge-hub', icon: FileText },
-    { name: 'Blog', href: '/admin/blog', icon: Newspaper },
-    { name: 'Settings', href: '/admin/profile', icon: Settings },
+    { name: 'Home', href: '/admin', icon: 'home' },
+    { name: 'Bookings', href: '/admin/bookings', icon: 'bookings' },
+    { name: 'Owners', href: '/admin/owners', icon: 'owners' },
+    { name: 'Expenses', href: '/admin/expenses', icon: 'expenses' },
+    { name: 'Tasks', href: '/admin/calendar', icon: 'tasks' },
+    { name: 'Documents', href: '/admin/knowledge-hub', icon: 'documents' },
+    { name: 'Blog', href: '/admin/blog', icon: 'blog' },
+    { name: 'Settings', href: '/admin/profile', icon: 'settings' },
   ];
 
   return (

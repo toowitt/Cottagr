@@ -2,15 +2,45 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import {
+  Banknote,
+  Calendar,
+  CalendarDays,
+  ClipboardCheck,
+  ClipboardList,
+  FileText,
+  Home,
+  Menu,
+  MenuSquare,
+  Newspaper,
+  Settings as SettingsIcon,
+  Users,
+  X,
+} from 'lucide-react';
 import { ReactNode, useMemo, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { Drawer } from '@/components/ui/Drawer';
 
+const iconRegistry = {
+  home: Home,
+  bookings: CalendarDays,
+  calendar: Calendar,
+  menu: MenuSquare,
+  owners: Users,
+  expenses: Banknote,
+  tasks: ClipboardCheck,
+  checklist: ClipboardList,
+  documents: FileText,
+  blog: Newspaper,
+  settings: SettingsIcon,
+} as const;
+
+type IconName = keyof typeof iconRegistry;
+
 export interface AppNavItem {
   href: string;
   name: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: IconName;
   badge?: ReactNode;
   ariaLabel?: string;
 }
@@ -109,25 +139,28 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around border-t border-default bg-background backdrop-blur md:hidden"
         aria-label="Bottom navigation"
       >
-        {mobileNav.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'touch-target relative flex h-full flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-              isActive(pathname, item.href) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-            )}
-            aria-label={item.ariaLabel ?? item.name}
-          >
-            {item.icon ? <item.icon className="h-5 w-5" aria-hidden /> : null}
-            <span>{item.name}</span>
-            {item.badge ? (
-              <span className="absolute right-5 top-2 inline-flex min-h-[1.25rem] min-w-[1.25rem] items-center justify-center rounded-full bg-accent-strong px-2 text-[10px] font-semibold text-background">
-                {item.badge}
-              </span>
-            ) : null}
-          </Link>
-        ))}
+        {mobileNav.map((item) => {
+          const IconComponent = item.icon ? iconRegistry[item.icon] : null;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'touch-target relative flex h-full flex-1 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                isActive(pathname, item.href) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+              )}
+              aria-label={item.ariaLabel ?? item.name}
+            >
+              {IconComponent ? <IconComponent className="h-5 w-5" aria-hidden /> : null}
+              <span>{item.name}</span>
+              {item.badge ? (
+                <span className="absolute right-5 top-2 inline-flex min-h-[1.25rem] min-w-[1.25rem] items-center justify-center rounded-full bg-accent-strong px-2 text-[10px] font-semibold text-background">
+                  {item.badge}
+                </span>
+              ) : null}
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );
@@ -142,7 +175,8 @@ function NavLink({
   isActive: boolean;
   onNavigate: () => void;
 }) {
-  const { href, name, icon: Icon, badge, ariaLabel } = item;
+  const { href, name, icon, badge, ariaLabel } = item;
+  const IconComponent = icon ? iconRegistry[icon] : null;
 
   return (
     <Link
@@ -157,7 +191,7 @@ function NavLink({
       aria-label={ariaLabel ?? name}
     >
       <span className="flex items-center gap-3">
-        {Icon ? <Icon className="h-4 w-4 shrink-0" aria-hidden /> : null}
+        {IconComponent ? <IconComponent className="h-4 w-4 shrink-0" aria-hidden /> : null}
         <span>{name}</span>
       </span>
       {badge ? (
