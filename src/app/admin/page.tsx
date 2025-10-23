@@ -6,6 +6,9 @@ import { prisma } from '@/lib/prisma';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { ResponsiveGrid } from '@/components/ui/ResponsiveGrid';
+import { Container } from '@/components/ui/Container';
 
 const currency = new Intl.NumberFormat('en-CA', {
   style: 'currency',
@@ -270,28 +273,34 @@ export default async function AdminDashboard() {
   const totalPendingExpenseAmount = pendingExpenses.reduce((acc, expense) => acc + expense.amountCents, 0);
 
   return (
-    <div className="space-y-10">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold text-white">Owner dashboard</h1>
-        <p className="text-sm text-slate-300">
-          Snapshot of your organizations, booking readiness, and maintenance work so you can jump straight to
-          what matters.
-        </p>
-      </header>
+    <>
+      <PageHeader
+        title="Owner dashboard"
+        description="Snapshot of organizations, booking readiness, and maintenance work so you can jump straight to what matters."
+        primaryAction={
+          <Link
+            href="/admin/bookings"
+            className="touch-target rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background shadow-soft transition hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          >
+            Create booking
+          </Link>
+        }
+      >
+        <ResponsiveGrid columns={{ base: 1, md: 2, xl: 4 }} gap="md">
+          <DashboardStat label="Organizations" value={organizations.length} href="/admin/setup#organizations" />
+          <DashboardStat label="Properties" value={propertyIds.length} href="/admin/setup#properties" />
+          <DashboardStat label="Owners" value={ownerMap.size} href="/admin/setup#owners" />
+          <DashboardStat
+            label="Pending expenses"
+            value={pendingExpenses.length}
+            href="/admin/expenses"
+            hint={pendingExpenses.length ? currency.format(totalPendingExpenseAmount / 100) : undefined}
+          />
+        </ResponsiveGrid>
+      </PageHeader>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardStat label="Organizations" value={organizations.length} href="/admin/setup#organizations" />
-        <DashboardStat label="Properties" value={propertyIds.length} href="/admin/setup#properties" />
-        <DashboardStat label="Owners" value={ownerMap.size} href="/admin/setup#owners" />
-        <DashboardStat
-          label="Pending expenses"
-          value={pendingExpenses.length}
-          href="/admin/expenses"
-          hint={pendingExpenses.length ? currency.format(totalPendingExpenseAmount / 100) : undefined}
-        />
-      </section>
-
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
+      <Container padding="md" className="space-y-10 py-10">
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
         <header className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Approved bookings</h2>
@@ -573,7 +582,8 @@ export default async function AdminDashboard() {
           )}
         </article>
       </section>
-    </div>
+      </Container>
+    </>
   );
 }
 
@@ -589,10 +599,10 @@ function DashboardStat({
   hint?: string;
 }) {
   const content = (
-    <div className="flex h-full flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-      <div className="text-sm uppercase tracking-wider text-slate-400">{label}</div>
-      <div className="mt-3 text-3xl font-semibold text-white">{value}</div>
-      {hint ? <div className="mt-2 text-xs text-emerald-300">{hint} pending</div> : null}
+    <div className="flex h-full flex-col justify-between rounded-2xl border border-default bg-background px-6 py-5 shadow-soft">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-4 text-3xl font-semibold text-foreground">{value}</div>
+      {hint ? <div className="mt-3 text-xs font-medium text-accent">{hint} pending</div> : null}
     </div>
   );
 
