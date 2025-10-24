@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { ArticleStatus } from '@prisma/client';
 import Link from 'next/link';
 import { Clock, Calendar, BookOpen } from 'lucide-react';
+import AppShell, { type NavItem } from '@/components/ui/AppShell';
 
 function formatDate(value: Date | null | undefined) {
   if (!value) return '—';
@@ -54,9 +55,16 @@ export default async function BlogPage({
     ? categories.find(c => c.slug === categorySlug) 
     : null;
 
+  const NAV: NavItem[] = [
+    { name: 'Home', href: '/', icon: 'Home' },
+    { name: 'Blog', href: '/blog', icon: 'Newspaper' },
+    { name: 'Login', href: '/login', icon: 'Settings' },
+  ];
+
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
-      <div className="mx-auto max-w-7xl px-6 py-20">
+    <AppShell nav={NAV} showSidebar={false}>
+      <div className="bg-white dark:bg-black">
+        <div className="mx-auto max-w-7xl px-6 py-20">
         <header className="mb-12 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">
             CottagrBlog
@@ -157,7 +165,8 @@ export default async function BlogPage({
             ))}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }
