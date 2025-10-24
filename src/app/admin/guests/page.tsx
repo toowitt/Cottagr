@@ -6,24 +6,11 @@ import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Container } from '@/components/ui/Container';
-import {
-  ResponsiveTable,
-  type ResponsiveColumn,
-} from '@/components/datagrid/ResponsiveTable';
 import { sendGuestInvite, markInviteConsumed } from './actions';
 
 interface GuestsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
-
-const formatDate = (input: Date) =>
-  new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(input);
 
 export default async function GuestsPage({ searchParams }: GuestsPageProps) {
   const params = await searchParams;
@@ -73,74 +60,14 @@ export default async function GuestsPage({ searchParams }: GuestsPageProps) {
     orderBy: { createdAt: 'desc' },
   });
 
-  type InviteRecord = (typeof invites)[number];
-
-  const columns: ResponsiveColumn<InviteRecord>[] = [
-    {
-      id: 'guest',
-      header: 'Guest',
-      priority: 'high',
-      renderCell: (invite) => (
-        <div className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-foreground">{invite.name ?? invite.email}</span>
-          <span className="text-xs text-muted-foreground">{invite.email}</span>
-        </div>
-      ),
-      mobileLabel: 'Guest',
-    },
-    {
-      id: 'property',
-      header: 'Property',
-      priority: 'medium',
-      renderCell: (invite) =>
-        invite.property ? (
-          <span className="text-sm text-foreground">{invite.property.name}</span>
-        ) : (
-          <span className="text-sm text-muted-foreground">Any property</span>
-        ),
-      mobileLabel: 'Property',
-    },
-    {
-      id: 'expires',
-      header: 'Expires',
-      priority: 'medium',
-      renderCell: (invite) => (
-        <span className="text-sm text-foreground">{formatDate(invite.expiresAt)}</span>
-      ),
-      mobileLabel: 'Expires',
-    },
-    {
-      id: 'link',
-      header: 'Link',
-      priority: 'low',
-      renderCell: (invite) => (
-        <div className="max-w-xs truncate text-xs text-accent">
-          <a href={invite.actionLink} target="_blank" rel="noreferrer">
-            {invite.actionLink}
-          </a>
-        </div>
-      ),
-      mobileLabel: 'Magic link',
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      priority: 'high',
-      align: 'end',
-      renderCell: (invite) => (
-        <form action={markInviteConsumed.bind(null, invite.id)}>
-          <button
-            type="submit"
-            className="text-xs font-semibold text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={invite.consumedAt !== null}
-          >
-            {invite.consumedAt ? 'Archived' : 'Archive'}
-          </button>
-        </form>
-      ),
-      mobileLabel: 'Actions',
-    },
-  ];
+  const formatInviteDate = (input: Date) =>
+  new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(input);
 
   return (
     <>
@@ -254,17 +181,102 @@ export default async function GuestsPage({ searchParams }: GuestsPageProps) {
           </div>
 
           {invites.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-default bg-background-muted px-4 py-5 text-sm text-muted-foreground">
-              No invites yet. Send one above to get started.
-            </p>
-          ) : (
-            <ResponsiveTable
-              columns={columns}
-              rows={invites}
-              rowKey={(invite) => invite.id.toString()}
-              mobileTitleColumnId="guest"
-            />
-          )}
+          <p className="rounded-2xl border border-dashed border-default bg-background-muted px-4 py-5 text-sm text-muted-foreground">
+            No invites yet. Send one above to get started.
+          </p>
+        ) : (
+          <>
+            <div className="hidden overflow-x-auto rounded-3xl border border-default bg-background shadow-soft md:block">
+              <table className="min-w-full text-sm text-foreground">
+                <thead className="bg-background-muted text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-3 text-left">Guest</th>
+                    <th className="px-5 py-3 text-left">Property</th>
+                    <th className="px-5 py-3 text-left">Expires</th>
+                    <th className="px-5 py-3 text-left">Link</th>
+                    <th className="px-5 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-muted">
+                  {invites.map((invite) => (
+                    <tr key={invite.id}>
+                      <td className="px-5 py-4">
+                        <div className="font-medium text-foreground">{invite.name ?? invite.email}</div>
+                        <div className="text-xs text-muted-foreground">{invite.email}</div>
+                      </td>
+                      <td className="px-5 py-4 text-foreground">
+                        {invite.property ? invite.property.name : <span className="text-muted-foreground">Any property</span>}
+                      </td>
+                      <td className="px-5 py-4 text-foreground">{formatInviteDate(invite.expiresAt)}</td>
+                      <td className="px-5 py-4 text-xs">
+                        <div className="max-w-xs truncate text-accent">
+                          <a href={invite.actionLink} target="_blank" rel="noreferrer">
+                            {invite.actionLink}
+                          </a>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <form action={markInviteConsumed.bind(null, invite.id)} className="flex justify-end">
+                          <button
+                            type="submit"
+                            className="text-xs font-semibold text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={invite.consumedAt !== null}
+                          >
+                            {invite.consumedAt ? 'Archived' : 'Archive'}
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-3 md:hidden">
+              {invites.map((invite) => (
+                <article
+                  key={invite.id}
+                  className="rounded-2xl border border-default bg-background px-4 py-5 shadow-soft"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{invite.name ?? invite.email}</p>
+                      <p className="text-xs text-muted-foreground">{invite.email}</p>
+                    </div>
+                    <form action={markInviteConsumed.bind(null, invite.id)}>
+                      <button
+                        type="submit"
+                        className="text-xs font-semibold text-accent transition hover:text-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={invite.consumedAt !== null}
+                      >
+                        {invite.consumedAt ? 'Archived' : 'Archive'}
+                      </button>
+                    </form>
+                  </div>
+
+                  <dl className="mt-4 space-y-2 text-sm text-foreground">
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Property</dt>
+                      <dd>{invite.property ? invite.property.name : <span className="text-muted-foreground">Any property</span>}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Expires</dt>
+                      <dd>{formatInviteDate(invite.expiresAt)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">Magic link</dt>
+                      <dd className="truncate text-xs text-accent">
+                        <a href={invite.actionLink} target="_blank" rel="noreferrer">
+                          {invite.actionLink}
+                        </a>
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
         </section>
 
         <section className="rounded-2xl border border-default bg-background-muted px-4 py-6 text-xs text-muted-foreground">
