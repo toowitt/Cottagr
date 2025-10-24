@@ -1,7 +1,6 @@
+import dynamic from 'next/dynamic';
 import { prisma } from '@/lib/prisma';
 import {
-  createArticleAction,
-  updateArticleAction,
   publishArticleAction,
   unpublishArticleAction,
   archiveArticleAction,
@@ -9,7 +8,7 @@ import {
   createCategoryAction,
 } from './actions';
 import { CheckCircle2, FolderOpen, PlusCircle, BookOpen, Archive } from 'lucide-react';
-import BlogArticleForm from '@/components/BlogArticleForm';
+import type { ComponentType } from 'react';
 
 function formatDate(value: Date | null | undefined) {
   if (!value) return '—';
@@ -20,13 +19,21 @@ function formatDate(value: Date | null | undefined) {
   }).format(value);
 }
 
+const BlogArticleForm = dynamic(async () => {
+  const mod = await import('@/components/BlogArticleForm');
+  return mod.default;
+}, {
+  ssr: false,
+  loading: () => <div className="h-48 animate-pulse rounded-2xl border border-gray-800 bg-gray-900/60" />,
+}) as ComponentType<{ categories: Array<{ id: number; name: string }> }>;
+
 export default async function AdminBlogPage() {
   const [articles, categories] = await Promise.all([
     prisma.blogArticle.findMany({
       orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
       include: {
         author: {
-          select: { firstName: true, lastName: true }
+          select: { firstName: true, lastName: true },
         },
         category: true,
       },
@@ -35,9 +42,9 @@ export default async function AdminBlogPage() {
       orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: { articles: true }
-        }
-      }
+          select: { articles: true },
+        },
+      },
     }),
   ]);
 
@@ -56,7 +63,7 @@ export default async function AdminBlogPage() {
             <PlusCircle className="h-5 w-5 text-emerald-400" /> New Article
           </h2>
           <div className="mt-4">
-            <BlogArticleForm categories={categories} />
+            <BlogArticleForm categories={categories.map(({ id, name }) => ({ id, name }))} />
           </div>
         </section>
 
@@ -98,7 +105,7 @@ export default async function AdminBlogPage() {
               Create Category
             </button>
           </form>
-          
+
           <div className="mt-6 space-y-2">
             <h3 className="text-sm font-medium text-gray-300">Existing Categories</h3>
             {categories.length === 0 ? (
@@ -150,7 +157,7 @@ export default async function AdminBlogPage() {
                         style={{
                           backgroundColor: article.category?.color ? `${article.category.color}20` : '#10b98120',
                           color: article.category?.color || '#10b981',
-                          borderColor: article.category?.color ? `${article.category.color}40` : '#10b98140'
+                          borderColor: article.category?.color ? `${article.category.color}40` : '#10b98140',
                         }}
                       >
                         {article.category?.name || 'Uncategorized'}
@@ -165,9 +172,7 @@ export default async function AdminBlogPage() {
                       {article.readingTimeMin && ` · ${article.readingTimeMin} min read`}
                     </p>
                     {article.publishedAt && (
-                      <p className="text-xs text-emerald-300">
-                        Published {formatDate(article.publishedAt)}
-                      </p>
+                      <p className="text-xs text-emerald-300">Published {formatDate(article.publishedAt)}</p>
                     )}
                     {article.excerpt && (
                       <p className="mt-2 text-sm text-gray-400">{article.excerpt}</p>
@@ -213,59 +218,11 @@ export default async function AdminBlogPage() {
                   </div>
                 </header>
 
-                <details className="mt-6">
-                  <summary className="cursor-pointer text-sm font-medium text-emerald-400 hover:text-emerald-300">
-                    Edit article
-                  </summary>
-                  <form action={updateArticleAction} className="mt-4 grid gap-3 rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-                    <input type="hidden" name="id" value={article.id} />
-                    <input
-                      type="text"
-                      name="title"
-                      defaultValue={article.title}
-                      required
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <input
-                      type="text"
-                      name="slug"
-                      defaultValue={article.slug}
-                      required
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <select
-                      name="categoryId"
-                      defaultValue={article.categoryId || ''}
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    >
-                      <option value="">No category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                    <textarea
-                      name="excerpt"
-                      defaultValue={article.excerpt || ''}
-                      rows={2}
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <textarea
-                      name="content"
-                      defaultValue={article.content}
-                      required
-                      rows={8}
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400"
-                    >
-                      Update Article
-                    </button>
-                  </form>
-                </details>
+                {article.content ? (
+                  <div className="mt-4 border-t border-gray-800 pt-4 text-sm text-gray-200">
+                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>
