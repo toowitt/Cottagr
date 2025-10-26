@@ -47,43 +47,45 @@ export default async function AdminKnowledgeHubPage() {
   ]);
 
   return (
-    <Container padding="md" className="space-y-10">
+    <div className="space-y-10">
       <PageHeader
         title="Knowledge & maintenance hub"
         description="Build and publish the definitive playbooks, tasks, and reference documents your owners rely on. Draft updates below, then publish when they're ready."
       />
 
-      <section className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <PlusCircle className="h-5 w-5 text-accent" /> New checklist
-        </h2>
-        <form action={createChecklistAction} className="mt-4 grid gap-3 md:grid-cols-[2fr,1fr]">
-          <input
-            type="text"
-            name="title"
-            required
-            placeholder="Checklist title (e.g. Opening weekend)"
-            className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          />
-          <input
-            type="text"
-            name="category"
-            placeholder="Category (optional)"
-            className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          />
-          <textarea
-            name="summary"
-            placeholder="Short description shown to owners"
-            className="md:col-span-2 min-h-[60px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          />
-          <button
-            type="submit"
-            className="md:col-span-2 inline-flex w-full items-center justify-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-soft transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-          >
-            Create checklist
-          </button>
-        </form>
-      </section>
+      <Container padding="md">
+        <section className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <PlusCircle className="h-5 w-5 text-accent" /> New checklist
+          </h2>
+          <form action={createChecklistAction} className="mt-4 grid gap-3 md:grid-cols-[2fr,1fr]">
+            <input
+              type="text"
+              name="title"
+              required
+              placeholder="Checklist title (e.g. Opening weekend)"
+              className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            />
+            <input
+              type="text"
+              name="category"
+              placeholder="Category (optional)"
+              className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            />
+            <textarea
+              name="summary"
+              placeholder="Short description shown to owners"
+              className="md:col-span-2 min-h-[60px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            />
+            <button
+              type="submit"
+              className="md:col-span-2 inline-flex w-full items-center justify-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-soft transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            >
+              Create checklist
+            </button>
+          </form>
+        </section>
+      </Container>
 
       <section className="space-y-6">
         <h2 className="text-xl font-semibold text-foreground">Draft &amp; published checklists</h2>
@@ -553,6 +555,6 @@ export default async function AdminKnowledgeHubPage() {
           </div>
         )}
       </section>
-    </Container>
+    </div>
   );
 }
