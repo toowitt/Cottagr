@@ -1,3 +1,4 @@
+import { Container } from '@/components/ui/Container';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { prisma } from '@/lib/prisma';
 import {
@@ -46,7 +47,7 @@ export default async function AdminKnowledgeHubPage() {
   ]);
 
   return (
-    <div className="space-y-10">
+    <Container padding="md" className="space-y-10">
       <PageHeader
         title="Knowledge & maintenance hub"
         description="Build and publish the definitive playbooks, tasks, and reference documents your owners rely on. Draft updates below, then publish when they're ready."
@@ -546,6 +547,6 @@ export default async function AdminKnowledgeHubPage() {
           </div>
         )}
       </section>
-    </div>
+    </Container>
   );
 }
