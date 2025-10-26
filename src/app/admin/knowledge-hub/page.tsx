@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/ui/PageHeader';
 import { prisma } from '@/lib/prisma';
 import {
   addChecklistItemAction,
@@ -46,12 +47,10 @@ export default async function AdminKnowledgeHubPage() {
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold text-white">Knowledge &amp; Maintenance Hub</h1>
-        <p className="text-sm text-gray-300">
-          Build and publish the definitive playbooks, tasks, and reference documents your owners rely on. Draft updates below, then publish when they&apos;re ready.
-        </p>
-      </header>
+      <PageHeader
+        title="Knowledge & maintenance hub"
+        description="Build and publish the definitive playbooks, tasks, and reference documents your owners rely on. Draft updates below, then publish when they're ready."
+      />
 
       <section className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
