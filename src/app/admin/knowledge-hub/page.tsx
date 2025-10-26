@@ -86,9 +86,9 @@ export default async function AdminKnowledgeHubPage() {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white">Draft &amp; published checklists</h2>
+        <h2 className="text-xl font-semibold text-foreground">Draft &amp; published checklists</h2>
         {checklists.length === 0 ? (
-          <p className="rounded-2xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-300">
+          <p className="rounded-2xl border border-default bg-background-muted p-6 text-sm text-muted-foreground shadow-soft">
             No checklists yet. Create one above to get started.
           </p>
         ) : (
@@ -101,15 +101,15 @@ export default async function AdminKnowledgeHubPage() {
               return (
                 <article
                   key={checklist.id}
-                  className="rounded-3xl border border-gray-800 bg-gray-900/40 p-6 text-white shadow-lg"
+                  className="rounded-3xl border border-default bg-surface px-6 py-6 text-foreground shadow-soft"
                 >
                   <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs uppercase tracking-wide text-gray-300">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-default bg-background-muted px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {checklist.category || 'General'} · {checklist.status}
                       </span>
-                      <h3 className="mt-3 text-2xl font-semibold">{checklist.title}</h3>
-                      <p className="text-sm text-gray-300">Last updated {formatDate(checklist.updatedAt)}</p>
+                      <h3 className="mt-3 text-2xl font-semibold text-foreground">{checklist.title}</h3>
+                      <p className="text-sm text-muted-foreground">Last updated {formatDate(checklist.updatedAt)}</p>
                       {activeVersion ? (
                         <p className="text-xs text-emerald-300">
                           Published version v{activeVersion.version} · {formatDate(activeVersion.publishedAt)}
@@ -121,7 +121,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 px-3 py-1.5 text-emerald-300 hover:bg-emerald-500/10"
+                          className="inline-flex items-center gap-2 rounded-full border border-accent/60 px-3 py-1.5 text-accent transition hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                         >
                           <CheckCircle2 className="h-4 w-4" /> Publish
                         </button>
@@ -130,7 +130,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 px-3 py-1.5 text-amber-300 hover:bg-amber-500/10"
+                          className="inline-flex items-center gap-2 rounded-full border border-warning/60 px-3 py-1.5 text-warning transition hover:bg-warning/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2"
                         >
                           <FolderOpen className="h-4 w-4" /> Mark draft
                         </button>
@@ -139,7 +139,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-3 py-1.5 text-gray-300 hover:bg-gray-700/40"
+                          className="inline-flex items-center gap-2 rounded-full border border-default px-3 py-1.5 text-muted-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border"
                         >
                           Archive
                         </button>
@@ -148,7 +148,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-red-300 hover:bg-red-500/10"
+                          className="inline-flex items-center gap-2 rounded-full border border-danger/60 px-3 py-1.5 text-danger transition hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2"
                         >
                           Delete
                         </button>
