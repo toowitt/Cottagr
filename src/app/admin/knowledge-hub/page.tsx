@@ -451,49 +451,49 @@ export default async function AdminKnowledgeHubPage() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Document library</h2>
+          <h2 className="text-xl font-semibold text-foreground">Document library</h2>
         </div>
         {documents.length === 0 ? (
-          <p className="rounded-2xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-300">
+          <p className="rounded-2xl border border-default bg-background-muted p-6 text-sm text-muted-foreground shadow-soft">
             Upload documents from any checklist to build the shared library.
           </p>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {documents.map((doc) => (
-              <article key={doc.id} className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 text-white">
-                <header className="flex items-center justify-between">
+              <article key={doc.id} className="rounded-3xl border border-default bg-background px-5 py-5 text-foreground shadow-soft">
+                <header className="flex items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold">{doc.title}</h3>
-                    <p className="text-xs text-gray-400">
+                    <h3 className="text-lg font-semibold text-foreground">{doc.title}</h3>
+                    <p className="text-xs text-muted-foreground">
                       v{doc.version} · {Math.round((doc.size ?? 0) / 1024)} KB · {doc.mimeType ?? 'unknown'}
                     </p>
-                    <p className="text-xs text-gray-500">Uploaded {formatDate(doc.createdAt)}</p>
+                    <p className="text-xs text-muted-foreground/80">Uploaded {formatDate(doc.createdAt)}</p>
                   </div>
                   <a
                     href={doc.fileUrl ?? '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-lg border border-gray-700 px-3 py-1 text-xs text-gray-300 hover:bg-gray-800"
+                    className="rounded-full border border-default px-3 py-1 text-xs text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                   >
                     View file
                   </a>
                 </header>
 
-                <form action={updateDocumentMetadataAction} className="mt-3 grid gap-2">
+                <form action={updateDocumentMetadataAction} className="mt-4 grid gap-3">
                   <input type="hidden" name="id" value={doc.id} />
                   <input
                     name="title"
                     defaultValue={doc.title}
-                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   />
                   <textarea
                     name="description"
                     defaultValue={doc.description ?? ''}
-                    className="min-h-[50px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="min-h-[50px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   />
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-white"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-3 py-2 text-sm font-semibold text-background transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
                   >
                     Save metadata
                   </button>
@@ -501,34 +501,36 @@ export default async function AdminKnowledgeHubPage() {
 
                 <form
                   action={uploadDocumentAction}
-                  className="mt-3 rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-3"
+                  className="mt-4 rounded-2xl border border-dashed border-default bg-background-muted p-4 shadow-soft"
                 >
                   <input type="hidden" name="documentId" value={doc.id} />
-                  <label className="text-xs uppercase tracking-wide text-gray-400">
-                    Upload new version
+                  <label className="text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Upload new version
+                    </span>
                     <input
                       type="file"
                       name="file"
                       required
-                      className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     />
                   </label>
                   <textarea
                     name="description"
                     placeholder="Version notes (optional)"
-                    className="mt-2 min-h-[50px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="mt-3 min-h-[50px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   />
                   <button
                     type="submit"
                     formEncType="multipart/form-data"
-                    className="mt-2 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-black hover:bg-emerald-400"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                   >
                     Upload version
                   </button>
                 </form>
 
                 {doc.checklistLinks.length > 0 ? (
-                  <div className="mt-3 rounded-lg border border-gray-800 bg-gray-900/50 p-3 text-xs text-gray-300">
+                  <div className="mt-4 rounded-xl border border-default bg-background-muted p-3 text-xs text-muted-foreground shadow-soft">
                     Linked to:{' '}
                     {doc.checklistLinks.map((link, index) => (
                       <span key={link.checklistId}>
@@ -540,13 +542,13 @@ export default async function AdminKnowledgeHubPage() {
                 ) : null}
 
                 {doc.versions.length > 0 ? (
-                  <details className="mt-3 rounded-lg border border-gray-800 bg-gray-900/50 p-3">
-                    <summary className="cursor-pointer text-sm font-medium text-gray-200">Version history</summary>
-                    <ul className="mt-2 space-y-2 text-xs text-gray-300">
+                  <details className="mt-4 rounded-xl border border-default bg-background-muted p-3 shadow-soft">
+                    <summary className="cursor-pointer text-sm font-medium text-foreground">Version history</summary>
+                    <ul className="mt-2 space-y-2 text-xs text-muted-foreground">
                       {doc.versions.map((version) => (
-                        <li key={version.id} className="flex items-center justify-between rounded border border-gray-800 bg-gray-900/70 px-2 py-1">
-                          <span>v{version.version}</span>
-                          <span>{formatDate(version.createdAt)}</span>
+                        <li key={version.id} className="flex items-center justify-between rounded-lg border border-default bg-background px-2 py-1">
+                          <span className="font-medium text-foreground">v{version.version}</span>
+                          <span className="text-muted-foreground">{formatDate(version.createdAt)}</span>
                         </li>
                       ))}
                     </ul>
