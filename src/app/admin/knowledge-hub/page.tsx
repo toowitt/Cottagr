@@ -316,20 +316,20 @@ export default async function AdminKnowledgeHubPage() {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-300">
+                      <div className="rounded-2xl border border-default bg-background px-5 py-5 shadow-soft">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                           <FileText className="h-4 w-4" /> Linked documents
                         </h4>
                         {linkedDocs.length === 0 ? (
-                          <p className="mt-3 text-sm text-gray-400">No documents attached yet.</p>
+                          <p className="mt-3 text-sm text-muted-foreground">No documents attached yet.</p>
                         ) : (
                           <ul className="mt-3 space-y-3 text-sm">
                             {linkedDocs.map((doc) => (
-                              <li key={doc.id} className="rounded-lg border border-gray-800 bg-gray-900/70 p-3">
+                              <li key={doc.id} className="rounded-xl border border-default bg-background-muted p-3 shadow-soft">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
-                                    <p className="font-medium text-white">{doc.title}</p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="font-medium text-foreground">{doc.title}</p>
+                                    <p className="text-xs text-muted-foreground">
                                       v{doc.version} · {Math.round((doc.size ?? 0) / 1024)} KB
                                     </p>
                                   </div>
@@ -338,7 +338,7 @@ export default async function AdminKnowledgeHubPage() {
                                       href={doc.fileUrl ?? '#'}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="rounded-lg border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800"
+                                      className="rounded-full border border-default px-3 py-1 text-xs text-foreground transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                                     >
                                       View
                                     </a>
@@ -347,7 +347,7 @@ export default async function AdminKnowledgeHubPage() {
                                       <input type="hidden" name="documentId" value={doc.id} />
                                       <button
                                         type="submit"
-                                        className="rounded-lg border border-red-500/40 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10"
+                                        className="rounded-full border border-danger/60 px-3 py-1 text-xs text-danger transition hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2"
                                       >
                                         Unlink
                                       </button>
@@ -364,7 +364,7 @@ export default async function AdminKnowledgeHubPage() {
                             <input type="hidden" name="checklistId" value={checklist.id} />
                             <select
                               name="documentId"
-                              className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                               required
                             >
                               <option value="">Link existing document…</option>
@@ -376,7 +376,7 @@ export default async function AdminKnowledgeHubPage() {
                             </select>
                             <button
                               type="submit"
-                              className="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-800"
+                              className="inline-flex items-center gap-2 rounded-full border border-default px-3 py-2 text-sm text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                             >
                               Attach document
                             </button>
@@ -386,13 +386,13 @@ export default async function AdminKnowledgeHubPage() {
 
                       <form
                         action={uploadDocumentAction}
-                        className="rounded-2xl border border-dashed border-emerald-500/50 bg-emerald-500/5 p-4 text-sm text-emerald-100"
+                        className="rounded-2xl border border-dashed border-accent/50 bg-accent/5 px-5 py-5 text-sm text-accent"
                       >
                         <input type="hidden" name="checklistId" value={checklist.id} />
-                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
                           <UploadCloud className="h-4 w-4" /> Upload a document
                         </h4>
-                        <p className="mt-2 text-xs text-emerald-200/80">
+                        <p className="mt-2 text-xs text-accent/80">
                           PDF, images, or docs. Files are stored under /public/uploads/knowledge-hub.
                         </p>
                         <div className="mt-3 grid gap-2">
@@ -400,23 +400,23 @@ export default async function AdminKnowledgeHubPage() {
                             type="text"
                             name="title"
                             placeholder="Document title"
-                            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                            className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                           />
                           <textarea
                             name="description"
                             placeholder="Description (optional)"
-                            className="min-h-[50px] rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                            className="min-h-[50px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                           />
                           <input
                             type="file"
                             name="file"
                             required
-                            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                            className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft file:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                           />
                           <button
                             type="submit"
                             formEncType="multipart/form-data"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-black hover:bg-emerald-400"
+                            className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                           >
                             Upload &amp; attach
                           </button>
@@ -426,15 +426,15 @@ export default async function AdminKnowledgeHubPage() {
                   </section>
 
                   {checklist.versions.length > 0 ? (
-                    <section className="mt-6 rounded-2xl border border-gray-800 bg-gray-900/50 p-4">
-                      <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-300">
+                    <section className="mt-6 rounded-2xl border border-default bg-background px-5 py-5 shadow-soft">
+                      <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         <ArrowUpCircle className="h-4 w-4" /> Version history
                       </h4>
-                      <ul className="mt-3 space-y-2 text-sm text-gray-300">
+                      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                         {checklist.versions.map((version) => (
-                          <li key={version.id} className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2">
-                            <span>v{version.version}</span>
-                            <span className="text-xs text-gray-400">
+                          <li key={version.id} className="flex items-center justify-between rounded-xl border border-default bg-background-muted px-3 py-2 shadow-soft">
+                            <span className="font-medium text-foreground">v{version.version}</span>
+                            <span className="text-xs text-muted-foreground">
                               {version.isPublished ? 'Published' : 'Draft snapshot'} · {formatDate(version.publishedAt ?? version.createdAt)}
                             </span>
                           </li>
