@@ -112,7 +112,7 @@ export default async function AdminKnowledgeHubPage() {
                       <h3 className="mt-3 text-2xl font-semibold text-foreground">{checklist.title}</h3>
                       <p className="text-sm text-muted-foreground">Last updated {formatDate(checklist.updatedAt)}</p>
                       {activeVersion ? (
-                        <p className="text-xs text-emerald-300">
+                        <p className="text-xs text-accent">
                           Published version v{activeVersion.version} · {formatDate(activeVersion.publishedAt)}
                         </p>
                       ) : null}
