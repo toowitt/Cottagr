@@ -204,11 +204,11 @@ export default async function AdminKnowledgeHubPage() {
                       </form>
 
                       <div className="space-y-3">
-                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-300">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                           Checklist items
                         </h4>
                         {checklist.items.length === 0 ? (
-                          <p className="rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-4 text-sm text-gray-400">
+                          <p className="rounded-xl border border-dashed border-default bg-background-muted p-4 text-sm text-muted-foreground shadow-soft">
                             No steps yet. Add the first instruction below.
                           </p>
                         ) : (
