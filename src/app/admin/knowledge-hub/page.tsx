@@ -158,39 +158,45 @@ export default async function AdminKnowledgeHubPage() {
 
                   <section className="mt-6 grid gap-6 md:grid-cols-[1.6fr,1fr]">
                     <div className="space-y-4">
-                      <form action={updateChecklistMetadataAction} className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
+                      <form action={updateChecklistMetadataAction} className="rounded-3xl border border-default bg-background px-5 py-5 shadow-soft">
                         <input type="hidden" name="id" value={checklist.id} />
                         <div className="grid gap-3">
                           <div className="grid gap-2 md:grid-cols-2">
-                            <label className="text-xs uppercase tracking-wide text-gray-400">
-                              Title
+                            <label className="text-sm text-foreground">
+                              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Title
+                              </span>
                               <input
                                 name="title"
                                 defaultValue={checklist.title}
-                                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                 required
                               />
                             </label>
-                            <label className="text-xs uppercase tracking-wide text-gray-400">
-                              Category
+                            <label className="text-sm text-foreground">
+                              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Category
+                              </span>
                               <input
                                 name="category"
                                 defaultValue={checklist.category ?? ''}
-                                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                               />
                             </label>
                           </div>
-                          <label className="text-xs uppercase tracking-wide text-gray-400">
-                            Summary
+                          <label className="text-sm text-foreground">
+                            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Summary
+                            </span>
                             <textarea
                               name="summary"
                               defaultValue={checklist.summary ?? ''}
-                              className="mt-1 min-h-[60px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              className="min-h-[60px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                             />
                           </label>
                           <button
                             type="submit"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-white"
+                            className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-3 py-2 text-sm font-semibold text-background transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
                           >
                             Save details
                           </button>
