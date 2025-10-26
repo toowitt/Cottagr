@@ -282,31 +282,31 @@ export default async function AdminKnowledgeHubPage() {
                           </ul>
                         )}
 
-                        <form action={addChecklistItemAction} className="rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-4">
+                        <form action={addChecklistItemAction} className="rounded-2xl border border-dashed border-default bg-background px-4 py-4 shadow-soft">
                           <input type="hidden" name="checklistId" value={checklist.id} />
                           <div className="grid gap-3">
                             <textarea
                               name="text"
                               placeholder="Add a new instruction"
-                              className="min-h-[80px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              className="min-h-[80px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                               required
                             />
                             <textarea
                               name="notes"
                               placeholder="Optional notes or context"
-                              className="min-h-[60px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              className="min-h-[60px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                             />
-                            <label className="inline-flex items-center gap-2 text-sm text-gray-200">
+                            <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                               <input
                                 type="checkbox"
                                 name="isRequired"
-                                className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-emerald-500 focus:ring-emerald-500"
+                                className="h-4 w-4 rounded border border-default bg-background text-accent focus:ring-accent"
                               />
                               Required step
                             </label>
                             <button
                               type="submit"
-                              className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-white"
+                              className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                             >
                               Add item
                             </button>
