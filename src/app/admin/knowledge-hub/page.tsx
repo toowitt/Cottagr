@@ -53,9 +53,9 @@ export default async function AdminKnowledgeHubPage() {
         description="Build and publish the definitive playbooks, tasks, and reference documents your owners rely on. Draft updates below, then publish when they're ready."
       />
 
-      <section className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-          <PlusCircle className="h-5 w-5 text-emerald-400" /> New checklist
+      <section className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+          <PlusCircle className="h-5 w-5 text-accent" /> New checklist
         </h2>
         <form action={createChecklistAction} className="mt-4 grid gap-3 md:grid-cols-[2fr,1fr]">
           <input
@@ -63,22 +63,22 @@ export default async function AdminKnowledgeHubPage() {
             name="title"
             required
             placeholder="Checklist title (e.g. Opening weekend)"
-            className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <input
             type="text"
             name="category"
             placeholder="Category (optional)"
-            className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <textarea
             name="summary"
             placeholder="Short description shown to owners"
-            className="md:col-span-2 min-h-[60px] rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className="md:col-span-2 min-h-[60px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <button
             type="submit"
-            className="md:col-span-2 inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400"
+            className="md:col-span-2 inline-flex w-full items-center justify-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-soft transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
             Create checklist
           </button>
