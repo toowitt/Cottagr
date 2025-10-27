@@ -1,15 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import {
-  createArticleAction,
-  updateArticleAction,
-  publishArticleAction,
-  unpublishArticleAction,
-  archiveArticleAction,
-  deleteArticleAction,
-  createCategoryAction,
-} from './actions';
-import { CheckCircle2, FolderOpen, PlusCircle, BookOpen, Archive } from 'lucide-react';
-import BlogArticleForm from '@/components/BlogArticleForm';
+import BlogClient from './client';
 
 function formatDate(value: Date | null | undefined) {
   if (!value) return '—';
@@ -26,7 +16,7 @@ export default async function AdminBlogPage() {
       orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
       include: {
         author: {
-          select: { firstName: true, lastName: true }
+          select: { firstName: true, lastName: true },
         },
         category: true,
       },
@@ -35,9 +25,9 @@ export default async function AdminBlogPage() {
       orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: { articles: true }
-        }
-      }
+          select: { articles: true },
+        },
+      },
     }),
   ]);
 
@@ -50,87 +40,10 @@ export default async function AdminBlogPage() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-            <PlusCircle className="h-5 w-5 text-emerald-400" /> New Article
-          </h2>
-          <div className="mt-4">
-            <BlogArticleForm categories={categories} />
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-            <FolderOpen className="h-5 w-5 text-emerald-400" /> New Category
-          </h2>
-          <form action={createCategoryAction} className="mt-4 grid gap-3">
-            <input
-              type="text"
-              name="name"
-              required
-              placeholder="Category name (e.g., Legalities)"
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <input
-              type="text"
-              name="slug"
-              required
-              placeholder="URL slug (e.g., legalities)"
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <textarea
-              name="description"
-              placeholder="Description (optional)"
-              rows={2}
-              className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-            <input
-              type="color"
-              name="color"
-              defaultValue="#10b981"
-              className="h-10 w-full rounded-xl border border-gray-700 bg-gray-800 px-2 py-1"
-            />
-            <button
-              type="submit"
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400"
-            >
-              Create Category
-            </button>
-          </form>
-          
-          <div className="mt-6 space-y-2">
-            <h3 className="text-sm font-medium text-gray-300">Existing Categories</h3>
-            {categories.length === 0 ? (
-              <p className="text-xs text-gray-400">No categories yet</p>
-            ) : (
-              <div className="space-y-1">
-                {categories.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-800/40 px-3 py-2 text-sm"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: cat.color || '#10b981' }}
-                      />
-                      <span className="text-white">{cat.name}</span>
-                    </span>
-                    <span className="text-xs text-gray-400">{cat._count.articles} articles</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+      <BlogClient categories={categories.map(({ id, name }) => ({ id, name }))} />
 
       <section className="space-y-6">
-        <h2 className="flex items-center gap-2 text-xl font-semibold text-white">
-          <BookOpen className="h-5 w-5 text-emerald-400" />
-          Articles
-        </h2>
+        <h2 className="flex items-center gap-2 text-xl font-semibold text-white">Articles</h2>
         {articles.length === 0 ? (
           <p className="rounded-2xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-300">
             No articles yet. Create one above to get started.
@@ -150,7 +63,7 @@ export default async function AdminBlogPage() {
                         style={{
                           backgroundColor: article.category?.color ? `${article.category.color}20` : '#10b98120',
                           color: article.category?.color || '#10b981',
-                          borderColor: article.category?.color ? `${article.category.color}40` : '#10b98140'
+                          borderColor: article.category?.color ? `${article.category.color}40` : '#10b98140',
                         }}
                       >
                         {article.category?.name || 'Uncategorized'}
@@ -165,107 +78,19 @@ export default async function AdminBlogPage() {
                       {article.readingTimeMin && ` · ${article.readingTimeMin} min read`}
                     </p>
                     {article.publishedAt && (
-                      <p className="text-xs text-emerald-300">
-                        Published {formatDate(article.publishedAt)}
-                      </p>
+                      <p className="text-xs text-emerald-300">Published {formatDate(article.publishedAt)}</p>
                     )}
                     {article.excerpt && (
                       <p className="mt-2 text-sm text-gray-400">{article.excerpt}</p>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <form action={publishArticleAction}>
-                      <input type="hidden" name="id" value={article.id} />
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 px-3 py-1.5 text-emerald-300 hover:bg-emerald-500/10"
-                      >
-                        <CheckCircle2 className="h-4 w-4" /> Publish
-                      </button>
-                    </form>
-                    <form action={unpublishArticleAction}>
-                      <input type="hidden" name="id" value={article.id} />
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 px-3 py-1.5 text-amber-300 hover:bg-amber-500/10"
-                      >
-                        <FolderOpen className="h-4 w-4" /> Draft
-                      </button>
-                    </form>
-                    <form action={archiveArticleAction}>
-                      <input type="hidden" name="id" value={article.id} />
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-3 py-1.5 text-gray-300 hover:bg-gray-700/40"
-                      >
-                        <Archive className="h-4 w-4" /> Archive
-                      </button>
-                    </form>
-                    <form action={deleteArticleAction}>
-                      <input type="hidden" name="id" value={article.id} />
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-red-300 hover:bg-red-500/10"
-                      >
-                        Delete
-                      </button>
-                    </form>
-                  </div>
                 </header>
 
-                <details className="mt-6">
-                  <summary className="cursor-pointer text-sm font-medium text-emerald-400 hover:text-emerald-300">
-                    Edit article
-                  </summary>
-                  <form action={updateArticleAction} className="mt-4 grid gap-3 rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-                    <input type="hidden" name="id" value={article.id} />
-                    <input
-                      type="text"
-                      name="title"
-                      defaultValue={article.title}
-                      required
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <input
-                      type="text"
-                      name="slug"
-                      defaultValue={article.slug}
-                      required
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <select
-                      name="categoryId"
-                      defaultValue={article.categoryId || ''}
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    >
-                      <option value="">No category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                    <textarea
-                      name="excerpt"
-                      defaultValue={article.excerpt || ''}
-                      rows={2}
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <textarea
-                      name="content"
-                      defaultValue={article.content}
-                      required
-                      rows={8}
-                      className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400"
-                    >
-                      Update Article
-                    </button>
-                  </form>
-                </details>
+                {article.content ? (
+                  <div className="mt-4 border-t border-gray-800 pt-4 text-sm text-gray-200">
+                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>

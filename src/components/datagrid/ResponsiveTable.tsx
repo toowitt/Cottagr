@@ -124,7 +124,7 @@ export function ResponsiveTable<T>({
                 <td
                   key={`${column.id}-skeleton`}
                   className={cn(
-                    'h-16 min-w-[10rem] border-b border-default px-5 align-middle',
+                    'h-16 min-w-[10rem] border-b border-default px-4 align-middle',
                     cellAlignment(column.align),
                   )}
                 >
@@ -165,7 +165,7 @@ export function ResponsiveTable<T>({
               <td
                 key={`${key}-${column.id}`}
                 className={cn(
-                  'border-b border-default px-5 py-4 align-middle text-sm text-foreground transition-colors group-hover:bg-background-muted',
+                  'border-b border-default px-4 py-4 align-middle text-sm text-foreground transition-colors group-hover:bg-background-muted/80',
                   column.minWidthClassName ?? 'min-w-[12rem]',
                   column.cellClassName,
                   cellAlignment(column.align),
@@ -182,7 +182,7 @@ export function ResponsiveTable<T>({
             ))}
 
             {hasActions ? (
-              <td className="sticky right-0 border-b border-default bg-background px-4 py-4 align-middle">
+              <td className="sticky right-0 min-w-[6rem] border-b border-default bg-background px-4 py-4 align-middle">
                 <RowActionsMenu actions={actions?.(data) ?? []} row={data} />
               </td>
             ) : null}
@@ -288,7 +288,7 @@ export function ResponsiveTable<T>({
                   key={column.id}
                   scope="col"
                   className={cn(
-                    'border-b border-default px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+                    'border-b border-default px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
                     column.headerClassName,
                     column.minWidthClassName ?? 'min-w-[12rem]',
                     cellAlignment(column.align),
@@ -304,7 +304,7 @@ export function ResponsiveTable<T>({
                 </th>
               ))}
               {hasActions ? (
-                <th className="sticky right-0 border-b border-default bg-background px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th className="sticky right-0 min-w-[6rem] border-b border-default bg-background px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
                   Actions
                 </th>
               ) : null}

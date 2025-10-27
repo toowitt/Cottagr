@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import RichTextEditor from './RichTextEditor';
+import type { RichTextValue } from '@/lib/quill';
 import { createArticleAction } from '@/app/admin/blog/actions';
 
 interface BlogArticleFormProps {
@@ -12,7 +13,7 @@ export default function BlogArticleForm({ categories }: BlogArticleFormProps) {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [excerpt, setExcerpt] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState<RichTextValue>({ html: '', text: '' });
   const [categoryId, setCategoryId] = useState('');
   const [isPending, startTransition] = useTransition();
 
@@ -21,7 +22,8 @@ export default function BlogArticleForm({ categories }: BlogArticleFormProps) {
     formData.append('title', title);
     formData.append('slug', slug);
     formData.append('excerpt', excerpt);
-    formData.append('content', content);
+    formData.append('content', content.html ?? '');
+    formData.append('contentText', content.text ?? '');
     formData.append('categoryId', categoryId);
     formData.append('status', status);
 
@@ -30,7 +32,7 @@ export default function BlogArticleForm({ categories }: BlogArticleFormProps) {
       setTitle('');
       setSlug('');
       setExcerpt('');
-      setContent('');
+      setContent({ html: '', text: '' });
       setCategoryId('');
     });
   };
@@ -97,7 +99,7 @@ export default function BlogArticleForm({ categories }: BlogArticleFormProps) {
         <button
           type="button"
           onClick={() => handleSubmit('DRAFT')}
-          disabled={isPending || !title || !slug || !content}
+          disabled={isPending || !title || !slug || !(content.html && content.html.trim())}
           className="flex-1 rounded-xl border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? 'Saving...' : 'Save as Draft'}
@@ -105,7 +107,7 @@ export default function BlogArticleForm({ categories }: BlogArticleFormProps) {
         <button
           type="button"
           onClick={() => handleSubmit('PUBLISHED')}
-          disabled={isPending || !title || !slug || !content}
+          disabled={isPending || !title || !slug || !(content.html && content.html.trim())}
           className="flex-1 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? 'Publishing...' : 'Publish Now'}

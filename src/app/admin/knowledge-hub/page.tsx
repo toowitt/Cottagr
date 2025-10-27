@@ -1,3 +1,8 @@
+import { Container } from '@/components/ui/Container';
+import { Input } from '@/components/ui/Input';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
 import { prisma } from '@/lib/prisma';
 import {
   addChecklistItemAction,
@@ -46,54 +51,58 @@ export default async function AdminKnowledgeHubPage() {
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold text-white">Knowledge &amp; Maintenance Hub</h1>
-        <p className="text-sm text-gray-300">
-          Build and publish the definitive playbooks, tasks, and reference documents your owners rely on. Draft updates below, then publish when they&apos;re ready.
-        </p>
-      </header>
+      <PageHeader
+        title="Knowledge & maintenance hub"
+        description="Build and publish the definitive playbooks, tasks, and reference documents your owners rely on. Draft updates below, then publish when they're ready."
+      />
 
-      <section className="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-          <PlusCircle className="h-5 w-5 text-emerald-400" /> New checklist
-        </h2>
-        <form action={createChecklistAction} className="mt-4 grid gap-3 md:grid-cols-[2fr,1fr]">
-          <input
-            type="text"
-            name="title"
-            required
-            placeholder="Checklist title (e.g. Opening weekend)"
-            className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
-          <input
-            type="text"
-            name="category"
-            placeholder="Category (optional)"
-            className="rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
-          <textarea
-            name="summary"
-            placeholder="Short description shown to owners"
-            className="md:col-span-2 min-h-[60px] rounded-xl border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
-          <button
-            type="submit"
-            className="md:col-span-2 inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-black hover:bg-emerald-400"
-          >
-            Create checklist
-          </button>
-        </form>
-      </section>
+      <Container padding="md" className="space-y-10">
+        <section className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <PlusCircle className="h-5 w-5 text-accent" /> New checklist
+          </h2>
+          <form action={createChecklistAction} className="mt-4 grid gap-3 md:grid-cols-[2fr,1fr]">
+            <label className="flex flex-col gap-1 text-sm text-foreground">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Title</span>
+              <Input
+                name="title"
+                required
+                placeholder="Checklist title (e.g. Opening weekend)"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-foreground">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Category</span>
+              <Input
+                name="category"
+                placeholder="Category (optional)"
+              />
+            </label>
+            <label className="md:col-span-2 flex flex-col gap-1 text-sm text-foreground">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Summary</span>
+              <Textarea
+                name="summary"
+                placeholder="Short description shown to owners"
+                rows={3}
+              />
+            </label>
+            <button
+              type="submit"
+              className="md:col-span-2 inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-black shadow-soft transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+            >
+              Create checklist
+            </button>
+          </form>
+        </section>
 
-      <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white">Draft &amp; published checklists</h2>
-        {checklists.length === 0 ? (
-          <p className="rounded-2xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-300">
-            No checklists yet. Create one above to get started.
-          </p>
-        ) : (
-          <div className="space-y-6">
-            {checklists.map((checklist) => {
+        <section className="space-y-6">
+          <h2 className="text-xl font-semibold text-foreground">Draft &amp; published checklists</h2>
+          {checklists.length === 0 ? (
+            <p className="rounded-2xl border border-default bg-background-muted p-6 text-sm text-muted-foreground shadow-soft">
+              No checklists yet. Create one above to get started.
+            </p>
+          ) : (
+            <div className="space-y-6">
+              {checklists.map((checklist) => {
               const linkedDocs = checklist.documents.map((link) => link.document);
               const otherDocuments = documents.filter((doc) => !linkedDocs.some((linked) => linked.id === doc.id));
               const activeVersion = checklist.versions.find((version) => version.isPublished);
@@ -101,17 +110,17 @@ export default async function AdminKnowledgeHubPage() {
               return (
                 <article
                   key={checklist.id}
-                  className="rounded-3xl border border-gray-800 bg-gray-900/40 p-6 text-white shadow-lg"
+                  className="rounded-3xl border border-default bg-surface px-6 py-6 text-foreground shadow-soft"
                 >
                   <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs uppercase tracking-wide text-gray-300">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-default bg-background-muted px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {checklist.category || 'General'} · {checklist.status}
                       </span>
-                      <h3 className="mt-3 text-2xl font-semibold">{checklist.title}</h3>
-                      <p className="text-sm text-gray-300">Last updated {formatDate(checklist.updatedAt)}</p>
+                      <h3 className="mt-3 text-2xl font-semibold text-foreground">{checklist.title}</h3>
+                      <p className="text-sm text-muted-foreground">Last updated {formatDate(checklist.updatedAt)}</p>
                       {activeVersion ? (
-                        <p className="text-xs text-emerald-300">
+                        <p className="text-xs text-accent">
                           Published version v{activeVersion.version} · {formatDate(activeVersion.publishedAt)}
                         </p>
                       ) : null}
@@ -121,7 +130,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 px-3 py-1.5 text-emerald-300 hover:bg-emerald-500/10"
+                          className="inline-flex items-center gap-2 rounded-full border border-accent/60 px-3 py-1.5 text-accent transition hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                         >
                           <CheckCircle2 className="h-4 w-4" /> Publish
                         </button>
@@ -130,7 +139,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 px-3 py-1.5 text-amber-300 hover:bg-amber-500/10"
+                          className="inline-flex items-center gap-2 rounded-full border border-warning/60 px-3 py-1.5 text-warning transition hover:bg-warning/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2"
                         >
                           <FolderOpen className="h-4 w-4" /> Mark draft
                         </button>
@@ -139,7 +148,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-3 py-1.5 text-gray-300 hover:bg-gray-700/40"
+                          className="inline-flex items-center gap-2 rounded-full border border-default px-3 py-1.5 text-muted-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border"
                         >
                           Archive
                         </button>
@@ -148,7 +157,7 @@ export default async function AdminKnowledgeHubPage() {
                         <input type="hidden" name="id" value={checklist.id} />
                         <button
                           type="submit"
-                          className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-red-300 hover:bg-red-500/10"
+                          className="inline-flex items-center gap-2 rounded-full border border-danger/60 px-3 py-1.5 text-danger transition hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2"
                         >
                           Delete
                         </button>
@@ -158,39 +167,43 @@ export default async function AdminKnowledgeHubPage() {
 
                   <section className="mt-6 grid gap-6 md:grid-cols-[1.6fr,1fr]">
                     <div className="space-y-4">
-                      <form action={updateChecklistMetadataAction} className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
+                      <form action={updateChecklistMetadataAction} className="rounded-3xl border border-default bg-background px-5 py-5 shadow-soft">
                         <input type="hidden" name="id" value={checklist.id} />
                         <div className="grid gap-3">
                           <div className="grid gap-2 md:grid-cols-2">
-                            <label className="text-xs uppercase tracking-wide text-gray-400">
-                              Title
-                              <input
+                            <label className="text-sm text-foreground">
+                              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Title
+                              </span>
+                              <Input
                                 name="title"
                                 defaultValue={checklist.title}
-                                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
                                 required
                               />
                             </label>
-                            <label className="text-xs uppercase tracking-wide text-gray-400">
-                              Category
-                              <input
+                            <label className="text-sm text-foreground">
+                              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Category
+                              </span>
+                              <Input
                                 name="category"
                                 defaultValue={checklist.category ?? ''}
-                                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
                               />
                             </label>
                           </div>
-                          <label className="text-xs uppercase tracking-wide text-gray-400">
-                            Summary
-                            <textarea
+                          <label className="text-sm text-foreground">
+                            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Summary
+                            </span>
+                            <Textarea
                               name="summary"
                               defaultValue={checklist.summary ?? ''}
-                              className="mt-1 min-h-[60px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              rows={3}
                             />
                           </label>
                           <button
                             type="submit"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-white"
+                            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                           >
                             Save details
                           </button>
@@ -198,61 +211,65 @@ export default async function AdminKnowledgeHubPage() {
                       </form>
 
                       <div className="space-y-3">
-                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-300">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                           Checklist items
                         </h4>
                         {checklist.items.length === 0 ? (
-                          <p className="rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-4 text-sm text-gray-400">
+                          <p className="rounded-xl border border-dashed border-default bg-background-muted p-4 text-sm text-muted-foreground shadow-soft">
                             No steps yet. Add the first instruction below.
                           </p>
                         ) : (
                           <ul className="space-y-4">
                             {checklist.items.map((item) => (
-                              <li key={item.id} className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
+                              <li key={item.id} className="rounded-2xl border border-default bg-background px-4 py-4 shadow-soft">
                                 <form action={updateChecklistItemAction} className="grid gap-3">
                                   <input type="hidden" name="id" value={item.id} />
                                   <input type="hidden" name="checklistId" value={checklist.id} />
-                                  <label className="text-xs uppercase tracking-wide text-gray-400">
-                                    Instruction
-                                    <textarea
+                                  <label className="text-sm text-foreground">
+                                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                      Instruction
+                                    </span>
+                                    <Textarea
                                       name="text"
                                       defaultValue={item.text}
-                                      className="mt-1 min-h-[70px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                      rows={4}
                                       required
                                     />
                                   </label>
-                                  <label className="text-xs uppercase tracking-wide text-gray-400">
-                                    Notes
-                                    <textarea
+                                  <label className="text-sm text-foreground">
+                                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                      Notes
+                                    </span>
+                                    <Textarea
                                       name="notes"
                                       defaultValue={item.notes ?? ''}
-                                      className="mt-1 min-h-[50px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                      rows={3}
                                     />
                                   </label>
-                                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-200">
+                                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                                     <label className="inline-flex items-center gap-2">
                                       <input
                                         type="checkbox"
                                         name="isRequired"
                                         defaultChecked={item.isRequired}
-                                        className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-emerald-500 focus:ring-emerald-500"
+                                        className="h-4 w-4 rounded border border-default bg-background text-accent focus:ring-accent"
                                       />
                                       Required step
                                     </label>
                                     <label className="inline-flex items-center gap-2">
                                       Order
-                                      <input
+                                      <Input
                                         type="number"
                                         name="position"
                                         min={1}
                                         defaultValue={item.position}
-                                        className="w-16 rounded border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                        className="w-16"
                                       />
                                     </label>
                                   </div>
                                   <button
                                     type="submit"
-                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-black hover:bg-emerald-400"
+                                    className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                                   >
                                     Save item
                                   </button>
@@ -262,7 +279,7 @@ export default async function AdminKnowledgeHubPage() {
                                   <input type="hidden" name="checklistId" value={checklist.id} />
                                   <button
                                     type="submit"
-                                    className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 text-sm text-red-300 hover:bg-red-500/10"
+                                    className="inline-flex items-center gap-2 rounded-full border border-danger/60 px-3 py-2 text-sm text-danger transition hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2"
                                   >
                                     Remove
                                   </button>
@@ -272,31 +289,31 @@ export default async function AdminKnowledgeHubPage() {
                           </ul>
                         )}
 
-                        <form action={addChecklistItemAction} className="rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-4">
+                        <form action={addChecklistItemAction} className="rounded-2xl border border-dashed border-default bg-background px-4 py-4 shadow-soft">
                           <input type="hidden" name="checklistId" value={checklist.id} />
                           <div className="grid gap-3">
-                            <textarea
+                            <Textarea
                               name="text"
                               placeholder="Add a new instruction"
-                              className="min-h-[80px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              rows={4}
                               required
                             />
-                            <textarea
+                            <Textarea
                               name="notes"
                               placeholder="Optional notes or context"
-                              className="min-h-[60px] w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                              rows={3}
                             />
-                            <label className="inline-flex items-center gap-2 text-sm text-gray-200">
+                            <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                               <input
                                 type="checkbox"
                                 name="isRequired"
-                                className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-emerald-500 focus:ring-emerald-500"
+                                className="h-4 w-4 rounded border border-default bg-background text-accent focus:ring-accent"
                               />
                               Required step
                             </label>
                             <button
                               type="submit"
-                              className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-white"
+                              className="inline-flex items-center gap-2 rounded-full border border-accent/60 px-3 py-2 text-sm text-accent transition hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                             >
                               Add item
                             </button>
@@ -306,20 +323,20 @@ export default async function AdminKnowledgeHubPage() {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4">
-                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-300">
+                      <div className="rounded-2xl border border-default bg-background px-5 py-5 shadow-soft">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                           <FileText className="h-4 w-4" /> Linked documents
                         </h4>
                         {linkedDocs.length === 0 ? (
-                          <p className="mt-3 text-sm text-gray-400">No documents attached yet.</p>
+                          <p className="mt-3 text-sm text-muted-foreground">No documents attached yet.</p>
                         ) : (
                           <ul className="mt-3 space-y-3 text-sm">
                             {linkedDocs.map((doc) => (
-                              <li key={doc.id} className="rounded-lg border border-gray-800 bg-gray-900/70 p-3">
+                              <li key={doc.id} className="rounded-xl border border-default bg-background-muted p-3 shadow-soft">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
-                                    <p className="font-medium text-white">{doc.title}</p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="font-medium text-foreground">{doc.title}</p>
+                                    <p className="text-xs text-muted-foreground">
                                       v{doc.version} · {Math.round((doc.size ?? 0) / 1024)} KB
                                     </p>
                                   </div>
@@ -328,7 +345,7 @@ export default async function AdminKnowledgeHubPage() {
                                       href={doc.fileUrl ?? '#'}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="rounded-lg border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800"
+                                      className="rounded-full border border-default px-3 py-1 text-xs text-foreground transition hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                                     >
                                       View
                                     </a>
@@ -337,7 +354,7 @@ export default async function AdminKnowledgeHubPage() {
                                       <input type="hidden" name="documentId" value={doc.id} />
                                       <button
                                         type="submit"
-                                        className="rounded-lg border border-red-500/40 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10"
+                                        className="rounded-full border border-danger/60 px-3 py-1 text-xs text-danger transition hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2"
                                       >
                                         Unlink
                                       </button>
@@ -352,9 +369,8 @@ export default async function AdminKnowledgeHubPage() {
                         {otherDocuments.length > 0 ? (
                           <form action={linkExistingDocumentAction} className="mt-4 grid gap-2">
                             <input type="hidden" name="checklistId" value={checklist.id} />
-                            <select
+                            <Select
                               name="documentId"
-                              className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
                               required
                             >
                               <option value="">Link existing document…</option>
@@ -363,10 +379,10 @@ export default async function AdminKnowledgeHubPage() {
                                   {doc.title} (v{doc.version})
                                 </option>
                               ))}
-                            </select>
+                            </Select>
                             <button
                               type="submit"
-                              className="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-200 hover:bg-gray-800"
+                              className="inline-flex items-center gap-2 rounded-full border border-default px-3 py-2 text-sm text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                             >
                               Attach document
                             </button>
@@ -376,37 +392,35 @@ export default async function AdminKnowledgeHubPage() {
 
                       <form
                         action={uploadDocumentAction}
-                        className="rounded-2xl border border-dashed border-emerald-500/50 bg-emerald-500/5 p-4 text-sm text-emerald-100"
+                        className="rounded-2xl border border-dashed border-accent/50 bg-accent/5 px-5 py-5 text-sm text-foreground"
                       >
                         <input type="hidden" name="checklistId" value={checklist.id} />
-                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-emerald-200">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
                           <UploadCloud className="h-4 w-4" /> Upload a document
                         </h4>
-                        <p className="mt-2 text-xs text-emerald-200/80">
+                        <p className="mt-2 text-xs text-muted-foreground/80">
                           PDF, images, or docs. Files are stored under /public/uploads/knowledge-hub.
                         </p>
                         <div className="mt-3 grid gap-2">
-                          <input
-                            type="text"
+                          <Input
                             name="title"
                             placeholder="Document title"
-                            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
                           />
-                          <textarea
+                          <Textarea
                             name="description"
                             placeholder="Description (optional)"
-                            className="min-h-[50px] rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                            rows={3}
                           />
                           <input
                             type="file"
                             name="file"
                             required
-                            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                            className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft file:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                           />
                           <button
                             type="submit"
                             formEncType="multipart/form-data"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-black hover:bg-emerald-400"
+                            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                           >
                             Upload &amp; attach
                           </button>
@@ -416,15 +430,15 @@ export default async function AdminKnowledgeHubPage() {
                   </section>
 
                   {checklist.versions.length > 0 ? (
-                    <section className="mt-6 rounded-2xl border border-gray-800 bg-gray-900/50 p-4">
-                      <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-300">
+                    <section className="mt-6 rounded-2xl border border-default bg-background px-5 py-5 shadow-soft">
+                      <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         <ArrowUpCircle className="h-4 w-4" /> Version history
                       </h4>
-                      <ul className="mt-3 space-y-2 text-sm text-gray-300">
+                      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                         {checklist.versions.map((version) => (
-                          <li key={version.id} className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2">
-                            <span>v{version.version}</span>
-                            <span className="text-xs text-gray-400">
+                          <li key={version.id} className="flex items-center justify-between rounded-xl border border-default bg-background-muted px-3 py-2 shadow-soft">
+                            <span className="font-medium text-foreground">v{version.version}</span>
+                            <span className="text-xs text-muted-foreground">
                               {version.isPublished ? 'Published' : 'Draft snapshot'} · {formatDate(version.publishedAt ?? version.createdAt)}
                             </span>
                           </li>
@@ -433,57 +447,58 @@ export default async function AdminKnowledgeHubPage() {
                     </section>
                   ) : null}
                 </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </Container>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Document library</h2>
-        </div>
-        {documents.length === 0 ? (
-          <p className="rounded-2xl border border-gray-800 bg-gray-900/40 p-6 text-sm text-gray-300">
-            Upload documents from any checklist to build the shared library.
-          </p>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {documents.map((doc) => (
-              <article key={doc.id} className="rounded-2xl border border-gray-800 bg-gray-900/40 p-4 text-white">
-                <header className="flex items-center justify-between">
+      <Container padding="md">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-xl font-semibold text-foreground">Document library</h2>
+          </div>
+          {documents.length === 0 ? (
+            <p className="rounded-2xl border border-default bg-background-muted p-6 text-sm text-muted-foreground shadow-soft">
+              Upload documents from any checklist to build the shared library.
+            </p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {documents.map((doc) => (
+              <article key={doc.id} className="rounded-3xl border border-default bg-background px-5 py-5 text-foreground shadow-soft">
+                <header className="flex items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold">{doc.title}</h3>
-                    <p className="text-xs text-gray-400">
+                    <h3 className="text-lg font-semibold text-foreground">{doc.title}</h3>
+                    <p className="text-xs text-muted-foreground">
                       v{doc.version} · {Math.round((doc.size ?? 0) / 1024)} KB · {doc.mimeType ?? 'unknown'}
                     </p>
-                    <p className="text-xs text-gray-500">Uploaded {formatDate(doc.createdAt)}</p>
+                    <p className="text-xs text-muted-foreground/80">Uploaded {formatDate(doc.createdAt)}</p>
                   </div>
                   <a
                     href={doc.fileUrl ?? '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-lg border border-gray-700 px-3 py-1 text-xs text-gray-300 hover:bg-gray-800"
+                    className="rounded-full border border-default px-3 py-1 text-xs text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                   >
                     View file
                   </a>
                 </header>
 
-                <form action={updateDocumentMetadataAction} className="mt-3 grid gap-2">
+                <form action={updateDocumentMetadataAction} className="mt-4 grid gap-3">
                   <input type="hidden" name="id" value={doc.id} />
-                  <input
+                  <Input
                     name="title"
                     defaultValue={doc.title}
-                    className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   />
-                  <textarea
+                  <Textarea
                     name="description"
                     defaultValue={doc.description ?? ''}
-                    className="min-h-[50px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    rows={3}
                   />
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-white"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                   >
                     Save metadata
                   </button>
@@ -491,34 +506,37 @@ export default async function AdminKnowledgeHubPage() {
 
                 <form
                   action={uploadDocumentAction}
-                  className="mt-3 rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-3"
+                  className="mt-4 rounded-2xl border border-dashed border-default bg-background-muted p-4 shadow-soft"
                 >
                   <input type="hidden" name="documentId" value={doc.id} />
-                  <label className="text-xs uppercase tracking-wide text-gray-400">
-                    Upload new version
+                  <label className="text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Upload new version
+                    </span>
                     <input
                       type="file"
                       name="file"
                       required
-                      className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     />
                   </label>
-                  <textarea
+                  <Textarea
                     name="description"
                     placeholder="Version notes (optional)"
-                    className="mt-2 min-h-[50px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    rows={3}
+                    className="mt-3"
                   />
                   <button
                     type="submit"
                     formEncType="multipart/form-data"
-                    className="mt-2 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-black hover:bg-emerald-400"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                   >
                     Upload version
                   </button>
                 </form>
 
                 {doc.checklistLinks.length > 0 ? (
-                  <div className="mt-3 rounded-lg border border-gray-800 bg-gray-900/50 p-3 text-xs text-gray-300">
+                  <div className="mt-4 rounded-xl border border-default bg-background-muted p-3 text-xs text-muted-foreground shadow-soft">
                     Linked to:{' '}
                     {doc.checklistLinks.map((link, index) => (
                       <span key={link.checklistId}>
@@ -530,23 +548,24 @@ export default async function AdminKnowledgeHubPage() {
                 ) : null}
 
                 {doc.versions.length > 0 ? (
-                  <details className="mt-3 rounded-lg border border-gray-800 bg-gray-900/50 p-3">
-                    <summary className="cursor-pointer text-sm font-medium text-gray-200">Version history</summary>
-                    <ul className="mt-2 space-y-2 text-xs text-gray-300">
+                  <details className="mt-4 rounded-xl border border-default bg-background-muted p-3 shadow-soft">
+                    <summary className="cursor-pointer text-sm font-medium text-foreground">Version history</summary>
+                    <ul className="mt-2 space-y-2 text-xs text-muted-foreground">
                       {doc.versions.map((version) => (
-                        <li key={version.id} className="flex items-center justify-between rounded border border-gray-800 bg-gray-900/70 px-2 py-1">
-                          <span>v{version.version}</span>
-                          <span>{formatDate(version.createdAt)}</span>
+                        <li key={version.id} className="flex items-center justify-between rounded-lg border border-default bg-background px-2 py-1">
+                          <span className="font-medium text-foreground">v{version.version}</span>
+                          <span className="text-muted-foreground">{formatDate(version.createdAt)}</span>
                         </li>
                       ))}
                     </ul>
                   </details>
                 ) : null}
               </article>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
+      </Container>
     </div>
   );
 }

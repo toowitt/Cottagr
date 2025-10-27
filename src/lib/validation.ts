@@ -55,6 +55,7 @@ export const ExpenseCreateSchema = z.object({
   memo: z.string().max(500).optional(),
   amountCents: z.number().int().min(1, 'Amount must be greater than zero'),
   incurredOn: isoDate('Incurred on'),
+  dueDate: isoDate('Due date').optional(),
   paidByOwnershipId: z.number().int().positive().optional(),
   receiptUrl: z
     .string()

@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { prisma } from '@/lib/prisma';
+import { formatShare } from '@/lib/share';
+import { Container } from '@/components/ui/Container';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { updateOwnershipPreferences } from './actions';
 
 interface ProfilePageProps {
@@ -47,133 +50,130 @@ export default async function OwnerProfilePage({ searchParams }: ProfilePageProp
   const hasOwnerships = ownerships.length > 0;
 
   return (
-    <div className="space-y-10">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold text-white">Your participation</h1>
-        <p className="text-sm text-slate-400">
-          Choose how involved you want to be in approvals, maintenance, and booking notifications. Changes take effect
-          immediately.
-        </p>
-      </header>
+    <>
+      <PageHeader
+        title="Your participation"
+        description="Choose how involved you want to be in approvals, maintenance, and booking notifications. Changes take effect immediately."
+      />
 
-      {successKey === 'preferences-saved' ? (
-        <div className="rounded border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          Preferences saved.
-        </div>
-      ) : null}
+      <Container padding="md" className="space-y-8 py-10">
+        {successKey === 'preferences-saved' ? (
+          <div className="rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-accent-strong">
+            Preferences saved.
+          </div>
+        ) : null}
 
-      {errorMessage ? (
-        <div className="rounded border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {errorMessage}
-        </div>
-      ) : null}
+        {errorMessage ? (
+          <div className="rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            {errorMessage}
+          </div>
+        ) : null}
 
-      {!hasOwnerships ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-6 text-sm text-slate-300">
-          <p>You are not yet linked to an ownership share. Ask an admin to invite you from the setup area.</p>
-          <p className="mt-3 text-xs text-slate-500">
-            Need help?{' '}
-            <Link href="/admin/setup" className="text-emerald-300 hover:text-emerald-200">
-              Go to setup
-            </Link>
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {ownerships.map((ownership) => (
-            <article
-              key={ownership.id}
-              className="space-y-4 rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-inner shadow-black/20"
-            >
-              <header className="flex flex-col gap-2">
-                <h2 className="text-xl font-semibold text-white">{ownership.property.name}</h2>
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Share {(ownership.shareBps / 100).toFixed(2)}% · Voting power {ownership.votingPower}
-                </p>
-              </header>
+        {!hasOwnerships ? (
+          <div className="rounded-2xl border border-default bg-background-muted px-4 py-6 text-sm text-muted-foreground">
+            <p>You are not yet linked to an ownership share. Ask an admin to invite you from the setup area.</p>
+            <p className="mt-3 text-xs text-muted-foreground/70">
+              Need help?{' '}
+              <Link href="/admin/setup" className="text-accent hover:text-accent-strong">
+                Go to setup
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {ownerships.map((ownership) => (
+              <article
+                key={ownership.id}
+                className="space-y-6 rounded-3xl border border-default bg-background px-6 py-6 shadow-soft"
+              >
+                <header className="flex flex-col gap-2">
+                  <h2 className="text-xl font-semibold text-foreground">{ownership.property.name}</h2>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Share {formatShare(ownership.shareBps)} · Voting power {ownership.votingPower}
+                  </p>
+                </header>
 
-              <form action={updateOwnershipPreferences} className="grid gap-4 lg:grid-cols-2">
-                <input type="hidden" name="ownershipId" value={ownership.id} />
+                <form action={updateOwnershipPreferences} className="grid gap-4 lg:grid-cols-2">
+                  <input type="hidden" name="ownershipId" value={ownership.id} />
 
-                <fieldset className="space-y-2 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                  <legend className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                    Booking participation
-                  </legend>
-                  <label className="flex items-center gap-3 text-sm text-slate-200">
-                    <input
-                      type="checkbox"
+                  <fieldset className="space-y-3 rounded-2xl border border-default bg-background-muted px-4 py-4">
+                    <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Booking participation
+                    </legend>
+                    <PreferenceToggle
                       name="bookingApprover"
                       defaultChecked={ownership.bookingApprover}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
+                      label="Approve booking requests"
                     />
-                    Approve booking requests
-                  </label>
-                  <label className="flex items-center gap-3 text-sm text-slate-200">
-                    <input
-                      type="checkbox"
+                    <PreferenceToggle
                       name="autoSkipBookings"
                       defaultChecked={ownership.autoSkipBookings}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
+                      label="Skip booking approvals by default (counts as abstain)"
                     />
-                    Skip booking approvals by default (counts as abstain)
-                  </label>
-                  <label className="flex items-center gap-3 text-sm text-slate-200">
-                    <input
-                      type="checkbox"
+                    <PreferenceToggle
                       name="notifyOnBookings"
                       defaultChecked={ownership.notifyOnBookings}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
+                      label="Notify me about booking activity"
                     />
-                    Notify me about booking activity
-                  </label>
-                </fieldset>
+                  </fieldset>
 
-                <fieldset className="space-y-2 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                  <legend className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                    Expense & maintenance
-                  </legend>
-                  <label className="flex items-center gap-3 text-sm text-slate-200">
-                    <input
-                      type="checkbox"
+                  <fieldset className="space-y-3 rounded-2xl border border-default bg-background-muted px-4 py-4">
+                    <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Expense & maintenance
+                    </legend>
+                    <PreferenceToggle
                       name="expenseApprover"
                       defaultChecked={ownership.expenseApprover}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
+                      label="Approve expenses"
                     />
-                    Approve expenses
-                  </label>
-                  <label className="flex items-center gap-3 text-sm text-slate-200">
-                    <input
-                      type="checkbox"
+                    <PreferenceToggle
                       name="notifyOnExpenses"
                       defaultChecked={ownership.notifyOnExpenses}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
+                      label="Notify me about expense activity"
                     />
-                    Notify me about expense activity
-                  </label>
-                  <label className="flex items-center gap-3 text-sm text-slate-200">
-                    <input
-                      type="checkbox"
+                    <PreferenceToggle
                       name="blackoutManager"
                       defaultChecked={ownership.blackoutManager}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
+                      label="Allow me to manage blackout dates"
                     />
-                    Allow me to manage blackout dates
-                  </label>
-                </fieldset>
+                  </fieldset>
 
-                <div className="lg:col-span-2 flex justify-end">
-                  <button
-                    type="submit"
-                    className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
-                  >
-                    Save preferences
-                  </button>
-                </div>
-              </form>
-            </article>
-          ))}
-        </div>
-      )}
-    </div>
+                  <div className="lg:col-span-2 flex justify-end">
+                    <button
+                      type="submit"
+                      className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background shadow-soft transition hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                    >
+                      Save preferences
+                    </button>
+                  </div>
+                </form>
+              </article>
+            ))}
+          </div>
+        )}
+      </Container>
+    </>
+  );
+}
+
+function PreferenceToggle({
+  name,
+  defaultChecked,
+  label,
+}: {
+  name: string;
+  defaultChecked: boolean;
+  label: string;
+}) {
+  return (
+    <label className="flex items-center gap-3 text-sm text-foreground">
+      <input
+        type="checkbox"
+        name={name}
+        defaultChecked={defaultChecked}
+        className="h-4 w-4 rounded border-default text-accent focus:ring-accent"
+      />
+      <span className="leading-tight text-sm text-foreground/90">{label}</span>
+    </label>
   );
 }

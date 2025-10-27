@@ -1,15 +1,25 @@
 
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Container } from '@/components/ui/Container';
+
 export default function AdminCalendarPage() {
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8">Calendar</h1>
-      <div className="bg-gray-800 p-8 rounded-lg text-center">
-        <div className="text-6xl mb-4">📅</div>
-        <h2 className="text-xl font-semibold mb-4">Availability Calendar</h2>
-        <p className="text-gray-400">
-          Calendar view for managing property availability and bookings coming soon.
-        </p>
-      </div>
-    </div>
+    <>
+      <PageHeader
+        title="Calendar"
+        description="Unified view of bookings, blackouts, and availability across every property. Calendar tooling is coming soon."
+      />
+
+      <Container padding="md" className="py-10">
+        <div className="rounded-3xl border border-dashed border-default bg-background-muted px-6 py-16 text-center shadow-soft">
+          <div className="text-6xl mb-6">📅</div>
+          <h2 className="text-xl font-semibold text-foreground">Availability calendar</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Calendar view for managing property availability and bookings is in progress. Meanwhile, use the bookings
+            list to approve, adjust, or review stays.
+          </p>
+        </div>
+      </Container>
+    </>
   );
 }

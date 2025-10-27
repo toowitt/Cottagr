@@ -8,15 +8,17 @@ export async function createArticleAction(formData: FormData) {
   const title = formData.get('title') as string;
   const slug = formData.get('slug') as string;
   const excerpt = formData.get('excerpt') as string;
-  const content = formData.get('content') as string;
+  const contentHtml = (formData.get('content') as string) ?? '';
+  const contentText = ((formData.get('contentText') as string) ?? '').trim();
   const categoryId = formData.get('categoryId') as string;
   const status = formData.get('status') as string;
 
-  if (!title || !slug || !content) {
+  if (!title || !slug || !contentHtml) {
     throw new Error('Title, slug, and content are required');
   }
 
-  const wordCount = content.split(/\s+/).length;
+  const sourceText = contentText || contentHtml.replace(/<[^>]+>/g, ' ');
+  const wordCount = sourceText.trim() ? sourceText.trim().split(/\s+/).length : 0;
   const readingTimeMin = Math.max(1, Math.ceil(wordCount / 200));
 
   await prisma.blogArticle.create({
@@ -24,7 +26,7 @@ export async function createArticleAction(formData: FormData) {
       title,
       slug,
       excerpt: excerpt || null,
-      content,
+      content: contentHtml,
       status: (status as ArticleStatus) || ArticleStatus.DRAFT,
       publishedAt: status === ArticleStatus.PUBLISHED ? new Date() : null,
       readingTimeMin,
@@ -41,10 +43,12 @@ export async function updateArticleAction(formData: FormData) {
   const title = formData.get('title') as string;
   const slug = formData.get('slug') as string;
   const excerpt = formData.get('excerpt') as string;
-  const content = formData.get('content') as string;
+  const contentHtml = (formData.get('content') as string) ?? '';
+  const contentText = ((formData.get('contentText') as string) ?? '').trim();
   const categoryId = formData.get('categoryId') as string;
 
-  const wordCount = content.split(/\s+/).length;
+  const sourceText = contentText || contentHtml.replace(/<[^>]+>/g, ' ');
+  const wordCount = sourceText.trim() ? sourceText.trim().split(/\s+/).length : 0;
   const readingTimeMin = Math.max(1, Math.ceil(wordCount / 200));
 
   await prisma.blogArticle.update({
@@ -53,7 +57,7 @@ export async function updateArticleAction(formData: FormData) {
       title,
       slug,
       excerpt: excerpt || null,
-      content,
+      content: contentHtml,
       readingTimeMin,
       categoryId: categoryId ? parseInt(categoryId) : null,
     },

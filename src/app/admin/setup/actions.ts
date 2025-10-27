@@ -4,6 +4,7 @@ import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
+import { percentToBasisPoints } from '@/lib/share';
 import { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -217,7 +218,7 @@ const OwnerSchema = z.object({
   email: z.string().email('Valid email required'),
   firstName: z.string().min(1, 'First name required'),
   lastName: z.string().optional(),
-  shareBps: z.coerce.number().int().min(0).max(10000),
+  sharePercent: z.coerce.number().min(0).max(100),
   votingPower: z.coerce.number().int().min(0),
   role: z.enum(['PRIMARY', 'OWNER', 'CARETAKER']).default('OWNER'),
 });
@@ -227,7 +228,7 @@ const OwnershipUpdateSchema = z.object({
   firstName: z.string().min(1, 'First name required'),
   lastName: z.string().optional(),
   email: z.string().email('Valid email required'),
-  shareBps: z.coerce.number().int().min(0).max(10000),
+  sharePercent: z.coerce.number().min(0).max(100),
   votingPower: z.coerce.number().int().min(0),
   role: z.enum(['PRIMARY', 'OWNER', 'CARETAKER']).default('OWNER'),
 });
@@ -241,6 +242,8 @@ export async function setupAddOwner(formData: FormData) {
     const msg = parsed.error.issues?.[0]?.message ?? 'Invalid input';
     redirect(`/admin/setup?error=${encodeURIComponent(msg)}`);
   }
+
+  const shareBps = percentToBasisPoints(parsed.data.sharePercent);
 
   const property = await prisma.property.findUnique({
     where: { id: parsed.data.propertyId },
@@ -263,7 +266,7 @@ export async function setupAddOwner(formData: FormData) {
   }
 
   const currentShare = property.ownerships.reduce((total, ownership) => total + ownership.shareBps, 0);
-  if (currentShare + parsed.data.shareBps > 10000) {
+  if (currentShare + shareBps > 10000) {
     redirect(
       `/admin/setup?error=${encodeURIComponent('Shares exceed 100%.')}&focus=${encodeURIComponent(
         `owners-${property.id}`,
@@ -290,7 +293,7 @@ export async function setupAddOwner(formData: FormData) {
         propertyId: property.id,
         ownerId: owner.id,
         role: parsed.data.role,
-        shareBps: parsed.data.shareBps,
+        shareBps,
         votingPower: parsed.data.votingPower,
       },
     });
@@ -409,6 +412,8 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
     redirect(`/admin/setup?error=${encodeURIComponent(msg)}&focus=${encodeURIComponent(`owners-${propertyKey}`)}`);
   }
 
+  const shareBps = percentToBasisPoints(parsed.data.sharePercent);
+
   const ownership = await ensureOwnershipAccess(ownershipId, allowedOrgIds);
 
   if (ownership.property.id !== parsed.data.propertyId) {
@@ -432,7 +437,7 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
   });
 
   const otherShare = siblingShare._sum.shareBps ?? 0;
-  if (otherShare + parsed.data.shareBps > 10000) {
+  if (otherShare + shareBps > 10000) {
     redirect(
       `/admin/setup?error=${encodeURIComponent('Shares exceed 100%.')}&focus=${encodeURIComponent(
         `owners-${ownership.property.id}`,
@@ -482,7 +487,7 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
   await prisma.ownership.update({
     where: { id: ownershipId },
     data: {
-      shareBps: parsed.data.shareBps,
+      shareBps,
       votingPower: parsed.data.votingPower,
       role: parsed.data.role,
     },

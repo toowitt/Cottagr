@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { formatShare } from '@/lib/share'
 
 interface OwnerSummary {
   id: number
@@ -65,6 +66,7 @@ interface Expense {
   amountCents: number
   amountFormatted: string
   incurredOn: string
+  dueDate: string | null
   status: ExpenseStatus
   decisionSummary: string | null
   receiptUrl: string | null
@@ -80,10 +82,23 @@ const statusStyles: Record<ExpenseStatus, string> = {
   rejected: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
 }
 
+const DEFAULT_CATEGORIES = [
+  'Repairs',
+  'Utilities',
+  'Taxes',
+  'Supplies',
+  'Insurance',
+  'Maintenance',
+  'Cleaning',
+  'Services',
+  'Other',
+] as const
+
 export default function ExpensesPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null)
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([...DEFAULT_CATEGORIES])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -108,6 +123,7 @@ export default function ExpensesPage() {
     category: '',
     amount: '',
     incurredOn: todayIso(),
+    dueDate: '',
     memo: '',
     receiptUrl: '',
     paidByOwnershipId: '',
@@ -162,7 +178,21 @@ export default function ExpensesPage() {
           if (bDate !== aDate) return bDate - aDate
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         })
-        setExpenses(sorted)
+        const normalized = sorted.map((expense) => ({
+          ...expense,
+          dueDate: expense.dueDate ?? null,
+        }))
+        const categoriesFromData = Array.from(
+          new Set(
+            normalized
+              .map((expense) => expense.category)
+              .filter((category): category is string => Boolean(category) && category.trim().length > 0),
+          ),
+        )
+        if (categoriesFromData.length > 0) {
+          setCategoryOptions((prev) => Array.from(new Set([...prev, ...categoriesFromData])))
+        }
+        setExpenses(normalized)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load expenses')
@@ -195,11 +225,15 @@ export default function ExpensesPage() {
     setValidationErrors([])
 
     const isUploaded = Boolean(expense.receiptUrl && expense.receiptUrl.startsWith('/uploads/expenses/'))
+    if (expense.category && !categoryOptions.includes(expense.category)) {
+      setCategoryOptions((prev) => Array.from(new Set([...prev, expense.category!])))
+    }
     setFormData({
       vendorName: expense.vendorName ?? '',
       category: expense.category ?? '',
       amount: (expense.amountCents / 100).toFixed(2),
       incurredOn: expense.incurredOn,
+      dueDate: expense.dueDate ?? '',
       memo: expense.memo ?? '',
       receiptUrl: isUploaded ? '' : expense.receiptUrl ?? '',
       paidByOwnershipId: expense.paidByOwnershipId ? String(expense.paidByOwnershipId) : '',
@@ -344,6 +378,13 @@ export default function ExpensesPage() {
     if (!formData.incurredOn) {
       errors.push('Choose the date the expense was incurred')
     }
+    if (formData.dueDate) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(formData.dueDate)) {
+        errors.push('Due date must be in YYYY-MM-DD format')
+      } else if (formData.dueDate < formData.incurredOn) {
+        errors.push('Due date cannot be before the incurred date')
+      }
+    }
 
     return errors
   }
@@ -391,10 +432,11 @@ export default function ExpensesPage() {
         vendorName: formData.vendorName || undefined,
         category: formData.category || undefined,
         memo: formData.memo || undefined,
-        amountCents: cents,
-        incurredOn: formData.incurredOn,
-        paidByOwnershipId,
-        receiptUrl: receiptHref || undefined,
+      amountCents: cents,
+      incurredOn: formData.incurredOn,
+      dueDate: formData.dueDate || undefined,
+      paidByOwnershipId,
+      receiptUrl: receiptHref || undefined,
       }
 
       const response = await fetch(endpoint, {
@@ -525,7 +567,7 @@ export default function ExpensesPage() {
                       {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
                     </span>
                     <span className="text-xs text-slate-400">
-                      Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
+                      Share {formatShare(ownership.shareBps)} · Power {ownership.votingPower}
                     </span>
                   </li>
                 ))}
@@ -576,7 +618,7 @@ export default function ExpensesPage() {
                         {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
                       </p>
                       <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Share {(ownership.shareBps / 100).toFixed(2)}% · Paid {formatMoney(paidCents)} · Owes {formatMoney(owedCents)}
+                        Share {formatShare(ownership.shareBps)} · Paid {formatMoney(paidCents)} · Owes {formatMoney(owedCents)}
                       </p>
                     </div>
                     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
@@ -615,8 +657,9 @@ export default function ExpensesPage() {
               {isEditing && editingExpense && (
                 <div className="mt-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
                   <p>
-                    Editing “{editingExpense.vendorName || 'Untitled expense'}” from {formatDisplayDate(editingExpense.incurredOn)}.
-                    Saving will reset approvals for this expense.
+                    Editing “{editingExpense.vendorName || 'Untitled expense'}” from {formatDisplayDate(editingExpense.incurredOn)}
+                    {editingExpense.dueDate ? ` · Due ${formatDisplayDate(editingExpense.dueDate)}` : ''}. Saving will reset
+                    approvals for this expense.
                   </p>
                 </div>
               )}
@@ -635,17 +678,22 @@ export default function ExpensesPage() {
                   </label>
                   <label className="text-sm text-slate-300">
                     <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Category</span>
-                    <input
-                      type="text"
+                    <select
                       value={formData.category}
                       onChange={(e) => handleFormChange('category', e.target.value)}
-                      placeholder="Repairs, Utilities, Supplies…"
                       className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
+                    >
+                      <option value="">Select category</option>
+                      {categoryOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <label className="text-sm text-slate-300">
                     <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Amount (CAD)</span>
                     <input
@@ -667,6 +715,15 @@ export default function ExpensesPage() {
                       onChange={(e) => handleFormChange('incurredOn', e.target.value)}
                       className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                       required
+                    />
+                  </label>
+                  <label className="text-sm text-slate-300">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Due date</span>
+                    <input
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e) => handleFormChange('dueDate', e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </label>
                 </div>
@@ -694,7 +751,7 @@ export default function ExpensesPage() {
                     <option value="">Not recorded yet</option>
                     {selectedProperty?.ownerships.map((ownership) => (
                       <option key={ownership.id} value={ownership.id}>
-                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({(ownership.shareBps / 100).toFixed(2)}%)
+                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({formatShare(ownership.shareBps)})
                       </option>
                     ))}
                   </select>
@@ -844,6 +901,7 @@ export default function ExpensesPage() {
                             <p className="text-sm text-slate-400">
                               {expense.category ? `${expense.category} · ` : ''}
                               {formatDisplayDate(expense.incurredOn)}
+                              {expense.dueDate ? <> · Due {formatDisplayDate(expense.dueDate)}</> : null}
                             </p>
                             {expense.memo && (
                               <p className="mt-2 text-sm text-slate-300 leading-relaxed">{expense.memo}</p>

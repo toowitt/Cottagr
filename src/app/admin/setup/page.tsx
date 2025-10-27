@@ -5,6 +5,7 @@ import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { basisPointsToPercent, formatShare } from '@/lib/share';
 import {
   setupAddOwner,
   setupCreateOrganization,
@@ -424,7 +425,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
         )}
 
         {hasProperties ? (
-          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70">
+          <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/70">
             <table className="w-full text-sm text-slate-200">
               <thead className="bg-slate-900/80 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
@@ -507,7 +508,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                     <div>
                       <h3 className="text-xl font-semibold text-white">{property.name}</h3>
                       <p className="text-xs uppercase tracking-wide text-slate-500">
-                        {((shareTotal / 10000) * 100).toFixed(2)}% allocated · {property.ownerships.length}{' '}
+                        {formatShare(shareTotal)} allocated · {property.ownerships.length}{' '}
                         owner{property.ownerships.length === 1 ? '' : 's'}
                       </p>
                     </div>
@@ -564,16 +565,17 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                         <div className="grid gap-3 sm:grid-cols-2">
                           <label className="text-sm text-slate-300">
                             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                              Share (basis points)
+                              Share (%)
                             </span>
                             <input
                               type="number"
-                              name="shareBps"
+                              name="sharePercent"
                               min="0"
-                              max="10000"
+                              max="100"
+                              step="0.01"
                               required
                               className="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                              placeholder="4000"
+                              placeholder="33.33"
                             />
                           </label>
                           <label className="text-sm text-slate-300">
@@ -640,7 +642,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                     <p className="text-xs text-slate-400">{ownership.owner.email}</p>
                                   </div>
                                   <div className="text-xs text-slate-400">
-                                    Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
+                                    Share {formatShare(ownership.shareBps)} · Power {ownership.votingPower}
                                   </div>
                                 </div>
 
@@ -681,13 +683,14 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         />
                                       </label>
                                       <label className="text-xs text-slate-400">
-                                        <span className="mb-1 block uppercase tracking-wide">Share (bps)</span>
+                                        <span className="mb-1 block uppercase tracking-wide">Share (%)</span>
                                         <input
                                           type="number"
-                                          name="shareBps"
+                                          name="sharePercent"
                                           min="0"
-                                          max="10000"
-                                          defaultValue={ownership.shareBps}
+                                          max="100"
+                                          step="0.01"
+                                          defaultValue={basisPointsToPercent(ownership.shareBps)}
                                           className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                         />
                                       </label>
@@ -732,7 +735,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                     <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                       <div className="grid gap-2 text-xs text-slate-300 md:grid-cols-3">
                                         <span>
-                                          Share: <strong>{(ownership.shareBps / 100).toFixed(2)}%</strong>
+                                          Share: <strong>{formatShare(ownership.shareBps)}</strong>
                                         </span>
                                         <span>
                                           Voting power: <strong>{ownership.votingPower}</strong>

@@ -5,8 +5,7 @@ import { notFound } from 'next/navigation';
 if (process.env.NODE_ENV === 'production') {
   notFound();
 }
-import { Calendar, ClipboardList, Home, MenuSquare, Users } from 'lucide-react';
-import { AppShell } from '@/components/navigation/AppShell';
+import AppShell, { type NavItem } from '@/components/ui/AppShell';
 import { Container, PageHeader, ResponsiveGrid } from '@/components/ui';
 import {
   ResponsiveTable,
@@ -111,12 +110,13 @@ const columns: ResponsiveColumn<DemoRow>[] = [
   },
 ];
 
-const navItems = [
-  { href: '/responsive-test', label: 'Dashboard', icon: MenuSquare },
-  { href: '#bookings', label: 'Bookings', icon: Calendar },
-  { href: '#owners', label: 'Owners', icon: Users },
-  { href: '#property', label: 'Properties', icon: Home },
-  { href: '#tasks', label: 'Tasks', icon: ClipboardList },
+const navItems: NavItem[] = [
+  { href: '/responsive-test', name: 'Dashboard', icon: 'Home' },
+  { href: '#bookings', name: 'Bookings', icon: 'Calendar' },
+  { href: '#owners', name: 'Owners', icon: 'Users' },
+  { href: '#property', name: 'Properties', icon: 'Home' },
+  { href: '/admin/blog', name: 'Blog', icon: 'Newspaper' },
+  { href: '#tasks', name: 'Tasks', icon: 'ListTodo' },
 ];
 
 const actions = [
@@ -137,18 +137,7 @@ const actions = [
 
 export default function ResponsiveTestPage() {
   return (
-    <AppShell
-      title={<span className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">Cottagr Preview</span>}
-      navItems={navItems}
-      actions={
-        <button
-          type="button"
-          className="touch-target hidden rounded-full bg-accent px-4 py-2 text-sm font-semibold text-background shadow-soft transition hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 md:inline-flex"
-        >
-          New booking
-        </button>
-      }
-    >
+    <AppShell nav={navItems}>
       <PageHeader
         title="Responsive system preview"
         description="This internal screen exercises navigation, responsive tables, and primary action layout across breakpoints."

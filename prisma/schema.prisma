@@ -299,6 +299,7 @@ model Expense {
   memo                 String?
   amountCents          Int
   incurredOn           DateTime
+  dueDate              DateTime?
   status               ExpenseStatus   @default(pending)
   receiptUrl           String?
   decisionSummary      String?
