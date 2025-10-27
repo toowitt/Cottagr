@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { formatShare } from '@/lib/share'
 
 interface OwnerSummary {
   id: number
@@ -525,7 +526,7 @@ export default function ExpensesPage() {
                       {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
                     </span>
                     <span className="text-xs text-slate-400">
-                      Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
+                      Share {formatShare(ownership.shareBps)} · Power {ownership.votingPower}
                     </span>
                   </li>
                 ))}
@@ -576,7 +577,7 @@ export default function ExpensesPage() {
                         {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
                       </p>
                       <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Share {(ownership.shareBps / 100).toFixed(2)}% · Paid {formatMoney(paidCents)} · Owes {formatMoney(owedCents)}
+                        Share {formatShare(ownership.shareBps)} · Paid {formatMoney(paidCents)} · Owes {formatMoney(owedCents)}
                       </p>
                     </div>
                     <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
@@ -694,7 +695,7 @@ export default function ExpensesPage() {
                     <option value="">Not recorded yet</option>
                     {selectedProperty?.ownerships.map((ownership) => (
                       <option key={ownership.id} value={ownership.id}>
-                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({(ownership.shareBps / 100).toFixed(2)}%)
+                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({formatShare(ownership.shareBps)})
                       </option>
                     ))}
                   </select>

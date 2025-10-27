@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { prisma } from '@/lib/prisma';
+import { formatShare } from '@/lib/share';
 import { Container } from '@/components/ui/Container';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { updateOwnershipPreferences } from './actions';
@@ -88,7 +89,7 @@ export default async function OwnerProfilePage({ searchParams }: ProfilePageProp
                 <header className="flex flex-col gap-2">
                   <h2 className="text-xl font-semibold text-foreground">{ownership.property.name}</h2>
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Share {(ownership.shareBps / 100).toFixed(2)}% · Voting power {ownership.votingPower}
+                    Share {formatShare(ownership.shareBps)} · Voting power {ownership.votingPower}
                   </p>
                 </header>
 

@@ -1,6 +1,7 @@
 import { Container } from '@/components/ui/Container';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { prisma } from '@/lib/prisma';
 import {
@@ -86,7 +87,7 @@ export default async function AdminKnowledgeHubPage() {
             </label>
             <button
               type="submit"
-              className="md:col-span-2 inline-flex w-full items-center justify-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-soft transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="md:col-span-2 inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-black shadow-soft transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
             >
               Create checklist
             </button>
@@ -174,10 +175,9 @@ export default async function AdminKnowledgeHubPage() {
                               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 Title
                               </span>
-                              <input
+                              <Input
                                 name="title"
                                 defaultValue={checklist.title}
-                                className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                 required
                               />
                             </label>
@@ -185,10 +185,9 @@ export default async function AdminKnowledgeHubPage() {
                               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 Category
                               </span>
-                              <input
+                              <Input
                                 name="category"
                                 defaultValue={checklist.category ?? ''}
-                                className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                               />
                             </label>
                           </div>
@@ -196,15 +195,15 @@ export default async function AdminKnowledgeHubPage() {
                             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                               Summary
                             </span>
-                            <textarea
+                            <Textarea
                               name="summary"
                               defaultValue={checklist.summary ?? ''}
-                              className="min-h-[60px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                              rows={3}
                             />
                           </label>
                           <button
                             type="submit"
-                            className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-3 py-2 text-sm font-semibold text-background transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+                            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                           >
                             Save details
                           </button>
@@ -230,10 +229,10 @@ export default async function AdminKnowledgeHubPage() {
                                     <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                       Instruction
                                     </span>
-                                    <textarea
+                                    <Textarea
                                       name="text"
                                       defaultValue={item.text}
-                                      className="min-h-[70px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                      rows={4}
                                       required
                                     />
                                   </label>
@@ -241,10 +240,10 @@ export default async function AdminKnowledgeHubPage() {
                                     <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                       Notes
                                     </span>
-                                    <textarea
+                                    <Textarea
                                       name="notes"
                                       defaultValue={item.notes ?? ''}
-                                      className="min-h-[50px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                      rows={3}
                                     />
                                   </label>
                                   <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -259,18 +258,18 @@ export default async function AdminKnowledgeHubPage() {
                                     </label>
                                     <label className="inline-flex items-center gap-2">
                                       Order
-                                      <input
+                                      <Input
                                         type="number"
                                         name="position"
                                         min={1}
                                         defaultValue={item.position}
-                                        className="w-16 rounded border border-default bg-background px-2 py-1 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                        className="w-16"
                                       />
                                     </label>
                                   </div>
                                   <button
                                     type="submit"
-                                    className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                                    className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                                   >
                                     Save item
                                   </button>
@@ -293,16 +292,16 @@ export default async function AdminKnowledgeHubPage() {
                         <form action={addChecklistItemAction} className="rounded-2xl border border-dashed border-default bg-background px-4 py-4 shadow-soft">
                           <input type="hidden" name="checklistId" value={checklist.id} />
                           <div className="grid gap-3">
-                            <textarea
+                            <Textarea
                               name="text"
                               placeholder="Add a new instruction"
-                              className="min-h-[80px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                              rows={4}
                               required
                             />
-                            <textarea
+                            <Textarea
                               name="notes"
                               placeholder="Optional notes or context"
-                              className="min-h-[60px] w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                              rows={3}
                             />
                             <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                               <input
@@ -370,9 +369,8 @@ export default async function AdminKnowledgeHubPage() {
                         {otherDocuments.length > 0 ? (
                           <form action={linkExistingDocumentAction} className="mt-4 grid gap-2">
                             <input type="hidden" name="checklistId" value={checklist.id} />
-                            <select
+                            <Select
                               name="documentId"
-                              className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                               required
                             >
                               <option value="">Link existing document…</option>
@@ -381,7 +379,7 @@ export default async function AdminKnowledgeHubPage() {
                                   {doc.title} (v{doc.version})
                                 </option>
                               ))}
-                            </select>
+                            </Select>
                             <button
                               type="submit"
                               className="inline-flex items-center gap-2 rounded-full border border-default px-3 py-2 text-sm text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
@@ -394,26 +392,24 @@ export default async function AdminKnowledgeHubPage() {
 
                       <form
                         action={uploadDocumentAction}
-                        className="rounded-2xl border border-dashed border-accent/50 bg-accent/5 px-5 py-5 text-sm text-accent"
+                        className="rounded-2xl border border-dashed border-accent/50 bg-accent/5 px-5 py-5 text-sm text-foreground"
                       >
                         <input type="hidden" name="checklistId" value={checklist.id} />
                         <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
                           <UploadCloud className="h-4 w-4" /> Upload a document
                         </h4>
-                        <p className="mt-2 text-xs text-accent/80">
+                        <p className="mt-2 text-xs text-muted-foreground/80">
                           PDF, images, or docs. Files are stored under /public/uploads/knowledge-hub.
                         </p>
                         <div className="mt-3 grid gap-2">
-                          <input
-                            type="text"
+                          <Input
                             name="title"
                             placeholder="Document title"
-                            className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                           />
-                          <textarea
+                          <Textarea
                             name="description"
                             placeholder="Description (optional)"
-                            className="min-h-[50px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                            rows={3}
                           />
                           <input
                             type="file"
@@ -424,7 +420,7 @@ export default async function AdminKnowledgeHubPage() {
                           <button
                             type="submit"
                             formEncType="multipart/form-data"
-                            className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                            className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                           >
                             Upload &amp; attach
                           </button>
@@ -456,7 +452,9 @@ export default async function AdminKnowledgeHubPage() {
             </div>
           )}
         </section>
+      </Container>
 
+      <Container padding="md">
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold text-foreground">Document library</h2>
@@ -489,19 +487,18 @@ export default async function AdminKnowledgeHubPage() {
 
                 <form action={updateDocumentMetadataAction} className="mt-4 grid gap-3">
                   <input type="hidden" name="id" value={doc.id} />
-                  <input
+                  <Input
                     name="title"
                     defaultValue={doc.title}
-                    className="rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   />
-                  <textarea
+                  <Textarea
                     name="description"
                     defaultValue={doc.description ?? ''}
-                    className="min-h-[50px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    rows={3}
                   />
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-3 py-2 text-sm font-semibold text-background transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                   >
                     Save metadata
                   </button>
@@ -523,15 +520,16 @@ export default async function AdminKnowledgeHubPage() {
                       className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     />
                   </label>
-                  <textarea
+                  <Textarea
                     name="description"
                     placeholder="Version notes (optional)"
-                    className="mt-3 min-h-[50px] rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    rows={3}
+                    className="mt-3"
                   />
                   <button
                     type="submit"
                     formEncType="multipart/form-data"
-                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                   >
                     Upload version
                   </button>
