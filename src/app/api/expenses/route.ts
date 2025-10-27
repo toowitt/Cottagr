@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
       amountCents: expense.amountCents,
       amountFormatted: formatCents(expense.amountCents),
       incurredOn: expense.incurredOn.toISOString().split('T')[0],
+      dueDate: expense.dueDate ? expense.dueDate.toISOString().split('T')[0] : null,
       status: expense.status,
       decisionSummary: expense.decisionSummary,
       receiptUrl: expense.receiptUrl,
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
       memo,
       amountCents,
       incurredOn,
+      dueDate,
       receiptUrl,
     } = parsed.data;
 
@@ -172,6 +174,7 @@ export async function POST(request: NextRequest) {
       memo: memo?.trim() || null,
       amountCents,
       incurredOn: new Date(`${incurredOn}T00:00:00Z`),
+      dueDate: dueDate ? new Date(`${dueDate}T00:00:00Z`) : null,
       status: 'pending', // default pending status
       receiptUrl: receiptUrl?.trim() || null,
     };
@@ -218,6 +221,7 @@ export async function PATCH(request: NextRequest) {
       memo,
       amountCents,
       incurredOn,
+      dueDate,
       receiptUrl,
     } = parsed.data;
 
@@ -261,6 +265,7 @@ export async function PATCH(request: NextRequest) {
           memo: memo?.trim() || null,
           amountCents,
           incurredOn: new Date(`${incurredOn}T00:00:00Z`),
+          dueDate: dueDate ? new Date(`${dueDate}T00:00:00Z`) : null,
           receiptUrl: receiptUrl?.trim() || null,
           status: 'pending',
           decisionSummary: null,

@@ -18,7 +18,7 @@ If you still see 429 responses, wait for the cooldown (usually ~60 s) or adjus
 
 ### Email confirmations & SMTP
 
-- Copy `.env.example` to `.env.local` and provide values for `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO` (defaults to `http://localhost:3000/admin/setup` for local onboarding).
+- Copy `.env.example` to `.env.local` and provide values for `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO` (defaults to `http://localhost:4001/admin/setup` for local onboarding).
 - In the Supabase dashboard, enable email confirmations and update the Site URL/Auth redirect to match `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO`.
 - Provide SMTP credentials (e.g., Mailpit or another sandbox) via the Supabase project settings. The `.env.example` file lists the `SUPABASE_SMTP_*` variables you can mirror in Supabase to send confirmation emails during development.
 - Run `npm run check-env` to verify the required variables are present before starting the app.
@@ -46,7 +46,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:4001](http://localhost:4001) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
