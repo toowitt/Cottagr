@@ -286,7 +286,7 @@ export default async function AdminDashboard() {
           </Link>
         }
       >
-        <ResponsiveGrid columns={{ base: 1, md: 2, xl: 4 }} gap="md">
+        <ResponsiveGrid columns={{ base: 1, md: 2, xl: 4 }} gap="md" className="w-full">
           <DashboardStat label="Organizations" value={organizations.length} href="/admin/setup#organizations" />
           <DashboardStat label="Properties" value={propertyIds.length} href="/admin/setup#properties" />
           <DashboardStat label="Owners" value={ownerMap.size} href="/admin/setup#owners" />

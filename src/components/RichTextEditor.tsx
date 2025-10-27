@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { loadQuill } from '@/lib/quill';
+import { loadQuill, type RichTextValue } from '@/lib/quill';
 import 'quill/dist/quill.snow.css';
 
 interface RichTextEditorProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: RichTextValue;
+  onChange: (value: RichTextValue) => void;
   placeholder?: string;
 }
 
@@ -56,13 +56,21 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
       quillRef.current = quill;
 
+      const initialHtml = value?.html ?? '';
       isInternalUpdate.current = true;
-      quill.setContents(quill.clipboard.convert(value || ''), 'silent');
+      const initialDelta = quill.clipboard.convert({ html: initialHtml });
+      quill.setContents(initialDelta, 'silent');
       isInternalUpdate.current = false;
 
       const handleChange = () => {
         if (isInternalUpdate.current) return;
-        onChange(quill.root.innerHTML);
+
+        const html = quill.root.innerHTML;
+        const text = quill.getText().trim();
+        onChange({
+          html,
+          text,
+        });
       };
 
       quill.on('text-change', handleChange);
@@ -76,11 +84,13 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       };
     };
 
-    mountQuill().catch(() => {
-      // swallow import errors to avoid crashing the client; UI will stay blank
-    }).finally(() => {
-      isMountingRef.current = false;
-    });
+    mountQuill()
+      .catch(() => {
+        // swallow import errors to avoid crashing the client; UI will stay blank
+      })
+      .finally(() => {
+        isMountingRef.current = false;
+      });
 
     return () => {
       mounted = false;
@@ -91,20 +101,17 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
   useEffect(() => {
     const quill = quillRef.current;
-    if (!quill) {
-      return;
-    }
+    if (!quill) return;
 
     const currentHtml = quill.root.innerHTML;
-    const nextHtml = value || '';
+    const nextHtml = value?.html ?? '';
 
-    if (currentHtml === nextHtml) {
-      return;
-    }
+    if (currentHtml === nextHtml) return;
 
     isInternalUpdate.current = true;
     const selection = quill.getSelection();
-    quill.setContents(quill.clipboard.convert(nextHtml), 'silent');
+    const nextDelta = quill.clipboard.convert({ html: nextHtml });
+    quill.setContents(nextDelta, 'silent');
     if (selection) {
       try {
         quill.setSelection(selection);
