@@ -13,11 +13,10 @@ export const metadata = {
 const NAV_ITEMS: NavItem[] = [
   { name: 'Home', href: '/admin', icon: 'Home' },
   { name: 'Bookings', href: '/admin/bookings', icon: 'Calendar' },
-  { name: 'Owners', href: '/admin/owners', icon: 'Users' },
+  { name: 'Setup', href: '/admin/setup', icon: 'Users' },
   { name: 'Expenses', href: '/admin/expenses', icon: 'Wallet' },
   { name: 'Tasks', href: '/admin/calendar', icon: 'ListTodo' },
   { name: 'Documents', href: '/admin/knowledge-hub', icon: 'FileText' },
-  { name: 'Blog', href: '/admin/blog', icon: 'Newspaper' },
   { name: 'Settings', href: '/admin/profile', icon: 'Settings' },
 ];
 

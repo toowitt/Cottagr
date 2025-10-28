@@ -464,13 +464,22 @@ export default function AdminBookingsPage() {
   }, [selectedPropertyId, properties]);
 
   async function fetchProperties() {
+    setLoading(true);
+    setError(null);
     try {
       const response = await fetch('/api/properties');
       if (!response.ok) throw new Error('Failed to fetch properties');
-      const data = await response.json();
+      const data: Property[] = await response.json();
       setProperties(data);
-      if (data.length === 1) {
-        setSelectedPropertyId((current) => current ?? data[0].id);
+      if (data.length > 0) {
+        setSelectedPropertyId((current) => {
+          if (current && data.some((property: Property) => property.id === current)) {
+            return current;
+          }
+          return data[0].id;
+        });
+      } else {
+        setSelectedPropertyId(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -950,14 +959,7 @@ export default function AdminBookingsPage() {
     return actionList;
   };
 
-  if (loading) {
-    return (
-      <Container padding="md" className="space-y-6">
-        <PageHeader title="Bookings management" />
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      </Container>
-    );
-  }
+  const isLoading = loading;
 
   const headerActions = (
     <div className="flex flex-wrap items-center gap-2">
@@ -1006,6 +1008,12 @@ export default function AdminBookingsPage() {
         description="Review requests, manage availability, and coordinate with owners."
         primaryAction={headerActions}
       />
+
+      {isLoading ? (
+        <div className="rounded-3xl border border-border/60 bg-surface p-6 text-sm text-muted-foreground shadow-soft">
+          Loading bookings…
+        </div>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-default bg-background-muted px-4 py-3 text-xs text-muted-foreground shadow-soft">
           <p className="font-semibold text-foreground">Pending requests</p>

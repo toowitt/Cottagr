@@ -28,7 +28,7 @@ interface DemoDay {
 
 export default function BookingsExperiencePage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <HeroSection />
       <WorkflowSection />
       <HighlightsSection />

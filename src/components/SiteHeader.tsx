@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { usePathname } from 'next/navigation';
 
 const marketingLinks = [
   { href: '/#features', label: 'Features' },
@@ -11,6 +12,7 @@ const marketingLinks = [
   { href: '/bookings', label: 'Bookings' },
   { href: '/#pricing', label: 'Pricing' },
   { href: '/#faq', label: 'FAQ' },
+  { href: '/blog', label: 'Blog' },
 ];
 
 const authenticatedLinks = [
@@ -30,8 +32,10 @@ interface SiteHeaderProps {
 }
 
 export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderProps) {
+  const pathname = usePathname();
   const [showAuthenticatedNav, setShowAuthenticatedNav] = useState(initialAuthenticated);
   const supabase = useSupabaseClient();
+  const isAdminRoute = pathname?.startsWith('/admin');
 
   useEffect(() => {
     let mounted = true;
@@ -69,6 +73,10 @@ export default function SiteHeader({ initialAuthenticated = false }: SiteHeaderP
     [showAuthenticatedNav],
   );
   const logoHref = showAuthenticatedNav ? '/admin' : '/';
+
+  if (isAdminRoute) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 transition-colors dark:border-gray-800 dark:bg-gray-900/70 dark:supports-[backdrop-filter]:bg-gray-900/60">
