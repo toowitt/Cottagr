@@ -98,7 +98,7 @@ export default function ExpensesPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null)
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([...DEFAULT_CATEGORIES])
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(() => [...DEFAULT_CATEGORIES])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -141,6 +141,8 @@ export default function ExpensesPage() {
   const previousActiveOwnershipIdRef = useRef<number | null>(null)
 
   const fetchProperties = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
       const response = await fetch('/api/properties')
       if (!response.ok) {
@@ -150,8 +152,21 @@ export default function ExpensesPage() {
       setProperties(data)
 
       if (data.length > 0) {
-        setSelectedPropertyId(prev => prev ?? data[0].id)
-        setActiveOwnershipId(prev => prev ?? (data[0].ownerships[0]?.id ?? null))
+        setSelectedPropertyId(current => {
+          if (current && data.some(property => property.id === current)) {
+            return current
+          }
+          return data[0].id
+        })
+        setActiveOwnershipId(current => {
+          if (current && data.some(property => property.ownerships.some(ownership => ownership.id === current))) {
+            return current
+          }
+          return data[0].ownerships[0]?.id ?? null
+        })
+      } else {
+        setSelectedPropertyId(null)
+        setActiveOwnershipId(null)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -165,6 +180,7 @@ export default function ExpensesPage() {
   }, [fetchProperties])
 
   const fetchExpenses = useCallback(async (propertyId: number) => {
+    setError(null)
     try {
       const response = await fetch(`/api/expenses?propertyId=${propertyId}`)
       if (!response.ok) {
@@ -189,13 +205,18 @@ export default function ExpensesPage() {
               .filter((category): category is string => Boolean(category) && category.trim().length > 0),
           ),
         )
-        if (categoriesFromData.length > 0) {
-          setCategoryOptions((prev) => Array.from(new Set([...prev, ...categoriesFromData])))
-        }
+        setCategoryOptions((prev) => {
+          const next = new Set<string>([...DEFAULT_CATEGORIES, ...prev])
+          categoriesFromData.forEach((category) => next.add(category))
+          return Array.from(next)
+        })
         setExpenses(normalized)
+      } else {
+        setExpenses([])
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load expenses')
+      setExpenses([])
     }
   }, [])
 
@@ -593,9 +614,9 @@ export default function ExpensesPage() {
         </section>
 
         {selectedProperty && ownerBalances.length > 0 && expenses.length > 0 && (
-          <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-black/20">
+        <section className="rounded-2xl border border-border/60 bg-surface p-6 shadow-soft">
             <h2 className="text-lg font-semibold tracking-tight text-slate-100">Running balances</h2>
-            <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-muted-foreground">
               Positive balances mean the group owes that owner money. Negative balances mean they owe the pool.
             </p>
             <ul className="mt-4 space-y-3 text-sm text-slate-300">
@@ -636,13 +657,13 @@ export default function ExpensesPage() {
         )}
 
         {selectedPropertyId && (
-          <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <div
               ref={formSectionRef}
-              className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-black/20"
+              className="rounded-3xl border border-border/60 bg-surface p-6 shadow-soft"
             >
-              <h2 className="text-lg font-semibold tracking-tight text-slate-100">Log a shared expense</h2>
-              <p className="mt-1 text-sm text-slate-400">Owners will see this immediately and can approve or reject it.</p>
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">Log a shared expense</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Owners will see this immediately and can approve or reject it.</p>
 
               {validationErrors.length > 0 && (
                 <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
@@ -666,22 +687,22 @@ export default function ExpensesPage() {
 
               <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="text-sm text-slate-300">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Vendor</span>
+                  <label className="text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vendor</span>
                     <input
                       type="text"
                       value={formData.vendorName}
                       onChange={(e) => handleFormChange('vendorName', e.target.value)}
                       placeholder="Simcoe Plumbing, Home Depot…"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                   </label>
-                  <label className="text-sm text-slate-300">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Category</span>
+                  <label className="text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Category</span>
                     <select
                       value={formData.category}
                       onChange={(e) => handleFormChange('category', e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     >
                       <option value="">Select category</option>
                       {categoryOptions.map((option) => (
@@ -694,8 +715,8 @@ export default function ExpensesPage() {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <label className="text-sm text-slate-300">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Amount (CAD)</span>
+                  <label className="text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount (CAD)</span>
                     <input
                       type="number"
                       min="0"
@@ -703,50 +724,50 @@ export default function ExpensesPage() {
                       value={formData.amount}
                       onChange={(e) => handleFormChange('amount', e.target.value)}
                       placeholder="0.00"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       required
                     />
                   </label>
-                  <label className="text-sm text-slate-300">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Incurred on</span>
+                  <label className="text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Incurred on</span>
                     <input
                       type="date"
                       value={formData.incurredOn}
                       onChange={(e) => handleFormChange('incurredOn', e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       required
                     />
                   </label>
-                  <label className="text-sm text-slate-300">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Due date</span>
+                  <label className="text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Due date</span>
                     <input
                       type="date"
                       value={formData.dueDate}
                       onChange={(e) => handleFormChange('dueDate', e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                   </label>
                 </div>
 
-                <label className="block text-sm text-slate-300">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Notes</span>
+                <label className="block text-sm text-foreground">
+                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</span>
                   <textarea
                     value={formData.memo}
                     onChange={(e) => handleFormChange('memo', e.target.value)}
                     rows={3}
                     placeholder="What was this for? Any special context the family should know?"
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                   />
                 </label>
 
-                <label className="block text-sm text-slate-300">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <label className="block text-sm text-foreground">
+                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Paid by (optional)
                   </span>
                   <select
                     value={formData.paidByOwnershipId}
                     onChange={(event) => handleFormChange('paidByOwnershipId', event.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     <option value="">Not recorded yet</option>
                     {selectedProperty?.ownerships.map((ownership) => (
@@ -755,7 +776,7 @@ export default function ExpensesPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Select who actually paid the bill to track running balances.
                   </p>
                 </label>
