@@ -42,6 +42,32 @@ export async function ensureUserRecord(authUser: User | null | undefined) {
     },
   });
 
+  if (!user) {
+    const byEmail = await prisma.user.findUnique({
+      where: { email: authUser.email },
+      include: {
+        memberships: true,
+        owners: true,
+      },
+    });
+
+    if (byEmail) {
+      user = await prisma.user.update({
+        where: { email: authUser.email },
+        data: {
+          id: authUser.id,
+          email: authUser.email,
+          firstName: name.firstName ?? undefined,
+          lastName: name.lastName ?? undefined,
+        },
+        include: {
+          memberships: true,
+          owners: true,
+        },
+      });
+    }
+  }
+
   if (user) {
     user = await prisma.user.update({
       where: { id: authUser.id },
