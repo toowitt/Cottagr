@@ -7,7 +7,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/forms';
 import { Input } from '@/components/ui';
-import { AUTH_REDIRECT_URL, APP_URL } from '@/lib/auth/config';
+import Link from 'next/link';
+import { AUTH_REDIRECT_URL, APP_URL, EMAIL_REDIRECT_BASE } from '@/lib/auth/config';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/cn';
 
@@ -20,8 +21,6 @@ type AuthMode = 'sign-in' | 'sign-up';
 const MIN_PASSWORD_LENGTH = 8;
 const SIGN_IN_FALLBACK_REDIRECT = '/admin';
 const SIGN_UP_FALLBACK_REDIRECT = '/admin/setup';
-const EMAIL_REDIRECT_BASE = process.env.NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO ?? AUTH_REDIRECT_URL;
-
 const formSchema = z
   .object({
     mode: z.enum(['sign-in', 'sign-up']),
@@ -212,6 +211,18 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           const status = 'status' in signUpError ? signUpError.status : undefined;
           if (status === 429) {
             applyCooldown('hard');
+            form.setError('root', {
+              type: 'server',
+              message: 'Too many attempts. Please wait a moment and try again.',
+            });
+          } else if (status === 400 || status === 422) {
+            handleModeChange('sign-in');
+            form.setValue('password', '', { shouldDirty: false, shouldTouch: false, shouldValidate: false });
+            form.setError('root', {
+              type: 'server',
+              message: 'That email is already registered. Try signing in with your password or reset it below.',
+            });
+            setStatusMessage('Sign in with your password or use the password reset link.');
           } else {
             applyCooldown('soft');
             form.setError('root', { type: 'server', message: signUpError.message });
@@ -281,16 +292,16 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
 
   return (
     <Form {...form}>
-      <form className="mt-6 space-y-6" onSubmit={onSubmit} noValidate>
-        <div className="grid gap-2 rounded-2xl border border-default bg-background-muted p-2 text-xs font-semibold text-muted-foreground md:grid-cols-2">
+      <form className="space-y-6" onSubmit={onSubmit} noValidate>
+        <div className="grid gap-2 rounded-2xl border border-default bg-background-muted/80 p-2 text-xs font-semibold md:grid-cols-2">
           <button
             type="button"
             onClick={() => handleModeChange('sign-in')}
             className={cn(
               'touch-target flex-1 rounded-xl px-4 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
               mode === 'sign-in'
-                ? 'bg-accent text-background shadow-soft'
-                : 'bg-transparent text-muted-foreground hover:text-foreground',
+                ? 'bg-emerald-500 text-black shadow-soft'
+                : 'bg-transparent text-muted-foreground hover:bg-background hover:text-foreground',
             )}
           >
             Sign in
@@ -301,16 +312,16 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
             className={cn(
               'touch-target flex-1 rounded-xl px-4 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
               mode === 'sign-up'
-                ? 'bg-accent text-background shadow-soft'
-                : 'bg-transparent text-muted-foreground hover:text-foreground',
+                ? 'bg-emerald-500 text-black shadow-soft'
+                : 'bg-transparent text-muted-foreground hover:bg-background hover:text-foreground',
             )}
           >
             Sign up
           </button>
         </div>
 
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">
+        <div className="space-y-3 rounded-2xl bg-background px-4 py-4 text-sm shadow-inner">
+          <p className="font-medium text-foreground">
             {mode === 'sign-in' ? 'Use your email and password to sign in.' : 'Create your owner account.'}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -386,15 +397,11 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
         />
 
         {rootError ? (
-          <div className="rounded-lg border border-default bg-background-muted px-4 py-3 text-sm text-danger">
-            {rootError}
-          </div>
+          <div className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">{rootError}</div>
         ) : null}
 
         {statusMessage ? (
-          <div className="rounded-lg border border-default bg-background px-4 py-3 text-sm text-accent-strong">
-            {statusMessage}
-          </div>
+          <div className="rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-accent">{statusMessage}</div>
         ) : null}
 
         <input type="hidden" {...form.register('mode')} />
@@ -403,7 +410,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           type="submit"
           disabled={isSubmitting || cooldownMs > 0}
           className={cn(
-            'touch-target w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-background shadow-strong transition-transform hover:-translate-y-0.5 hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+            'touch-target w-full rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-black shadow-strong transition-transform hover:-translate-y-0.5 hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
           )}
         >
           {cooldownMs > 0
@@ -416,6 +423,11 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
                 ? 'Create account'
                 : 'Sign in'}
         </button>
+        <div className="text-center text-xs text-muted-foreground">
+          <Link href="/forgot-password" className="text-accent hover:text-accent-strong">
+            Forgot password?
+          </Link>
+        </div>
       </form>
     </Form>
   );

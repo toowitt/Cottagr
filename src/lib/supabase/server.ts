@@ -34,8 +34,16 @@ export const createServerSupabaseActionClient = async () =>
 export const createRouteSupabaseClient = async () =>
   createRouteHandlerClient(await withCookieStore(), { cookieOptions });
 
-const isInvalidRefreshTokenError = (error: AuthApiError) =>
-  error.code === 'refresh_token_not_found' || error.code === 'session_not_found';
+const isInvalidRefreshTokenError = (error: AuthApiError) => {
+  const invalidCodes = new Set([
+    'refresh_token_not_found',
+    'session_not_found',
+    'user_not_found',
+    'invalid_jwt',
+    'invalid_session',
+  ]);
+  return invalidCodes.has(error.code ?? '');
+};
 
 const isMissingSessionError = (error: AuthError) => error.message === 'Auth session missing!';
 
