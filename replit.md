@@ -6,6 +6,13 @@ Cottagr is a comprehensive cottage/vacation property management system built wit
 
 ## Recent Changes
 
+**October 18, 2025** - Admin layout system + mobile nav + support footer
+
+- Added shared admin layout primitives (`AdminPage`, `AdminSection`, `AdminMetricGrid`, etc.) and showcased them at `/admin/ui`
+- Refactored bookings, dashboard, and expenses pages to the new system
+- Introduced `SupportFooter` for public/login pages with support@cottagr.com contact info and Copilot teaser
+- Built a responsive mobile navigation drawer with full-screen gradient backdrop and clear CTA buttons
+
 **October 17, 2025** - WYSIWYG Editor & Taxes Category
 
 - Integrated react-quill WYSIWYG editor for rich text article creation

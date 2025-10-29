@@ -6,9 +6,12 @@ import { prisma } from '@/lib/prisma';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { ResponsiveGrid } from '@/components/ui/ResponsiveGrid';
-import { Container } from '@/components/ui/Container';
+import {
+  AdminPage,
+  AdminSection,
+  AdminMetric,
+  AdminMetricGrid,
+} from '@/components/ui/AdminPage';
 
 const currency = new Intl.NumberFormat('en-CA', {
   style: 'currency',
@@ -72,26 +75,25 @@ export default async function AdminDashboard() {
 
   if (adminOrganizationIds.length === 0) {
     return (
-      <div className="space-y-8">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold text-white">Owner dashboard</h1>
-          <p className="text-sm text-slate-300">
-            You&apos;ll see a summary of organizations, properties, expenses, and maintenance here once you create
-            your first organization.
-          </p>
-        </header>
-
-        <div className="rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-sm text-emerald-100">
-          <h2 className="text-lg font-semibold text-emerald-200">Get started</h2>
-          <p className="mt-2">Create an ownership group to unlock calendar, expenses, and knowledge hub tools.</p>
+      <AdminPage
+        title="Owner dashboard"
+        description="You’ll see organizations, bookings, and maintenance metrics here once you create your first group."
+        actions={
           <Link
             href="/admin/setup"
-            className="mt-4 inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+            className="touch-target rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background shadow-soft transition hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           >
             Go to setup
           </Link>
-        </div>
-      </div>
+        }
+      >
+        <AdminSection title="Get started" description="Create an ownership group to unlock calendar, expenses, and knowledge hub tools.">
+          <p className="text-sm text-muted-foreground">
+            Once you add your first organization, this dashboard will surface upcoming stays, pending expenses, and active
+            maintenance so you can stay ahead.
+          </p>
+        </AdminSection>
+      </AdminPage>
     );
   }
 
@@ -154,17 +156,16 @@ export default async function AdminDashboard() {
     propertyIds.length === 0
       ? []
       : await prisma.booking.findMany({
-        where: {
-          propertyId: { in: propertyIds },
-          status: BookingStatus.approved,
-          startDate: { lt: calendarGridEnd },
-          endDate: { gt: calendarGridStart },
-        },
-        orderBy: { startDate: 'asc' },
-        include: bookingInclude,
-      });
+          where: {
+            propertyId: { in: propertyIds },
+            status: BookingStatus.approved,
+            startDate: { lt: calendarGridEnd },
+            endDate: { gt: calendarGridStart },
+          },
+          orderBy: { startDate: 'asc' },
+          include: bookingInclude,
+        });
 
-  // serialize bookings returned from Prisma
   const approvedBookings: SerializedBooking[] = rawApprovedBookings.map(serializeBooking);
 
   const bookingsForCalendar: CalendarBooking[] = approvedBookings.map((booking) => {
@@ -273,102 +274,124 @@ export default async function AdminDashboard() {
   const totalPendingExpenseAmount = pendingExpenses.reduce((acc, expense) => acc + expense.amountCents, 0);
 
   return (
-    <>
-      <PageHeader
-        title="Owner dashboard"
-        description="Snapshot of organizations, booking readiness, and maintenance work so you can jump straight to what matters."
-        primaryAction={
-          <Link
-            href="/admin/bookings"
-            className="touch-target rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background shadow-soft transition hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-          >
-            Create booking
+    <AdminPage
+      title="Owner dashboard"
+      description="Snapshot of organizations, booking readiness, and maintenance work so you can jump straight to what matters."
+      actions={
+        <Link
+          href="/admin/bookings"
+          className="touch-target rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background shadow-soft transition hover:bg-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        >
+          Create booking
+        </Link>
+      }
+    >
+      <AdminMetricGrid className="md:grid-cols-2 xl:grid-cols-4">
+        <AdminMetric label="Organizations" value={organizations.length} />
+        <AdminMetric label="Properties" value={propertyIds.length} />
+        <AdminMetric label="Owners" value={ownerMap.size} />
+        <AdminMetric
+          label="Pending expenses"
+          value={pendingExpenses.length}
+          description={
+            pendingExpenses.length ? `${currency.format(totalPendingExpenseAmount / 100)} awaiting approval` : undefined
+          }
+        />
+      </AdminMetricGrid>
+
+      <AdminSection
+        title="Approved bookings"
+        description="Current month at a glance for every property."
+        actions={
+          <Link href="/admin/bookings" className="text-sm font-semibold text-accent hover:text-accent-strong">
+            Go to bookings
           </Link>
         }
       >
-        <ResponsiveGrid columns={{ base: 1, md: 2, xl: 4 }} gap="md" className="w-full">
-          <DashboardStat label="Organizations" value={organizations.length} href="/admin/setup#organizations" />
-          <DashboardStat label="Properties" value={propertyIds.length} href="/admin/setup#properties" />
-          <DashboardStat label="Owners" value={ownerMap.size} href="/admin/setup#owners" />
-          <DashboardStat
-            label="Pending expenses"
-            value={pendingExpenses.length}
-            href="/admin/expenses"
-            hint={pendingExpenses.length ? currency.format(totalPendingExpenseAmount / 100) : undefined}
-          />
-        </ResponsiveGrid>
-      </PageHeader>
-
-      <Container padding="md" className="space-y-10 py-10">
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-        <header className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Approved bookings</h2>
-            <p className="text-sm text-slate-400">Current month at a glance for every property.</p>
-          </div>
-          <Link href="/admin/bookings" className="text-sm text-emerald-300 hover:text-emerald-200">
-            Go to bookings
-          </Link>
-        </header>
-
         {propertyIds.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-300">
+          <div className="rounded-2xl border border-dashed border-border/60 bg-background px-5 py-6 text-sm text-muted-foreground">
             Add a property in setup to start tracking stays.
-          </p>
+          </div>
         ) : bookingsForCalendar.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-300">
+          <div className="rounded-2xl border border-dashed border-border/60 bg-background px-5 py-6 text-sm text-muted-foreground">
             No approved bookings for this month yet.
-          </p>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <p className="font-semibold text-white">{calendarMonthLabel}</p>
-              <p className="text-xs text-slate-400">Showing confirmed stays only.</p>
+              <p className="font-semibold text-foreground">{calendarMonthLabel}</p>
+              <p className="text-xs text-muted-foreground">Showing confirmed stays only.</p>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-800">
-              <div className="grid grid-cols-7 bg-slate-900/70 text-xs uppercase tracking-wide text-slate-400">
+
+            <div className="overflow-x-auto rounded-2xl border border-border/60 bg-background">
+              <table className="w-full min-w-[32rem] divide-y divide-border text-left text-sm text-muted-foreground">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wider text-muted-foreground/80">
+                    <th className="py-3 pl-4 pr-3 font-medium text-foreground">Property</th>
+                    <th className="py-3 pr-3 font-medium">Owner / Guest</th>
+                    <th className="py-3 pr-3 font-medium">Check-in</th>
+                    <th className="py-3 pr-4 font-medium">Check-out</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {bookingsForCalendar.map((booking) => (
+                    <tr key={booking.id} className="transition hover:bg-background-muted">
+                      <td className="py-3 pl-4 pr-3 font-medium text-foreground">{booking.propertyName}</td>
+                      <td className="py-3 pr-3">{booking.guestLabel}</td>
+                      <td className="py-3 pr-3 text-muted-foreground">{longDate.format(new Date(booking.startIso))}</td>
+                      <td className="py-3 pr-4 text-muted-foreground">{longDate.format(new Date(booking.endIso))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="rounded-2xl border border-border/30 bg-surface px-4 py-4">
+              <div className="grid grid-cols-7 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                 {weekdayLabels.map((weekday) => (
-                  <div key={weekday} className="px-3 py-2 text-center">
-                    {weekday}
-                  </div>
+                  <div key={weekday}>{weekday}</div>
                 ))}
               </div>
-              <div className="grid grid-cols-7">
+              <div className="mt-3 grid grid-cols-7 gap-2">
                 {calendarCells.map((cell) => {
-                  const hasBookings = cell.bookings.length > 0;
-                  const cellClasses = [
-                    'min-h-[7.5rem] border border-slate-800 p-2 text-xs transition',
-                    cell.inCurrentMonth ? 'bg-slate-950/60 text-slate-200' : 'bg-slate-950/20 text-slate-500',
-                    cell.isToday ? 'ring-2 ring-emerald-400' : '',
-                  ].join(' ');
-
+                  const isActive = cell.bookings.length > 0;
+                  const containsToday = cell.isToday;
+                  const baseClasses =
+                    'relative min-h-[5.25rem] rounded-xl border border-transparent px-2 py-2 text-left text-xs transition';
+                  const stateClasses = [
+                    cell.inCurrentMonth ? 'text-foreground' : 'text-muted-foreground/60',
+                    containsToday ? 'ring-1 ring-accent/30 bg-accent/8' : '',
+                    isActive
+                      ? 'bg-emerald-500/8 text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/12'
+                      : 'bg-surface hover:bg-background-muted/60',
+                    !isActive && !containsToday ? 'border-border/10' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ');
                   return (
-                    <div key={cell.iso} className={cellClasses}>
-                      <div className="flex items-center justify-between text-white">
+                    <div key={cell.iso} className={`${baseClasses} ${stateClasses}`}>
+                      <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold">{cell.date.getDate()}</span>
-                        {hasBookings ? (
-                          <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-200">
-                            Booked
+                        {containsToday ? (
+                          <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                            Today
                           </span>
                         ) : null}
                       </div>
-                      <div className="mt-2 space-y-1">
-                        {cell.bookings.slice(0, 3).map((booking) => (
-                          <div
+                      <div className="mt-1 space-y-1">
+                        {cell.bookings.slice(0, 2).map((booking) => (
+                          <span
                             key={booking.id}
-                            className="rounded-lg bg-emerald-500/20 px-2 py-1 text-[11px] text-white"
+                            className="block truncate rounded-md bg-emerald-500/15 px-2 py-1 text-[11px] text-emerald-700 dark:text-emerald-200"
+                            title={`${booking.propertyName} · ${booking.guestLabel}`}
                           >
-                            <p className="font-medium">{booking.guestLabel}</p>
-                            <p className="text-[10px] text-emerald-100">{booking.propertyName}</p>
-                          </div>
+                            {booking.propertyName}
+                          </span>
                         ))}
-                        {cell.bookings.length > 3 ? (
-                          <p className="text-[10px] text-slate-300">
-                            +{cell.bookings.length - 3} more
-                          </p>
-                        ) : null}
-                        {!hasBookings ? (
-                          <p className="text-[10px] text-slate-500">Available</p>
+                        {cell.bookings.length > 2 ? (
+                          <span className="block text-[10px] text-muted-foreground">
+                            +{cell.bookings.length - 2} more
+                          </span>
                         ) : null}
                       </div>
                     </div>
@@ -378,72 +401,70 @@ export default async function AdminDashboard() {
             </div>
           </div>
         )}
-      </section>
+      </AdminSection>
 
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-        <header className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Organizations &amp; properties</h2>
-            <p className="text-sm text-slate-400">Quick glance at each group you manage.</p>
-          </div>
-          <Link href="/admin/setup#properties" className="text-sm text-emerald-300 hover:text-emerald-200">
+      <AdminSection
+        title="Organizations & properties"
+        description="Quick glance at each group you manage."
+        actions={
+          <Link href="/admin/setup#properties" className="text-sm font-semibold text-accent hover:text-accent-strong">
             Manage properties
           </Link>
-        </header>
-
+        }
+      >
         {organizations.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-sm text-slate-300">
+          <div className="rounded-2xl border border-dashed border-border/60 bg-background px-5 py-6 text-sm text-muted-foreground">
             No organizations yet. Create one from the setup page to begin tracking everything in Cottagr.
-          </p>
+          </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {organizations.map((organization) => {
               const propertyCount = organization.properties.length;
               const propertySummary = organization.properties.slice(0, 3);
               return (
-                <article key={organization.id} className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <div key={organization.id} className="space-y-4 rounded-2xl border border-border/60 bg-background px-5 py-5 shadow-soft">
                   <header className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-white">{organization.name}</h3>
-                      <p className="text-xs uppercase tracking-wider text-slate-500">
+                      <h3 className="text-lg font-semibold text-foreground">{organization.name}</h3>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
                         {propertyCount} propert{propertyCount === 1 ? 'y' : 'ies'}
                       </p>
                     </div>
-                    <Link href="/admin/setup#organizations" className="text-sm text-emerald-300 hover:text-emerald-200">
+                    <Link href="/admin/setup#organizations" className="text-sm font-semibold text-accent hover:text-accent-strong">
                       Manage
                     </Link>
                   </header>
 
                   {propertySummary.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-300">
+                    <div className="rounded-xl border border-dashed border-border/60 bg-background px-4 py-4 text-sm text-muted-foreground">
                       No properties yet. Add your first cottage to unlock bookings and expenses.
-                    </p>
+                    </div>
                   ) : (
-                    <ul className="space-y-3 text-sm text-slate-200">
+                    <ul className="space-y-3 text-sm text-muted-foreground">
                       {propertySummary.map((property) => {
                         const owners = property.ownerships.map((ownership) => ownership.owner).filter(Boolean);
                         return (
-                          <li key={property.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                          <li key={property.id} className="rounded-xl border border-border/60 bg-background px-4 py-4 shadow-soft">
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <p className="text-base font-medium text-white">{property.name}</p>
-                                <p className="text-xs text-slate-400">{property.location ?? 'Location TBD'}</p>
+                                <p className="text-base font-medium text-foreground">{property.name}</p>
+                                <p className="text-xs text-muted-foreground">{property.location ?? 'Location TBD'}</p>
                               </div>
                               <Link
                                 href={`/admin/setup?editProperty=${property.id}#properties`}
-                                className="text-xs text-emerald-300 hover:text-emerald-200"
+                                className="text-xs font-semibold text-accent hover:text-accent-strong"
                               >
                                 Edit
                               </Link>
                             </div>
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                              <span className="rounded-full bg-slate-800 px-2 py-0.5">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span className="rounded-full bg-background-muted px-2 py-0.5">
                                 Min {property.minNights} night{property.minNights === 1 ? '' : 's'}
                               </span>
-                              <span className="rounded-full bg-slate-800 px-2 py-0.5">
+                              <span className="rounded-full bg-background-muted px-2 py-0.5">
                                 Nightly {currency.format(property.nightlyRate / 100)}
                               </span>
-                              <span className="rounded-full bg-slate-800 px-2 py-0.5">
+                              <span className="rounded-full bg-background-muted px-2 py-0.5">
                                 {owners.length} owner{owners.length === 1 ? '' : 's'}
                               </span>
                             </div>
@@ -452,127 +473,127 @@ export default async function AdminDashboard() {
                       })}
                     </ul>
                   )}
-                </article>
+                </div>
               );
             })}
           </div>
         )}
-      </section>
+      </AdminSection>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <article className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Outstanding expenses</h2>
-              <p className="text-sm text-slate-400">Latest pending reimbursements or approvals.</p>
-            </div>
-            <Link href="/admin/expenses" className="text-sm text-emerald-300 hover:text-emerald-200">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminSection
+          title="Outstanding expenses"
+          description="Latest pending reimbursements or approvals."
+          actions={
+            <Link href="/admin/expenses" className="text-sm font-semibold text-accent hover:text-accent-strong">
               Open expenses
             </Link>
-          </header>
-
+          }
+          className="h-full"
+        >
           {pendingExpenses.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-5 text-sm text-slate-300">
+            <div className="rounded-xl border border-dashed border-border/60 bg-background px-4 py-5 text-sm text-muted-foreground">
               No pending expenses right now.
-            </p>
+            </div>
           ) : (
-            <ul className="space-y-3 text-sm text-slate-200">
+            <ul className="space-y-3 text-sm text-muted-foreground">
               {pendingExpenses.map((expense) => (
-                <li key={expense.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                <li key={expense.id} className="rounded-xl border border-border/60 bg-background px-4 py-4 shadow-soft">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-base font-medium text-white">{expense.property.name}</p>
-                      <p className="text-xs text-slate-400">Incurred {longDate.format(expense.incurredOn)}</p>
+                      <p className="text-base font-medium text-foreground">{expense.property.name}</p>
+                      <p className="text-xs text-muted-foreground">Incurred {longDate.format(expense.incurredOn)}</p>
                     </div>
-                    <span className="text-sm font-semibold text-emerald-300">{currency.format(expense.amountCents / 100)}</span>
+                    <span className="text-sm font-semibold text-emerald-600">
+                      {currency.format(expense.amountCents / 100)}
+                    </span>
                   </div>
                 </li>
               ))}
             </ul>
           )}
-        </article>
+        </AdminSection>
 
-        <article className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Upcoming blackouts</h2>
-              <p className="text-sm text-slate-400">Maintenance windows or holds you&apos;ve put on the calendar.</p>
-            </div>
-            <Link href="/admin/blackouts" className="text-sm text-emerald-300 hover:text-emerald-200">
+        <AdminSection
+          title="Upcoming blackouts"
+          description="Maintenance windows or holds on the calendar."
+          actions={
+            <Link href="/admin/blackouts" className="text-sm font-semibold text-accent hover:text-accent-strong">
               Manage blackouts
             </Link>
-          </header>
-
+          }
+          className="h-full"
+        >
           {upcomingBlackouts.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-5 text-sm text-slate-300">
+            <div className="rounded-xl border border-dashed border-border/60 bg-background px-4 py-5 text-sm text-muted-foreground">
               No upcoming blackouts scheduled.
-            </p>
+            </div>
           ) : (
-            <ul className="space-y-3 text-sm text-slate-200">
+            <ul className="space-y-3 text-sm text-muted-foreground">
               {upcomingBlackouts.map((blackout) => (
-                <li key={blackout.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                  <p className="text-base font-medium text-white">{blackout.property.name}</p>
-                  <p className="text-xs text-slate-400">
+                <li key={blackout.id} className="rounded-xl border border-border/60 bg-background px-4 py-4 shadow-soft">
+                  <p className="text-base font-medium text-foreground">{blackout.property.name}</p>
+                  <p className="text-xs text-muted-foreground">
                     {longDate.format(blackout.startDate)} – {longDate.format(blackout.endDate)}
                   </p>
-                  {blackout.reason ? <p className="mt-2 text-sm text-slate-300">{blackout.reason}</p> : null}
+                  {blackout.reason ? <p className="mt-2 text-sm text-muted-foreground">{blackout.reason}</p> : null}
                 </li>
               ))}
             </ul>
           )}
-        </article>
-      </section>
+        </AdminSection>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <article className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Knowledge documents</h2>
-              <p className="text-sm text-slate-400">Latest files owners rely on in a pinch.</p>
-            </div>
-            <Link href="/admin/knowledge-hub" className="text-sm text-emerald-300 hover:text-emerald-200">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminSection
+          title="Knowledge documents"
+          description="Latest files owners rely on in a pinch."
+          actions={
+            <Link href="/admin/knowledge-hub" className="text-sm font-semibold text-accent hover:text-accent-strong">
               Manage documents
             </Link>
-          </header>
-
+          }
+          className="h-full"
+        >
           {documents.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-5 text-sm text-slate-300">
+            <div className="rounded-xl border border-dashed border-border/60 bg-background px-4 py-5 text-sm text-muted-foreground">
               No documents uploaded yet.
-            </p>
+            </div>
           ) : (
-            <ul className="space-y-3 text-sm text-slate-200">
+            <ul className="space-y-3 text-sm text-muted-foreground">
               {documents.map((document) => (
-                <li key={document.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                  <p className="text-base font-medium text-white">{document.title}</p>
-                  <p className="text-xs text-slate-400">v{document.version} · Updated {longDate.format(new Date(document.updatedAt))}</p>
-                  {document.description ? <p className="mt-2 text-sm text-slate-300">{document.description}</p> : null}
+                <li key={document.id} className="rounded-xl border border-border/60 bg-background px-4 py-4 shadow-soft">
+                  <p className="text-base font-medium text-foreground">{document.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    v{document.version} · Updated {longDate.format(new Date(document.updatedAt))}
+                  </p>
+                  {document.description ? <p className="mt-2 text-sm text-muted-foreground">{document.description}</p> : null}
                 </li>
               ))}
             </ul>
           )}
-        </article>
+        </AdminSection>
 
-        <article className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Published playbooks</h2>
-              <p className="text-sm text-slate-400">Checklists currently live for owners.</p>
-            </div>
-            <Link href="/admin/knowledge-hub" className="text-sm text-emerald-300 hover:text-emerald-200">
+        <AdminSection
+          title="Published playbooks"
+          description="Checklists currently live for owners."
+          actions={
+            <Link href="/admin/knowledge-hub" className="text-sm font-semibold text-accent hover:text-accent-strong">
               Review hub
             </Link>
-          </header>
-
+          }
+          className="h-full"
+        >
           {publishedChecklists.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-5 text-sm text-slate-300">
+            <div className="rounded-xl border border-dashed border-border/60 bg-background px-4 py-5 text-sm text-muted-foreground">
               No published checklists yet.
-            </p>
+            </div>
           ) : (
-            <ul className="space-y-3 text-sm text-slate-200">
+            <ul className="space-y-3 text-sm text-muted-foreground">
               {publishedChecklists.map((checklist) => (
-                <li key={checklist.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                  <p className="text-base font-medium text-white">{checklist.title}</p>
-                  <p className="text-xs text-slate-400">
+                <li key={checklist.id} className="rounded-xl border border-border/60 bg-background px-4 py-4 shadow-soft">
+                  <p className="text-base font-medium text-foreground">{checklist.title}</p>
+                  <p className="text-xs text-muted-foreground">
                     {checklist.checklist?.category ?? 'General'} · v{checklist.version} · Published{' '}
                     {checklist.publishedAt ? longDate.format(new Date(checklist.publishedAt)) : 'recently'}
                   </p>
@@ -580,39 +601,8 @@ export default async function AdminDashboard() {
               ))}
             </ul>
           )}
-        </article>
-      </section>
-      </Container>
-    </>
+        </AdminSection>
+      </div>
+    </AdminPage>
   );
-}
-
-function DashboardStat({
-  label,
-  value,
-  href,
-  hint,
-}: {
-  label: string;
-  value: number;
-  href?: string;
-  hint?: string;
-}) {
-  const content = (
-    <div className="flex h-full flex-col justify-between rounded-2xl border border-default bg-background px-6 py-5 shadow-soft">
-      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-4 text-3xl font-semibold text-foreground">{value}</div>
-      {hint ? <div className="mt-3 text-xs font-medium text-accent">{hint} pending</div> : null}
-    </div>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className="transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/10">
-        {content}
-      </Link>
-    );
-  }
-
-  return content;
 }

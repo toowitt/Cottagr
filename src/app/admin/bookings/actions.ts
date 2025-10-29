@@ -53,9 +53,13 @@ export async function deleteBooking(formData: FormData) {
   }
 
   try {
-    await prisma.booking.delete({
-      where: { id },
-    });
+    await prisma.$transaction([
+      prisma.bookingVote.deleteMany({ where: { bookingId: id } }),
+      prisma.bookingParticipant.deleteMany({ where: { bookingId: id } }),
+      prisma.bookingTimelineEvent.deleteMany({ where: { bookingId: id } }),
+      prisma.bookingUsageSnapshot.deleteMany({ where: { bookingId: id } }),
+      prisma.booking.delete({ where: { id } }),
+    ]);
 
     revalidatePath('/admin/bookings');
   } catch (error) {

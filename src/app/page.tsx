@@ -1,4 +1,6 @@
 "use client";
+import MarketingSection from "@/components/marketing/MarketingSection";
+import SupportFooter from "@/components/SupportFooter";
 import {
   CalendarDays,
   Receipt,
@@ -146,9 +148,9 @@ export default function CottagrLandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-slate-200 bg-white py-10 text-slate-900 dark:border-white/10 dark:bg-black dark:text-white">
-        <div className="mx-auto grid max-w-6xl gap-6 px-6 sm:grid-cols-3">
-          {[ 
+      <MarketingSection>
+        <div className="grid gap-6 text-slate-900 dark:text-white sm:grid-cols-3">
+          {[
             {
               label: "Owners kept in sync",
               value: "150+",
@@ -175,228 +177,224 @@ export default function CottagrLandingPage() {
             </div>
           ))}
         </div>
-      </section>
+      </MarketingSection>
 
       {/* FEATURES */}
-      <section
-        id="features"
-        className="scroll-mt-32 border-t border-slate-200 py-20 dark:border-white/10"
-      >
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Everything co‑owners need, in one calm workspace</h2>
-            <p className="mt-3 text-slate-600 dark:text-white/70">
-              Replace fragile spreadsheets and message threads with a platform designed for transparency, fairness,
-              and shared stewardship.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <FeatureCard
-              icon={<CalendarDays className="h-6 w-6" />}
-              eyebrow="Operational clarity"
-              title="Booking & Access"
-              points={[
-                "Propose, discuss, and vote on stays in one thread",
-                "Automated fairness rules, blackout holds, and quick blocks",
-                "Real-time calendar sync to iCal, Google, and Outlook",
-                "Owner dashboard surfaces conflicts before they happen",
-              ]}
-              href="/admin/bookings"
-            />
-            <FeatureCard
-              icon={<Receipt className="h-6 w-6" />}
-              eyebrow="Shared accountability"
-              title="Expense Tracking"
-              points={[
-                "Snap receipts, auto-split by owner share, and tag payers",
-                "Approval flows keep reimbursements moving without email",
-                "Ledger view shows deposits, payouts, and settlements",
-                "Export-ready history for accountants and tax season",
-              ]}
-              href="/admin/expenses"
-            />
-            <FeatureCard
-              icon={<BookOpenText className="h-6 w-6" />}
-              eyebrow="Always-on knowledge"
-              title="Knowledge Hub"
-              points={[
-                "Versioned opening/closing checklists with approvals",
-                "Central vault for manuals, diagrams, and permits",
-                "Recurring maintenance schedules with blackout reminders",
-                "Owners see the latest playbook from any device",
-              ]}
-              href="/admin/knowledge-hub"
-            />
-          </div>
+      <MarketingSection id="features">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Everything co‑owners need, in one calm workspace</h2>
+          <p className="mt-3 text-slate-600 dark:text-white/70">
+            Replace fragile spreadsheets and message threads with a platform designed for transparency, fairness,
+            and shared stewardship.
+          </p>
         </div>
-      </section>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          <FeatureCard
+            icon={<CalendarDays className="h-6 w-6" />}
+            eyebrow="Operational clarity"
+            title="Booking & Access"
+            points={[
+              "Propose, discuss, and vote on stays in one thread",
+              "Automated fairness rules, blackout holds, and quick blocks",
+              "Real-time calendar sync to iCal, Google, and Outlook",
+              "Owner dashboard surfaces conflicts before they happen",
+            ]}
+            href="/admin/bookings"
+          />
+          <FeatureCard
+            icon={<Receipt className="h-6 w-6" />}
+            eyebrow="Shared accountability"
+            title="Expense Tracking"
+            points={[
+              "Snap receipts, auto-split by owner share, and tag payers",
+              "Approval flows keep reimbursements moving without email",
+              "Ledger view shows deposits, payouts, and settlements",
+              "Export-ready history for accountants and tax season",
+            ]}
+            href="/admin/expenses"
+          />
+          <FeatureCard
+            icon={<BookOpenText className="h-6 w-6" />}
+            eyebrow="Always-on knowledge"
+            title="Knowledge Hub"
+            points={[
+              "Versioned opening/closing checklists with approvals",
+              "Central vault for manuals, diagrams, and permits",
+              "Recurring maintenance schedules with blackout reminders",
+              "Owners see the latest playbook from any device",
+            ]}
+            href="/admin/knowledge-hub"
+          />
+        </div>
+      </MarketingSection>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="scroll-mt-32 border-t border-white/10 bg-white py-20 dark:bg-black">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900 dark:text-white">How it works</h2>
-            <p className="mt-3 text-slate-600 dark:text-white/70">From the first invite to a calm cottage rhythm in four clear moves.</p>
-          </div>
-          <ol className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-4">
-            {[
-              {
-                n: 1,
-                t: 'Create your ownership group',
-                d: 'Spin up an organization, assign owner-admins, and set the guardrails for who can approve what.',
-              },
-              {
-                n: 2,
-                t: 'Add properties & owners',
-                d: 'Define shares, voting power, nightly rates, and blackout rules for each cottage you manage.',
-              },
-              {
-                n: 3,
-                t: 'Launch the operating dashboard',
-                d: 'Use the booking board, expense approvals, and knowledge hub to keep decisions in one place.',
-              },
-              {
-                n: 4,
-                t: 'Share access in minutes',
-                d: 'Send magic links to owners, caretakers, or guests—roles keep data scoped to what they need.',
-              },
-            ].map((s) => (
-              <li
-                key={s.n}
-                className="card-sheen rounded-[24px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_30px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white"
-              >
-                <div className="text-5xl font-black text-emerald-500 dark:text-emerald-400">{s.n}</div>
-                <h3 className="mt-3 text-lg font-semibold">{s.t}</h3>
-                <p className="mt-2 text-sm text-slate-600 dark:text-white/70">{s.d}</p>
-              </li>
-            ))}
-          </ol>
+      <MarketingSection id="how" className="scroll-mt-32">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">How it works</h2>
+          <p className="mt-3 text-slate-600 dark:text-white/70">From the first invite to a calm cottage rhythm in four clear moves.</p>
         </div>
-      </section>
+        <ol className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-4">
+          {[
+            {
+              n: 1,
+              t: "Create your ownership group",
+              d: "Spin up an organization, assign owner-admins, and set the guardrails for who can approve what.",
+            },
+            {
+              n: 2,
+              t: "Add properties & owners",
+              d: "Define shares, voting power, nightly rates, and blackout rules for each cottage you manage.",
+            },
+            {
+              n: 3,
+              t: "Launch the operating dashboard",
+              d: "Use the booking board, expense approvals, and knowledge hub to keep decisions in one place.",
+            },
+            {
+              n: 4,
+              t: "Share access in minutes",
+              d: "Send magic links to owners, caretakers, or guests—roles keep data scoped to what they need.",
+            },
+          ].map((s) => (
+            <li
+              key={s.n}
+              className="card-sheen rounded-[24px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_30px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white"
+            >
+              <div className="text-5xl font-black text-emerald-500 dark:text-emerald-400">{s.n}</div>
+              <h3 className="mt-3 text-lg font-semibold">{s.t}</h3>
+              <p className="mt-2 text-sm text-slate-600 dark:text-white/70">{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </MarketingSection>
 
       {/* PRICING */}
-      <section id="pricing" className="scroll-mt-32 border-t border-slate-200 bg-[#f6f8ff] py-20 dark:border-white/10 dark:bg-zinc-950">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900 dark:text-white">Simple pricing</h2>
-            <p className="mt-3 text-slate-600 dark:text-white/70">Pay for peace of mind, not per argument.</p>
+      <MarketingSection
+        id="pricing"
+        className="scroll-mt-32 bg-[#f6f8ff] dark:bg-zinc-950"
+        containerClassName="max-w-7xl"
+      >
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900 dark:text-white">Simple pricing</h2>
+          <p className="mt-3 text-slate-600 dark:text-white/70">Pay for peace of mind, not per argument.</p>
+        </div>
+        <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-2">
+          <div className="card-sheen rounded-[28px] border border-slate-200 bg-white p-8 text-slate-900 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white">
+            <h3 className="text-xl font-semibold">Early Access</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-white/70">Limited seats</p>
+            <p className="mt-6 text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">$0</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-white/70">Free while in beta</p>
+            <ul className="mt-6 space-y-2 text-sm text-slate-700 dark:text-white/80">
+              <li>• All core features</li>
+              <li>• Priority support & roadmap input</li>
+              <li>• Smooth upgrade to paid plan</li>
+            </ul>
+            <a
+              href="#early-access"
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 font-semibold text-black shadow-[0_20px_60px_-30px_rgba(52,211,153,0.9)] transition hover:bg-emerald-400"
+            >
+              Request invite
+              <ArrowRight className="h-4 w-4" />
+            </a>
           </div>
-          <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-2">
-            <div className="card-sheen rounded-[28px] border border-slate-200 bg-white p-8 text-slate-900 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white">
-              <h3 className="text-xl font-semibold">Early Access</h3>
-              <p className="mt-1 text-sm text-slate-600 dark:text-white/70">Limited seats</p>
-              <p className="mt-6 text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">$0</p>
-              <p className="mt-2 text-sm text-slate-600 dark:text-white/70">Free while in beta</p>
-              <ul className="mt-6 space-y-2 text-sm text-slate-700 dark:text-white/80">
-                <li>• All core features</li>
-                <li>• Priority support & roadmap input</li>
-                <li>• Smooth upgrade to paid plan</li>
-              </ul>
-              <a
-                href="#early-access"
-                className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 font-semibold text-black shadow-[0_20px_60px_-30px_rgba(52,211,153,0.9)] transition hover:bg-emerald-400"
-              >
-                Request invite
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-            <div className="card-sheen rounded-[28px] border border-slate-200 bg-white p-8 text-slate-900 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white">
-              <h3 className="text-xl font-semibold">Family Plan</h3>
-              <p className="mt-1 text-sm text-slate-600 dark:text-white/70">Coming at launch</p>
-              <p className="mt-6 text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">$—</p>
-              <p className="mt-2 text-sm text-slate-600 dark:text-white/70">Flat monthly fee per cottage</p>
-              <ul className="mt-6 space-y-2 text-sm text-slate-700 dark:text-white/80">
-                <li>• Unlimited co‑owners & guests</li>
-                <li>• Calendar sync + expense auto‑split</li>
-                <li>• Document storage & task schedules</li>
-              </ul>
-              <span className="mt-8 inline-flex rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/70 backdrop-blur">
-                Notify me at launch
-              </span>
-            </div>
+          <div className="card-sheen rounded-[28px] border border-slate-200 bg-white p-8 text-slate-900 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-white/5 dark:text-white">
+            <h3 className="text-xl font-semibold">Family Plan</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-white/70">Coming at launch</p>
+            <p className="mt-6 text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">$—</p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-white/70">Flat monthly fee per cottage</p>
+            <ul className="mt-6 space-y-2 text-sm text-slate-700 dark:text-white/80">
+              <li>• Unlimited co‑owners & guests</li>
+              <li>• Calendar sync + expense auto‑split</li>
+              <li>• Document storage & task schedules</li>
+            </ul>
+            <span className="mt-8 inline-flex rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white/70 backdrop-blur">
+              Notify me at launch
+            </span>
           </div>
         </div>
-      </section>
+      </MarketingSection>
 
       {/* FAQ */}
-      <section id="faq" className="scroll-mt-32 border-t border-slate-200 py-20 dark:border-white/10">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900 dark:text-white">FAQ</h2>
-            <p className="mt-3 text-slate-600 dark:text-white/70">Quick answers to common questions.</p>
-          </div>
-          <div className="mx-auto mt-10 max-w-3xl space-y-4">
-            {[
-              {
-                q: 'Can my co-owners have separate logins?',
-                a: 'Absolutely. Invite them with a magic link or password and assign a role (Owner Admin, Owner, or Caretaker). Each person sees only the organizations and properties you share with them.',
-              },
-              {
-                q: 'How do bookings get approved?',
-                a: 'Owners propose dates, add context, and vote. Fairness rules, blackout holds, and minimum nights are enforced automatically, and the dashboard surfaces any conflicts before they escalate.',
-              },
-              {
-                q: 'What does the expense workflow look like?',
-                a: 'Upload a receipt, tag who paid, and Cottagr splits it by ownership share. Other owners approve or comment, and the ledger keeps a running balance ready for payouts or accountant exports.',
-              },
-              {
-                q: 'Where do we store manuals and checklists?',
-                a: 'The Knowledge Hub keeps versioned playbooks, documents, and maintenance cadences in one place. Publish updates when they are ready so everyone sees the latest instructions.',
-              },
-              {
-                q: 'Can caretakers or guests use the app?',
-                a: 'Yes. Assign the Caretaker role for limited operational access or share read-only booking links with guests. Sensitive ownership data stays scoped to the people who need it.',
-              },
-              {
-                q: 'What happens when we add another cottage?',
-                a: 'Add a new property to your organization (or create a new org) and the dashboard updates instantly with fresh counts, expenses, blackouts, and documents for that place.',
-              },
-            ].map((f, i) => (
-              <details
-                key={i}
-                className="group rounded-2xl border border-slate-200 p-5 open:bg-slate-50 dark:border-white/10 dark:open:bg-white/5"
-              >
-                <summary className="flex cursor-pointer select-none items-center justify-between text-base font-medium text-slate-900 dark:text-white">
-                  {f.q}
-                  <span className="ml-4 text-slate-400 group-open:hidden dark:text-white/40">+</span>
-                  <span className="ml-4 hidden text-slate-400 group-open:block dark:text-white/40">−</span>
-                </summary>
-                <p className="mt-3 text-sm text-slate-600 dark:text-white/70">{f.a}</p>
-              </details>
-            ))}
-          </div>
+      <MarketingSection id="faq" className="scroll-mt-32" containerClassName="max-w-5xl">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900 dark:text-white">FAQ</h2>
+          <p className="mt-3 text-slate-600 dark:text-white/70">Quick answers to common questions.</p>
         </div>
-      </section>
+        <div className="mx-auto mt-10 max-w-3xl space-y-4">
+          {[
+            {
+              q: "Can my co-owners have separate logins?",
+              a: "Absolutely. Invite them with a magic link or password and assign a role (Owner Admin, Owner, or Caretaker). Each person sees only the organizations and properties you share with them.",
+            },
+            {
+              q: "How do bookings get approved?",
+              a: "Owners propose dates, add context, and vote. Fairness rules, blackout holds, and minimum nights are enforced automatically, and the dashboard surfaces any conflicts before they escalate.",
+            },
+            {
+              q: "What does the expense workflow look like?",
+              a: "Upload a receipt, tag who paid, and Cottagr splits it by ownership share. Other owners approve or comment, and the ledger keeps a running balance ready for payouts or accountant exports.",
+            },
+            {
+              q: "Where do we store manuals and checklists?",
+              a: "The Knowledge Hub keeps versioned playbooks, documents, and maintenance cadences in one place. Publish updates when they are ready so everyone sees the latest instructions.",
+            },
+            {
+              q: "Can caretakers or guests use the app?",
+              a: "Yes. Assign the Caretaker role for limited operational access or share read-only booking links with guests. Sensitive ownership data stays scoped to the people who need it.",
+            },
+            {
+              q: "What happens when we add another cottage?",
+              a: "Add a new property to your organization (or create a new org) and the dashboard updates instantly with fresh counts, expenses, blackouts, and documents for that place.",
+            },
+          ].map((f, i) => (
+            <details
+              key={i}
+              className="group rounded-2xl border border-slate-200 p-5 open:bg-slate-50 dark:border-white/10 dark:open:bg-white/5"
+            >
+              <summary className="flex cursor-pointer select-none items-center justify-between text-base font-medium text-slate-900 dark:text-white">
+                {f.q}
+                <span className="ml-4 text-slate-400 group-open:hidden dark:text-white/40">+</span>
+                <span className="ml-4 hidden text-slate-400 group-open:block dark:text-white/40">−</span>
+              </summary>
+              <p className="mt-3 text-sm text-slate-600 dark:text-white/70">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </MarketingSection>
 
       {/* EARLY ACCESS FORM (embed‑ready placeholder) */}
-      <section id="early-access" className="scroll-mt-32 border-y border-slate-200 bg-slate-100 py-16 text-slate-900 dark:border-white/10 dark:bg-gradient-to-b dark:from-zinc-950 dark:to-black dark:text-white">
-        <div className="mx-auto max-w-3xl px-6 text-center">
-          <h3 className="text-2xl font-semibold">Want in early?</h3>
-          <p className="mt-2 text-slate-600 dark:text-white/70">Drop your email and we’ll reach out with a private beta invite.</p>
-          {/* Replace the form below with your real form / API hook */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              alert("Thanks! We'll be in touch soon.");
-            }}
-            className="mx-auto mt-6 flex max-w-xl flex-col gap-3 sm:flex-row"
+      <MarketingSection
+        id="early-access"
+        className="scroll-mt-32 bg-slate-100 text-slate-900 dark:bg-gradient-to-b dark:from-zinc-950 dark:to-black dark:text-white"
+        containerClassName="max-w-3xl text-center"
+        withDivider={false}
+      >
+        <h3 className="text-2xl font-semibold">Want in early?</h3>
+        <p className="mt-2 text-slate-600 dark:text-white/70">Drop your email and we’ll reach out with a private beta invite.</p>
+        {/* Replace the form below with your real form / API hook */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            alert("Thanks! We'll be in touch soon.");
+          }}
+          className="mx-auto mt-6 flex max-w-xl flex-col gap-3 sm:flex-row"
+        >
+          <input
+            type="email"
+            required
+            placeholder="you@email.com"
+            className="h-12 flex-1 rounded-full border border-slate-200 bg-white px-5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-white/20 dark:bg-black/50 dark:text-white dark:placeholder-white/40"
+          />
+          <button
+            type="submit"
+            className="h-12 rounded-full bg-emerald-500 px-6 font-semibold text-black shadow-[0_20px_60px_-30px_rgba(52,211,153,0.9)] transition hover:bg-emerald-400"
           >
-            <input
-              type="email"
-              required
-              placeholder="you@email.com"
-              className="h-12 flex-1 rounded-full border border-slate-200 bg-white px-5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-white/20 dark:bg-black/50 dark:text-white dark:placeholder-white/40"
-            />
-            <button
-              type="submit"
-              className="h-12 rounded-full bg-emerald-500 px-6 font-semibold text-black shadow-[0_20px_60px_-30px_rgba(52,211,153,0.9)] transition hover:bg-emerald-400"
-            >
-              Request Invite
-            </button>
-          </form>
-          <p className="mt-3 text-xs text-slate-500 dark:text-white/50">No spam. Unsubscribe anytime.</p>
-        </div>
-      </section>
+            Request Invite
+          </button>
+        </form>
+        <p className="mt-3 text-xs text-slate-500 dark:text-white/50">No spam. Unsubscribe anytime.</p>
+      </MarketingSection>
 
       {/* FOOTER */}
       <footer className="px-6 py-10">
@@ -409,6 +407,7 @@ export default function CottagrLandingPage() {
           </div>
         </div>
       </footer>
+      <SupportFooter />
     </div>
   );
 }
@@ -426,11 +425,11 @@ function FeatureCard({
   href?: string;
   eyebrow?: string;
 }) {
-  const content = (
-    <div className="card-sheen h-full rounded-[26px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.18)] transition hover:-translate-y-1 dark:border-white/10 dark:bg-white/5 dark:text-white">
+  return (
+    <article className="card-sheen h-full rounded-[26px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.18)] transition hover:-translate-y-1 dark:border-white/10 dark:bg-white/5 dark:text-white">
       <div className="flex items-start justify-between gap-3">
         <div className="rounded-2xl bg-emerald-500/15 p-3 text-emerald-500 dark:text-emerald-300">{icon}</div>
-        {href ? <ArrowUpRight className="h-4 w-4 text-slate-300 dark:text-white/40" /> : null}
+        {href ? <ArrowUpRight className="h-4 w-4 text-slate-300 dark:text-white/40" aria-hidden="true" /> : null}
       </div>
       {eyebrow ? (
         <p className="mt-6 text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-white/40">{eyebrow}</p>
@@ -445,21 +444,14 @@ function FeatureCard({
         ))}
       </ul>
       {href ? (
-        <span className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-300">
+        <a
+          href={href}
+          className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-300 dark:hover:text-emerald-200"
+        >
           Learn more
           <ArrowRight className="h-4 w-4" />
-        </span>
+        </a>
       ) : null}
-    </div>
+    </article>
   );
-
-  if (href) {
-    return (
-      <a href={href} className="h-full">
-        {content}
-      </a>
-    );
-  }
-
-  return content;
 }

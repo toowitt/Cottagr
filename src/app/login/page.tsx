@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import LoginForm from './LoginForm';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
+import SupportFooter from '@/components/SupportFooter';
 
 type LoginPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -25,8 +26,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background-secondary to-background">
-      <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-12">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background-secondary to-background">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-6 py-12">
         <div className="rounded-3xl border border-default bg-card p-8 shadow-2xl">
           <h1 className="text-3xl font-semibold">Welcome to Cottagr</h1>
           <p className="mt-2 text-sm text-muted">
@@ -42,6 +43,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <LoginForm redirectTo={redirectPath} />
         </div>
       </div>
+      <SupportFooter />
     </div>
   );
 }
