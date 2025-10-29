@@ -47,7 +47,7 @@ function HeroSection() {
     <section className="relative overflow-hidden bg-white text-slate-900 dark:bg-black dark:text-white">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(70rem_70rem_at_40%_-10%,rgba(52,211,153,0.15),transparent_65%),radial-gradient(50rem_50rem_at_100%_10%,rgba(37,99,235,0.14),transparent_60%)] dark:bg-[radial-gradient(70rem_70rem_at_40%_-10%,rgba(52,211,153,0.18),transparent_65%),radial-gradient(50rem_50rem_at_100%_10%,rgba(37,99,235,0.16),transparent_60%)]" />
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-24 pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:pb-32 lg:pt-28">
-        <div className="space-y-8">
+        <div className="space-y-8 text-slate-900 dark:text-white">
           <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
             Booking workflow preview
           </span>
@@ -60,44 +60,44 @@ function HeroSection() {
           <div className="flex flex-col items-start gap-3 sm:flex-row">
             <a
               href="#workflow"
-              className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-[0_20px_60px_-28px_rgba(37,99,235,0.9)] transition hover:bg-blue-500"
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-base font-semibold text-black shadow-[0_20px_60px_-28px_rgba(52,211,153,0.9)] transition hover:bg-emerald-400"
             >
               See the workflow <ArrowRight className="h-4 w-4" />
             </a>
             <a
               href="#cta"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 text-base text-white/80 transition hover:bg-white/5"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-6 py-3 text-base text-slate-700 transition hover:bg-slate-100 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/10"
             >
               Share with co-owners
             </a>
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-sm text-white/60">
-            <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-400" /> Voting transparency</div>
-            <div className="flex items-center gap-2"><Users className="h-4 w-4 text-emerald-400" /> Built for shared homes</div>
+          <div className="flex flex-wrap items-center gap-6 text-sm text-slate-500 dark:text-white/65">
+            <div className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-500 dark:text-emerald-300" /> Voting transparency</div>
+            <div className="flex items-center gap-2"><Users className="h-4 w-4 text-emerald-500 dark:text-emerald-300" /> Built for shared homes</div>
           </div>
         </div>
 
         <div className="relative" aria-hidden="true">
-          <div className="mx-auto max-w-lg rounded-[28px] border border-white/15 bg-white/5 p-6 shadow-[0_42px_160px_-60px_rgba(15,23,42,0.55)]">
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
-              <div className="flex items-center justify-between text-xs text-white/60">
+          <div className="mx-auto max-w-lg rounded-[28px] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_42px_160px_-60px_rgba(15,23,42,0.1)] dark:border-white/10 dark:bg-white/5 dark:text-white">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-black/40">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-white/60">
                 <span>Request preview</span>
                 <span>Friday · 7:45pm</span>
               </div>
               <div className="mt-5 space-y-4">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-wide text-white/50">Selected stay</p>
-                  <h3 className="mt-1 text-lg font-semibold text-white">Aug 29 – Sep 2 · Lakehouse</h3>
-                  <p className="mt-2 text-xs text-white/55">4 approvals · 0 conflicts</p>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/10">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-white/60">Selected stay</p>
+                  <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Aug 29 – Sep 2 · Lakehouse</h3>
+                  <p className="mt-2 text-xs text-slate-400 dark:text-white/55">4 approvals · 0 conflicts</p>
                 </div>
-                <div className="grid gap-3 text-xs text-white/70 sm:grid-cols-3">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">Smart fairness rules</div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">Vote audit trail</div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">Calendar sync</div>
+                <div className="grid gap-3 text-xs text-slate-600 dark:text-white/70 sm:grid-cols-3">
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/10">Smart fairness rules</div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/10">Vote audit trail</div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/10">Calendar sync</div>
                 </div>
               </div>
             </div>
-            <p className="mt-3 text-center text-xs text-white/45">Marketing preview of the owner experience.</p>
+            <p className="mt-3 text-center text-xs text-slate-400 dark:text-white/45">Marketing preview of the owner experience.</p>
           </div>
         </div>
       </div>
@@ -109,8 +109,8 @@ function WorkflowSection() {
   return (
     <MarketingSection
       id="workflow"
-      className="border-t border-slate-200 bg-background text-foreground dark:border-white/10 dark:bg-black"
-      containerClassName="flex max-w-6xl flex-col gap-12 lg:flex-row lg:items-start"
+      className="border-t border-border/60 bg-background text-foreground dark:border-white/10 dark:bg-black"
+      containerClassName="flex w-full flex-col gap-12 lg:flex-row lg:items-start"
     >
       <div className="max-w-xl space-y-4">
         <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-400/10 dark:text-emerald-200">
