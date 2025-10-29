@@ -253,7 +253,9 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           setIsSubmitting(false);
           startNavigation(() => {
             router.replace(redirectTarget);
-            router.refresh();
+            if (typeof router.refresh === 'function') {
+              router.refresh();
+            }
           });
           return;
         }
@@ -294,7 +296,9 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
       setIsSubmitting(false);
       startNavigation(() => {
         router.replace(target);
-        router.refresh();
+        if (typeof router.refresh === 'function') {
+          router.refresh();
+        }
       });
       return;
     } finally {

@@ -101,54 +101,59 @@ export default function CottagrLandingPage() {
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-transparent py-20 dark:border-white/10">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:items-center">
-          <div className="space-y-6 rounded-[30px] border border-slate-200 bg-white/95 p-8 text-slate-900 shadow-[0_35px_110px_-60px_rgba(15,23,42,0.18)] dark:border-white/15 dark:bg-white/5 dark:text-white">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/40 px-3 py-1 text-xs uppercase tracking-[0.25em] text-slate-500 dark:border-white/20 dark:bg-white/10 dark:text-white/60">
-              Why families trust Cottagr
-            </div>
-            <blockquote className="space-y-4 text-slate-700 dark:text-white/80">
-              <p className="text-lg italic text-slate-800 dark:text-white/85">
-                “We went from late-night text threads to a single dashboard. Votes happen fast, expenses settle on
-                time, and the opening checklist is always up to date.”
-              </p>
-              <footer className="text-sm text-slate-500 dark:text-white/55">– Laura M., co-owner of a 4-family Muskoka cottage</footer>
-            </blockquote>
+      <MarketingSection
+        variant="muted"
+        containerClassName="grid gap-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:items-center"
+      >
+        <div className="space-y-6 rounded-[30px] border border-border/60 bg-background p-8 text-slate-900 shadow-[0_35px_110px_-60px_rgba(15,23,42,0.18)] dark:text-white">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-background-muted px-3 py-1 text-xs uppercase tracking-[0.25em] text-slate-500 dark:border-white/20 dark:bg-white/10 dark:text-white/60">
+            Why families trust Cottagr
           </div>
-          <div className="grid gap-4">
-            {[
-              {
-                title: 'Clarity out of the box',
-                description: 'Owner dashboards spotlight upcoming stays, approvals, and documents without digging.',
-                icon: <BarChart3 className="h-5 w-5 text-emerald-500" />,
-              },
-              {
-                title: 'Roles built for real life',
-                description: 'Owner admins, owners, and caretakers see tailored tools—no oversharing or guesswork.',
-                icon: <Users className="h-5 w-5 text-emerald-500" />,
-              },
-              {
-                title: 'Confidence in every decision',
-                description: 'Fairness rules, voting history, and knowledge versions keep the next handover smooth.',
-                icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-3xl border border-slate-200 bg-white/95 p-6 text-slate-900 shadow-[0_32px_90px_-70px_rgba(15,23,42,0.18)] dark:border-white/15 dark:bg-white/5 dark:text-white"
-              >
-                <div className="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-white">
-                  <span className="rounded-2xl bg-emerald-500/15 p-2 text-emerald-500 dark:text-emerald-300">{item.icon}</span>
-                  {item.title}
-                </div>
-                <p className="mt-3 text-sm text-slate-600 dark:text-white/75">{item.description}</p>
-              </div>
-            ))}
-          </div>
+          <blockquote className="space-y-4 text-slate-700 dark:text-white/80">
+            <p className="text-lg italic text-slate-800 dark:text-white/85">
+              “We went from late-night text threads to a single dashboard. Votes happen fast, expenses settle on time,
+              and the opening checklist is always up to date.”
+            </p>
+            <footer className="text-sm text-slate-500 dark:text-white/55">
+              – Laura M., co-owner of a 4-family Muskoka cottage
+            </footer>
+          </blockquote>
         </div>
-      </section>
+        <div className="grid gap-4">
+          {[
+            {
+              title: "Clarity out of the box",
+              description: "Owner dashboards spotlight upcoming stays, approvals, and documents without digging.",
+              icon: <BarChart3 className="h-5 w-5 text-emerald-500" />,
+            },
+            {
+              title: "Roles built for real life",
+              description: "Owner admins, owners, and caretakers see tailored tools—no oversharing or guesswork.",
+              icon: <Users className="h-5 w-5 text-emerald-500" />,
+            },
+            {
+              title: "Confidence in every decision",
+              description: "Fairness rules, voting history, and knowledge versions keep the next handover smooth.",
+              icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="rounded-3xl border border-border/60 bg-background p-6 text-slate-900 shadow-[0_32px_90px_-70px_rgba(15,23,42,0.18)] dark:text-white"
+            >
+              <div className="flex items-center gap-3 text-sm font-medium">
+                <span className="rounded-2xl bg-emerald-500/15 p-2 text-emerald-500 dark:text-emerald-300">
+                  {item.icon}
+                </span>
+                {item.title}
+              </div>
+              <p className="mt-3 text-sm text-slate-600 dark:text-white/75">{item.description}</p>
+            </div>
+          ))}
+        </div>
+      </MarketingSection>
 
-      <MarketingSection>
+      <MarketingSection variant="muted">
         <div className="grid gap-6 text-slate-900 dark:text-white sm:grid-cols-3">
           {[
             {
@@ -169,7 +174,7 @@ export default function CottagrLandingPage() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-[0_34px_110px_-80px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-white/5 dark:text-white"
+              className="rounded-3xl border border-border/60 bg-background p-6 text-center shadow-[0_34px_110px_-80px_rgba(15,23,42,0.15)] dark:border-white/15 dark:bg-white/5 dark:text-white"
             >
               <div className="text-4xl font-semibold text-slate-900 dark:text-white">{stat.value}</div>
               <p className="mt-2 text-sm font-medium uppercase tracking-[0.25em] text-slate-500 dark:text-white/40">{stat.label}</p>
