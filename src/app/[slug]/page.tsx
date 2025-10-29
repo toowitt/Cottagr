@@ -1,7 +1,9 @@
 
-import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
-import AvailabilityCalendar from './AvailabilityCalendar';
+import { notFound } from "next/navigation";
+import MarketingSection from "@/components/marketing/MarketingSection";
+import SupportFooter from "@/components/SupportFooter";
+import { prisma } from "@/lib/prisma";
+import AvailabilityCalendar from "./AvailabilityCalendar";
 
 interface PropertyPageProps {
   params: Promise<{
@@ -19,65 +21,76 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
     notFound();
   }
 
+  const nightlyRate = property.nightlyRate ? `$${(property.nightlyRate / 100).toFixed(2)}` : "Not specified";
+  const cleaningFee =
+    property.cleaningFee && property.cleaningFee > 0 ? `$${(property.cleaningFee / 100).toFixed(2)}` : null;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="mb-8">
-          <div className="w-full h-64 bg-gray-300 rounded-lg flex items-center justify-center mb-6">
-            <span className="text-gray-600 text-lg">Property Image Placeholder</span>
-          </div>
-          
-          <h1 className="text-4xl font-bold mb-4">{property.name}</h1>
-          {property.location && (
-            <p className="text-lg text-gray-400 mb-4">{property.location}</p>
-          )}
-        </div>
-
-        {/* Property Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Property Details</h2>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-4">
-                <span className="font-medium">Bedrooms:</span>
-                <span>{property.beds || 'Not specified'}</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="font-medium">Bathrooms:</span>
-                <span>{property.baths || 'Not specified'}</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="font-medium">Nightly Rate:</span>
-                <span>${(property.nightlyRate / 100).toFixed(2)}</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="font-medium">Minimum Nights:</span>
-                <span>{property.minNights}</span>
-              </div>
-              {property.cleaningFee > 0 && (
-                <div className="flex items-center space-x-4">
-                  <span className="font-medium">Cleaning Fee:</span>
-                  <span>${(property.cleaningFee / 100).toFixed(2)}</span>
-                </div>
-              )}
+      <MarketingSection withDivider={false} containerClassName="max-w-5xl">
+        <div className="space-y-6 text-center">
+          <div className="mx-auto h-48 w-full max-w-3xl rounded-3xl border border-border/50 bg-gradient-to-br from-slate-200 via-slate-100 to-white shadow-soft">
+            <div className="flex h-full items-center justify-center text-sm font-medium text-muted-foreground">
+              Property imagery coming soon
             </div>
-            
-            {property.description && (
-              <div className="mt-6">
-                <h3 className="text-xl font-semibold mb-3">Description</h3>
-                <p className="text-gray-300 leading-relaxed">{property.description}</p>
-              </div>
-            )}
           </div>
-
-          {/* Availability Calendar */}
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Check Availability</h2>
-            <AvailabilityCalendar propertyId={property.id} />
+          <div className="space-y-2">
+            <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">{property.name}</h1>
+            {property.location ? (
+              <p className="text-base text-muted-foreground">{property.location}</p>
+            ) : null}
           </div>
         </div>
-      </div>
+      </MarketingSection>
+
+      <MarketingSection containerClassName="max-w-5xl">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]">
+          <section className="space-y-6 rounded-3xl border border-border/60 bg-surface p-6 shadow-soft">
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-foreground">Property details</h2>
+              <p className="text-sm text-muted-foreground">
+                The essentials owners and guests usually ask before they pack a bag.
+              </p>
+            </div>
+
+            <dl className="grid gap-4 text-sm text-foreground sm:grid-cols-2">
+              <PropertyFact label="Bedrooms" value={property.beds ?? "Not specified"} />
+              <PropertyFact label="Bathrooms" value={property.baths ?? "Not specified"} />
+              <PropertyFact label="Nightly rate" value={nightlyRate} />
+              <PropertyFact label="Minimum nights" value={property.minNights ?? "Not specified"} />
+              <PropertyFact label="Cleaning fee" value={cleaningFee ?? "Included"} />
+            </dl>
+
+            {property.description ? (
+              <div className="space-y-2">
+                <h3 className="text-base font-semibold text-foreground">Description</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">{property.description}</p>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="space-y-4 rounded-3xl border border-border/60 bg-surface p-6 shadow-soft">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-foreground">Check availability</h2>
+              <p className="text-sm text-muted-foreground">
+                Explore open nights, pending requests, and confirmed bookings in real time.
+              </p>
+            </div>
+            <AvailabilityCalendar propertyId={property.id} />
+          </section>
+        </div>
+      </MarketingSection>
+
+      <SupportFooter className="bg-background text-foreground" />
+    </div>
+  );
+}
+
+function PropertyFact({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-2xl border border-border/50 bg-surface-elevated/80 px-4 py-3 shadow-soft">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-sm font-medium text-foreground">{value}</dd>
     </div>
   );
 }
