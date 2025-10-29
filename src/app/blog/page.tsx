@@ -1,7 +1,9 @@
-import { prisma } from '@/lib/prisma';
-import { ArticleStatus } from '@prisma/client';
-import Link from 'next/link';
-import { Clock, Calendar, BookOpen } from 'lucide-react';
+import MarketingSection from "@/components/marketing/MarketingSection";
+import SupportFooter from "@/components/SupportFooter";
+import { prisma } from "@/lib/prisma";
+import { ArticleStatus } from "@prisma/client";
+import Link from "next/link";
+import { Clock, Calendar, BookOpen } from "lucide-react";
 
 function formatDate(value: Date | null | undefined) {
   if (!value) return '—';
@@ -55,12 +57,10 @@ export default async function BlogPage({
     : null;
 
   return (
-    <div className="bg-white dark:bg-black">
-      <div className="mx-auto max-w-7xl px-6 py-20">
+    <div className="bg-background text-foreground">
+      <MarketingSection withDivider={false} containerClassName="max-w-7xl">
         <header className="mb-12 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">
-            CottagrBlog
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">Cottagr Blog</h1>
           <p className="mt-4 text-lg text-slate-600 dark:text-white/70">
             Expert guidance on cottage ownership, legalities, and family transitions
           </p>
@@ -72,8 +72,8 @@ export default async function BlogPage({
               href="/blog"
               className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                 !categorySlug
-                  ? 'border-emerald-500 bg-emerald-500 text-black'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-emerald-500'
+                  ? "border-emerald-500 bg-emerald-500 text-black"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-emerald-500"
               }`}
             >
               All Articles
@@ -84,14 +84,14 @@ export default async function BlogPage({
                 href={`/blog?category=${category.slug}`}
                 className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                   categorySlug === category.slug
-                    ? 'text-black'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-emerald-500'
+                    ? "text-black"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-emerald-500"
                 }`}
                 style={{
                   ...(categorySlug === category.slug && {
-                    borderColor: category.color || '#10b981',
-                    backgroundColor: category.color || '#10b981',
-                  })
+                    borderColor: category.color || "#10b981",
+                    backgroundColor: category.color || "#10b981",
+                  }),
                 }}
               >
                 {category.name} ({category._count.articles})
@@ -103,13 +103,11 @@ export default async function BlogPage({
         {articles.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-12 text-center dark:border-white/10 dark:bg-white/5">
             <BookOpen className="mx-auto h-12 w-12 text-slate-400 dark:text-white/40" />
-            <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-white">
-              No articles yet
-            </h3>
+            <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-white">No articles yet</h3>
             <p className="mt-2 text-sm text-slate-600 dark:text-white/70">
-              {selectedCategory 
-                ? `No published articles in ${selectedCategory.name} category.` 
-                : 'Check back soon for helpful articles.'}
+              {selectedCategory
+                ? `No published articles in ${selectedCategory.name} category.`
+                : "Check back soon for helpful articles."}
             </p>
           </div>
         ) : (
@@ -125,7 +123,7 @@ export default async function BlogPage({
                     className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
                     style={{
                       backgroundColor: `${article.category.color}20`,
-                      color: article.category.color || '#10b981',
+                      color: article.category.color || "#10b981",
                     }}
                   >
                     {article.category.name}
@@ -135,9 +133,7 @@ export default async function BlogPage({
                   {article.title}
                 </h2>
                 {article.excerpt && (
-                  <p className="mt-2 line-clamp-3 text-sm text-slate-600 dark:text-white/70">
-                    {article.excerpt}
-                  </p>
+                  <p className="mt-2 line-clamp-3 text-sm text-slate-600 dark:text-white/70">{article.excerpt}</p>
                 )}
                 <div className="mt-4 flex items-center gap-4 text-xs text-slate-500 dark:text-white/50">
                   {article.publishedAt && (
@@ -157,7 +153,8 @@ export default async function BlogPage({
             ))}
           </div>
         )}
-      </div>
+      </MarketingSection>
+      <SupportFooter className="bg-white text-slate-900 dark:bg-black dark:text-white" />
     </div>
   );
 }

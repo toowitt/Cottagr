@@ -2,14 +2,20 @@
 'use client';
 
 import { useState, useEffect, useCallback, FormEvent, useMemo } from 'react';
-import { Container } from '@/components/ui/Container';
-import { PageHeader } from '@/components/ui/PageHeader';
+import {
+  AdminPage,
+  AdminSection,
+  AdminMetric,
+  AdminMetricGrid,
+  AdminCard,
+  AdminSplit,
+} from '@/components/ui/AdminPage';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { ResponsiveTable, type ResponsiveColumn, type RowAction } from '@/components/datagrid/ResponsiveTable';
 import type { BookingParticipantInput } from '@/lib/validation';
-import { confirmBooking, cancelBooking, deleteBooking, createQuickBooking, createQuickBlackout } from './actions';
+import { confirmBooking, cancelBooking, deleteBooking } from './actions';
 interface PropertyOwnership {
   id: number;
   role: string;
@@ -131,7 +137,7 @@ export default function AdminBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedBookingId, setExpandedBookingId] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -152,14 +158,6 @@ export default function AdminBookingsPage() {
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   // Quick create form state
-  const [showQuickForm, setShowQuickForm] = useState(false);
-  const [quickFormData, setQuickFormData] = useState({
-    type: 'booking', // 'booking' or 'blackout'
-    startDate: '',
-    endDate: '',
-    guestName: '',
-    reason: ''
-  });
   const [showRequestComposer, setShowRequestComposer] = useState(false);
   const [requestFormData, setRequestFormData] = useState({
     propertyId: 0,
@@ -179,6 +177,19 @@ export default function AdminBookingsPage() {
     ? properties.find((property) => property.id === selectedPropertyId) ?? null
     : null;
   const pendingRequests = bookings.filter((booking) => booking.status === 'pending');
+  const upcomingApprovedBookings = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        const isApproved = booking.status === 'approved';
+        if (!isApproved) return false;
+        const start = new Date(booking.startDate);
+        // limit to future or same-day bookings
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return start >= today;
+      }),
+    [bookings],
+  );
   const calendarCells = buildCalendarCells(calendarMonth, availability);
   const goToPreviousMonth = goToPreviousMonthHandler(setCalendarMonth);
   const goToNextMonth = goToNextMonthHandler(setCalendarMonth);
@@ -765,46 +776,6 @@ export default function AdminBookingsPage() {
     }
   }
 
-  async function handleQuickCreate() {
-    if (!selectedPropertyId || !quickFormData.startDate || !quickFormData.endDate) {
-      setError('Please select a property and fill in all required fields');
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('propertyId', selectedPropertyId.toString());
-      formData.append('startDate', quickFormData.startDate);
-      formData.append('endDate', quickFormData.endDate);
-
-      if (quickFormData.type === 'booking') {
-        formData.append('guestName', quickFormData.guestName || 'Owner/Manual Block');
-        await createQuickBooking(formData);
-      } else {
-        formData.append('reason', quickFormData.reason || 'Manual Block');
-        await createQuickBlackout(formData);
-      }
-
-      // Reset form and refresh
-      setQuickFormData({
-        type: 'booking',
-        startDate: '',
-        endDate: '',
-        guestName: '',
-        reason: ''
-      });
-      setShowQuickForm(false);
-
-      if (selectedPropertyId) {
-        await fetchBookings(selectedPropertyId);
-      } else {
-        await fetchAllBookings();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create entry');
-    }
-  }
-
   const expandedBooking = useMemo(
     () => (expandedBookingId ? bookings.find((booking) => booking.id === expandedBookingId) ?? null : null),
     [bookings, expandedBookingId],
@@ -981,70 +952,62 @@ export default function AdminBookingsPage() {
         onClick={() => {
           setRangeAnchor(null);
           setShowRequestComposer((prev) => !prev);
-          setShowQuickForm(false);
         }}
         className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-black shadow-[0_18px_45px_-25px_rgba(52,211,153,0.9)] transition hover:bg-emerald-500"
       >
         {showRequestComposer ? 'Close Request Composer' : 'New Booking Request'}
-      </button>
-      <button
-        onClick={() => {
-          setRangeAnchor(null);
-          setShowQuickForm((prev) => !prev);
-          setShowRequestComposer(false);
-        }}
-        className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-blue-500"
-      >
-        {showQuickForm ? 'Hide Quick Create' : 'Quick Create'}
       </button>
     </div>
   );
 
 
   return (
-    <Container padding="md" className="space-y-10">
-      <PageHeader
-        title="Bookings management"
-        description="Review requests, manage availability, and coordinate with owners."
-        primaryAction={headerActions}
-      />
-
+    <AdminPage
+      title="Bookings management"
+      description="Review requests, manage availability, and coordinate with owners."
+      actions={headerActions}
+    >
       {isLoading ? (
-        <div className="rounded-3xl border border-border/60 bg-surface p-6 text-sm text-muted-foreground shadow-soft">
-          Loading bookings…
-        </div>
+        <AdminSection subdued>
+          <p className="text-sm text-muted-foreground">Loading bookings…</p>
+        </AdminSection>
       ) : null}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-default bg-background-muted px-4 py-3 text-xs text-muted-foreground shadow-soft">
-          <p className="font-semibold text-foreground">Pending requests</p>
-          <p className="text-lg font-bold text-accent">{pendingRequests.length}</p>
-        </div>
-        <div className="rounded-2xl border border-default bg-background-muted px-4 py-3 text-xs text-muted-foreground shadow-soft">
-          <p className="font-semibold text-foreground">Upcoming bookings</p>
-          <p className="text-lg font-bold text-accent">{bookings.filter((b) => b.status === 'approved').length}</p>
-        </div>
-        <div className="rounded-2xl border border-default bg-background-muted px-4 py-3 text-xs text-muted-foreground shadow-soft">
-          <p className="font-semibold text-foreground">Blackouts</p>
-          <p className="text-lg font-bold text-accent">
-            {availability?.items.filter((item) => item.type === 'blackout').length ?? 0}
-          </p>
-        </div>
-      </div>
 
-      {/* Voting Panel */}
-      <div className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
+      <AdminMetricGrid className="md:grid-cols-3">
+        <AdminMetric label="Pending requests" value={pendingRequests.length} />
+        <button
+          type="button"
+          disabled={upcomingApprovedBookings.length === 0}
+          onClick={() => {
+            if (upcomingApprovedBookings.length === 0) return;
+            document.getElementById('upcoming-bookings')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          className="text-left disabled:opacity-60"
+        >
+          <AdminMetric
+            label="Upcoming bookings"
+            value={upcomingApprovedBookings.length}
+            description={upcomingApprovedBookings.length ? 'Tap to jump to the upcoming list' : undefined}
+            className="transition hover:border-accent hover:shadow-[0_12px_30px_-24px_rgba(52,211,153,0.5)]"
+          />
+        </button>
+        <AdminMetric
+          label="Blackouts"
+          value={availability?.items.filter((item) => item.type === 'blackout').length ?? 0}
+        />
+      </AdminMetricGrid>
+
+      <AdminSection
+        title="Voting dashboard"
+        description="Review pending requests and cast your vote."
+      >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">Voting dashboard</h2>
-            <p className="text-sm text-muted-foreground">Review pending requests and cast your vote.</p>
-          </div>
-          <div className="flex flex-col gap-2 md:flex-row md:items-center">
-            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Vote as
-              <select
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Vote as
+            <div className="w-52">
+              <Select
                 value={votingOwnershipId ?? ''}
                 onChange={(event) => setVotingOwnershipId(event.target.value ? Number(event.target.value) : null)}
-                className="ml-2 rounded-lg border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <option value="">Select owner</option>
                 {selectedFilterProperty?.ownerships.map((ownership) => {
@@ -1057,21 +1020,21 @@ export default function AdminBookingsPage() {
                     </option>
                   );
                 })}
-              </select>
-            </label>
+              </Select>
+            </div>
           </div>
         </div>
 
         {!selectedFilterProperty ? (
-          <p className="mt-4 rounded-xl border border-default bg-background-muted px-4 py-3 text-sm text-muted-foreground shadow-soft">
+          <p className="rounded-xl border border-default bg-background-muted px-4 py-3 text-sm text-muted-foreground shadow-soft">
             Select a property above to see pending requests and vote.
           </p>
         ) : pendingRequests.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-default bg-background-muted px-4 py-3 text-sm text-muted-foreground shadow-soft">
+          <p className="rounded-xl border border-default bg-background-muted px-4 py-3 text-sm text-muted-foreground shadow-soft">
             No pending requests for {selectedFilterProperty.name}.
           </p>
         ) : (
-          <div className="mt-4 space-y-4">
+          <div className="space-y-4">
             {pendingRequests.map((booking) => {
               const summary = getVotingSummary(booking, selectedFilterProperty);
               const approvalPercent = summary.total > 0 ? Math.min(100, Math.round((summary.approvals / summary.total) * 100)) : 0;
@@ -1119,15 +1082,19 @@ export default function AdminBookingsPage() {
             })}
           </div>
         )}
-      </div>
+      </AdminSection>
       {error && (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive mb-6">
-          {error}
-        </div>
+        <AdminSection subdued>
+          <p className="text-sm text-destructive">{error}</p>
+        </AdminSection>
       )}
 
       {viewMode === 'calendar' && (
-        <div className="mb-6 space-y-4">
+        <AdminSection
+          title="Availability calendar"
+          description="Review availability, bookings, and blackout periods at a glance."
+        >
+          <div className="space-y-4">
           <div className="flex flex-col gap-3 rounded-2xl border border-default bg-surface px-4 py-4 shadow-soft md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm uppercase tracking-wide text-muted-foreground">Viewing month</p>
@@ -1261,17 +1228,14 @@ export default function AdminBookingsPage() {
               })}
             </div>
           </div>
-        </div>
-      )}
-      {/* Property Filter */}
-      <div className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Filter by property</h2>
-            <p className="text-sm text-muted-foreground">Narrow results to a single home or review everything.</p>
           </div>
-        </div>
-        <div className="mt-4 max-w-md">
+        </AdminSection>
+      )}
+      <AdminSection
+        title="Filter by property"
+        description="Narrow results to a single home or review everything."
+      >
+        <div className="max-w-md">
           <Select
             value={selectedPropertyId ?? ''}
             onChange={(event) => setSelectedPropertyId(event.target.value ? Number(event.target.value) : null)}
@@ -1285,13 +1249,14 @@ export default function AdminBookingsPage() {
             ))}
           </Select>
         </div>
-      </div>
+      </AdminSection>
 
       {/* Booking Request Composer */}
       {showRequestComposer && (
-        <div className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
-          <h2 className="text-xl font-semibold text-foreground">New booking request</h2>
-          <p className="text-sm text-muted-foreground">Draft a new stay and include the owners who should review it.</p>
+        <AdminSection
+          title="New booking request"
+          description="Draft a new stay and include the owners who should review it."
+        >
           {requestError ? (
             <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {requestError}
@@ -1427,223 +1392,159 @@ export default function AdminBookingsPage() {
               </button>
             </div>
           </form>
-        </div>
-      )}
-
-      {/* Quick Create Form */}
-      {showQuickForm && (
-        <div className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft space-y-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Quick create</h2>
-              <p className="text-sm text-muted-foreground">Block time or add a manual booking without leaving this page.</p>
-            </div>
-          </div>
-
-          {!selectedPropertyId && (
-            <p className="rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning shadow-soft">
-              Select a property before creating a booking or blackout.
-            </p>
-          )}
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type</label>
-              <Select
-                value={quickFormData.type}
-                onChange={(event) => setQuickFormData((prev) => ({ ...prev, type: event.target.value }))}
-              >
-                <option value="booking">Manual booking</option>
-                <option value="blackout">Blackout period</option>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start date</label>
-              <Input
-                type="date"
-                value={quickFormData.startDate}
-                onChange={(event) => setQuickFormData((prev) => ({ ...prev, startDate: event.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">End date</label>
-              <Input
-                type="date"
-                value={quickFormData.endDate}
-                onChange={(event) => setQuickFormData((prev) => ({ ...prev, endDate: event.target.value }))}
-              />
-            </div>
-
-            {quickFormData.type === 'booking' ? (
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Guest name</label>
-                <Input
-                  type="text"
-                  value={quickFormData.guestName}
-                  onChange={(event) => setQuickFormData((prev) => ({ ...prev, guestName: event.target.value }))}
-                  placeholder="Owner/Manual block"
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason</label>
-                <Input
-                  type="text"
-                  value={quickFormData.reason}
-                  onChange={(event) => setQuickFormData((prev) => ({ ...prev, reason: event.target.value }))}
-                  placeholder="Manual block"
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleQuickCreate}
-              disabled={!selectedPropertyId}
-              className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 disabled:bg-muted-foreground/30"
-            >
-              Create {quickFormData.type === 'booking' ? 'booking' : 'blackout'}
-            </button>
-            <button
-              onClick={() => {
-                setRangeAnchor(null);
-                setShowQuickForm(false);
-              }}
-              className="rounded-full border border-default px-5 py-2 text-sm font-semibold text-foreground transition hover:bg-background-muted"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        </AdminSection>
       )}
 
       {viewMode === 'list' && (
         <>
-          <ResponsiveTable
-            columns={bookingColumns}
-            rows={bookings}
-            rowKey={(booking) => booking.id.toString()}
-            emptyState="No bookings found"
-            mobileTitleColumnId="property"
-            actions={bookingRowActions}
-          />
+          {upcomingApprovedBookings.length > 0 ? (
+            <AdminSection
+              title="Upcoming bookings"
+              description="Approved stays that haven’t started yet."
+            >
+              <div id="upcoming-bookings" />
+              <ResponsiveTable
+                columns={bookingColumns}
+                rows={upcomingApprovedBookings}
+                rowKey={(booking) => `upcoming-${booking.id}`}
+                emptyState="No upcoming bookings"
+                mobileTitleColumnId="property"
+                actions={bookingRowActions}
+              />
+            </AdminSection>
+          ) : null}
+
+          <AdminSection title="All bookings" description="Full history including pending and past stays.">
+            <ResponsiveTable
+              columns={bookingColumns}
+              rows={bookings}
+              rowKey={(booking) => booking.id.toString()}
+              emptyState="No bookings found"
+              mobileTitleColumnId="property"
+              actions={bookingRowActions}
+            />
+          </AdminSection>
 
           {expandedBooking ? (
-            <section className="rounded-3xl border border-default bg-surface px-6 py-6 shadow-soft">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="space-y-3 rounded-2xl border border-default bg-background p-4">
-                  <header className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Participants</h3>
-                    <span className="text-xs text-muted-foreground">{expandedBooking.participants.length} total</span>
-                  </header>
-                  {expandedBooking.participants.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No participants recorded.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {expandedBooking.participants.map((participant) => {
-                        const ownershipOwner = participant.ownership?.owner;
-                        const roleLabel = roleLabels[participant.role] ?? participant.role;
-                        const ownerName =
-                          ownershipOwner
-                            ? [ownershipOwner.firstName, ownershipOwner.lastName].filter(Boolean).join(' ') || ownershipOwner.email
-                            : null;
+            <AdminSection
+              title={`Booking #${expandedBooking.id}`}
+              description="Breakdown of participants, timeline, and decisions."
+            >
+              <AdminSplit
+                className="items-start gap-6"
+                primary={
+                  <AdminCard className="space-y-4">
+                    <header className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="font-semibold uppercase tracking-wide">Participants</span>
+                      <span>{expandedBooking.participants.length} total</span>
+                    </header>
+                    {expandedBooking.participants.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No participants recorded.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {expandedBooking.participants.map((participant) => {
+                          const ownershipOwner = participant.ownership?.owner;
+                          const roleLabel = roleLabels[participant.role] ?? participant.role;
+                          const ownerName =
+                            ownershipOwner
+                              ? [ownershipOwner.firstName, ownershipOwner.lastName].filter(Boolean).join(' ') ||
+                                ownershipOwner.email
+                              : null;
 
-                        return (
-                          <div
-                            key={participant.id}
-                            className="rounded-xl border border-default bg-background-muted p-3"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="text-sm font-medium text-foreground">{participant.displayName}</p>
-                                {participant.email ? (
-                                  <p className="text-xs text-muted-foreground">{participant.email}</p>
-                                ) : null}
+                          return (
+                            <div
+                              key={participant.id}
+                              className="rounded-xl border border-default bg-background-muted p-3"
+                            >
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">{participant.displayName}</p>
+                                  {participant.email ? (
+                                    <p className="text-xs text-muted-foreground">{participant.email}</p>
+                                  ) : null}
+                                </div>
+                                <span className="rounded-full bg-background-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                                  {roleLabel}
+                                </span>
                               </div>
-                              <span className="rounded-full bg-background-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                                {roleLabel}
-                              </span>
+                              <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                                <span>{participant.nights} nights</span>
+                                {ownerName ? <span>Owner: {ownerName}</span> : null}
+                              </div>
                             </div>
-                            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                              <span>{participant.nights} nights</span>
-                              {ownerName ? <span>Owner: {ownerName}</span> : null}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    )}
 
-                  <div className="grid gap-2 text-xs text-muted-foreground">
-                    <div className="flex justify-between">
-                      <span>Submitted</span>
-                      <span>{formatDateTime(expandedBooking.submittedAt)}</span>
+                    <div className="grid gap-2 text-xs text-muted-foreground">
+                      <div className="flex justify-between">
+                        <span>Submitted</span>
+                        <span>{formatDateTime(expandedBooking.submittedAt)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Decision</span>
+                        <span>{formatDateTime(expandedBooking.decisionAt)}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Decision</span>
-                      <span>{formatDateTime(expandedBooking.decisionAt)}</span>
-                    </div>
-                  </div>
 
-                  {expandedBooking.requestNotes ? (
-                    <div className="rounded-xl border border-accent/30 bg-accent/10 p-3 text-sm text-accent">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-accent">Request notes</p>
-                      <p className="mt-1 text-sm leading-relaxed">{expandedBooking.requestNotes}</p>
-                    </div>
-                  ) : null}
+                    {expandedBooking.requestNotes ? (
+                      <div className="rounded-xl border border-accent/30 bg-accent/10 p-3 text-sm text-accent">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-accent">Request notes</p>
+                        <p className="mt-1 text-sm leading-relaxed">{expandedBooking.requestNotes}</p>
+                      </div>
+                    ) : null}
 
-                  {expandedBooking.decisionSummary ? (
-                    <div className="rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-success">Decision</p>
-                      <p className="mt-1 text-sm leading-relaxed">{expandedBooking.decisionSummary}</p>
-                    </div>
-                  ) : null}
-                </div>
+                    {expandedBooking.decisionSummary ? (
+                      <div className="rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-success">Decision</p>
+                        <p className="mt-1 text-sm leading-relaxed">{expandedBooking.decisionSummary}</p>
+                      </div>
+                    ) : null}
+                  </AdminCard>
+                }
+                secondary={
+                  <AdminCard className="space-y-3" title="Timeline">
+                    {expandedBooking.timeline.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No timeline events recorded.</p>
+                    ) : (
+                      <ol className="space-y-3 text-sm text-foreground">
+                        {expandedBooking.timeline.map((event) => {
+                          const actorUser = event.actor.user;
+                          const actorOwnership = event.actor.ownership;
+                          const actorOwner = actorOwnership?.owner;
+                          const actorName =
+                            (actorUser
+                              ? [actorUser.firstName, actorUser.lastName].filter(Boolean).join(' ') || actorUser.email
+                              : null) ??
+                            (actorOwner
+                              ? [actorOwner.firstName, actorOwner.lastName].filter(Boolean).join(' ') || actorOwner.email
+                              : null);
 
-                <div className="space-y-3 rounded-2xl border border-default bg-background p-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Timeline</h3>
-                  {expandedBooking.timeline.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No timeline events recorded.</p>
-                  ) : (
-                    <ol className="space-y-3 text-sm text-foreground">
-                      {expandedBooking.timeline.map((event) => {
-                        const actorUser = event.actor.user;
-                        const actorOwnership = event.actor.ownership;
-                        const actorOwner = actorOwnership?.owner;
-                        const actorName =
-                          (actorUser
-                            ? [actorUser.firstName, actorUser.lastName].filter(Boolean).join(' ') || actorUser.email
-                            : null) ??
-                          (actorOwner
-                            ? [actorOwner.firstName, actorOwner.lastName].filter(Boolean).join(' ') || actorOwner.email
-                            : null);
-
-                        return (
-                          <li key={event.id} className="rounded-xl border border-default bg-background-muted p-3">
-                            <div className="flex items-start justify-between text-xs uppercase tracking-wide text-muted-foreground">
-                              <span>{eventLabels[event.type] ?? event.type}</span>
-                              <span>{new Date(event.createdAt).toLocaleString()}</span>
-                            </div>
-                            {event.message ? (
-                              <p className="mt-2 text-sm text-foreground leading-relaxed">{event.message}</p>
-                            ) : null}
-                            {actorName ? (
-                              <p className="mt-1 text-xs text-muted-foreground">By {actorName}</p>
-                            ) : null}
-                          </li>
-                        );
-                      })}
-                    </ol>
-                  )}
-                </div>
-              </div>
-            </section>
+                          return (
+                            <li key={event.id} className="rounded-xl border border-default bg-background-muted p-3">
+                              <div className="flex items-start justify-between text-xs uppercase tracking-wide text-muted-foreground">
+                                <span>{eventLabels[event.type] ?? event.type}</span>
+                                <span>{new Date(event.createdAt).toLocaleString()}</span>
+                              </div>
+                              {event.message ? (
+                                <p className="mt-2 text-sm text-foreground leading-relaxed">{event.message}</p>
+                              ) : null}
+                              {actorName ? (
+                                <p className="mt-1 text-xs text-muted-foreground">By {actorName}</p>
+                              ) : null}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    )}
+                  </AdminCard>
+                }
+              />
+            </AdminSection>
           ) : null}
         </>
       )}
-    </Container>
+    </AdminPage>
   );
 }

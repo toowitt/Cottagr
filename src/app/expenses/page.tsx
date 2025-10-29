@@ -2,6 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { formatShare } from '@/lib/share'
+import {
+  AdminPage,
+  AdminSection,
+  AdminMetric,
+  AdminMetricGrid,
+  AdminCard,
+  AdminSplit,
+} from '@/components/ui/AdminPage'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Textarea } from '@/components/ui/Textarea'
 
 interface OwnerSummary {
   id: number
@@ -76,10 +87,10 @@ interface Expense {
 }
 
 const statusStyles: Record<ExpenseStatus, string> = {
-  pending: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
-  approved: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200',
-  reimbursed: 'border-sky-500/40 bg-sky-500/10 text-sky-200',
-  rejected: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
+  pending: 'border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-200',
+  approved: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-200',
+  reimbursed: 'border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-200',
+  rejected: 'border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-200',
 }
 
 const DEFAULT_CATEGORIES = [
@@ -521,559 +532,567 @@ export default function ExpensesPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-slate-950 text-slate-100">
-        <div className="max-w-6xl mx-auto px-4 py-12">
-          <h1 className="text-4xl font-bold tracking-tight">Shared Expenses</h1>
-          <p className="mt-4 text-slate-300">Loading…</p>
-        </div>
-      </div>
-    )
-  }
+  
 
+const pendingExpensesForSelectedProperty = useMemo(
+  () => expenses.filter((expense) => expense.status === 'pending'),
+  [expenses],
+)
+const outstandingAmountCents = useMemo(
+  () => pendingExpensesForSelectedProperty.reduce((sum, expense) => sum + expense.amountCents, 0),
+  [pendingExpensesForSelectedProperty],
+)
+const reimbursedCount = useMemo(
+  () => expenses.filter((expense) => expense.status === 'reimbursed').length,
+  [expenses],
+)
+const approvedCount = useMemo(
+  () => expenses.filter((expense) => expense.status === 'approved').length,
+  [expenses],
+)
+
+if (loading) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-slate-900 to-slate-950 text-slate-100">
-      <div className="max-w-6xl mx-auto px-4 py-12 space-y-10">
-        <header>
-          <h1 className="text-4xl font-bold tracking-tight">Shared Expenses</h1>
-          <p className="mt-2 max-w-2xl text-slate-300">
-            Capture invoices, route approvals, and keep every owner’s share clear in one place. Auth will lock this down later—right now it’s wide open for faster iteration.
-          </p>
-        </header>
+    <AdminPage
+      title="Shared expenses"
+      description="Capture invoices, route approvals, and keep every owner’s share clear in one place."
+      >
+      <div className="rounded-3xl border border-border/60 bg-surface p-6 text-sm text-muted-foreground shadow-soft">
+        Loading…
+      </div>
+    </AdminPage>
+  )
+}
 
-        {error && (
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-            {error}
-          </div>
-        )}
+return (
+  <AdminPage
+    title="Shared expenses"
+    description="Capture invoices, route approvals, and keep every owner’s share clear in one place."
+  >
+    <AdminMetricGrid className="md:grid-cols-2 xl:grid-cols-4">
+      <AdminMetric label="Properties" value={properties.length} />
+      <AdminMetric label="Expenses logged" value={expenses.length} />
+      <AdminMetric label="Pending approvals" value={pendingExpensesForSelectedProperty.length} />
+      <AdminMetric
+        label="Outstanding amount"
+        value={formatMoney(outstandingAmountCents)}
+        description={
+          reimbursedCount ? `${reimbursedCount} reimbursed · ${approvedCount} approved` : undefined
+        }
+      />
+    </AdminMetricGrid>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-black/20 backdrop-blur">
-          <h2 className="text-lg font-semibold tracking-tight text-slate-100">Select property</h2>
-          <p className="mt-1 text-sm text-slate-400">Pick the cottage and owner identity you’re logging expenses for.</p>
+    {error ? (
+      <AdminSection subdued>
+        <p className="text-sm text-destructive">{error}</p>
+      </AdminSection>
+    ) : null}
 
-          <select
-            value={selectedPropertyId ?? ''}
-            onChange={(event) => {
-              const value = event.target.value ? Number(event.target.value) : null
-              setSelectedPropertyId(value)
-              if (value) {
-                const property = properties.find((p) => p.id === value)
-                setActiveOwnershipId(property?.ownerships[0]?.id ?? null)
-              } else {
-                setActiveOwnershipId(null)
-              }
-              setFormData((prev) => ({ ...prev, paidByOwnershipId: '' }))
-            }}
-            className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          >
-            <option value="">Choose a property…</option>
-            {properties.map((property) => (
-              <option key={property.id} value={property.id}>
-                {property.name} ({property.location ?? 'location TBD'})
-              </option>
-            ))}
-          </select>
+    <AdminSection
+      title="Select property"
+      description="Pick the cottage and owner identity you’re logging expenses for."
+    >
+      <div className="space-y-6">
+        <Select
+          value={selectedPropertyId ?? ''}
+          onChange={(event) => {
+            const value = event.target.value ? Number(event.target.value) : null
+            setSelectedPropertyId(value)
+            if (value) {
+              const property = properties.find((p) => p.id === value)
+              setActiveOwnershipId(property?.ownerships[0]?.id ?? null)
+            } else {
+              setActiveOwnershipId(null)
+            }
+            setFormData((prev) => ({ ...prev, paidByOwnershipId: '' }))
+          }}
+        >
+          <option value="">Choose a property…</option>
+          {properties.map((property) => (
+            <option key={property.id} value={property.id}>
+              {property.name} ({property.location ?? 'location TBD'})
+            </option>
+          ))}
+        </Select>
 
-          {selectedProperty && (
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Ownership split</p>
-              <ul className="mt-2 space-y-2 text-sm text-slate-300">
-                {selectedProperty.ownerships.map((ownership) => (
-                  <li
-                    key={ownership.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-                  >
-                    <span className="font-medium text-slate-100">
-                      {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      Share {formatShare(ownership.shareBps)} · Power {ownership.votingPower}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                You are logging this as
-              </label>
-              <select
-                value={activeOwnershipId ?? ''}
-                onChange={(event) => setActiveOwnershipId(event.target.value ? Number(event.target.value) : null)}
-                className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              >
-                <option value="">Choose an owner…</option>
-                {selectedProperty.ownerships.map((ownership) => (
-                  <option key={ownership.id} value={ownership.id}>
-                    {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({ownership.role.toLowerCase()})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </section>
-
-        {selectedProperty && ownerBalances.length > 0 && expenses.length > 0 && (
-        <section className="rounded-2xl border border-border/60 bg-surface p-6 shadow-soft">
-            <h2 className="text-lg font-semibold tracking-tight text-slate-100">Running balances</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-              Positive balances mean the group owes that owner money. Negative balances mean they owe the pool.
-            </p>
-            <ul className="mt-4 space-y-3 text-sm text-slate-300">
-              {ownerBalances.map((entry) => {
-                const { ownership, paidCents, owedCents, netCents } = entry
-                const owesOthers = netCents < 0
-                const badgeClass = owesOthers
-                  ? 'bg-rose-500/10 text-rose-200 border border-rose-500/30'
-                  : netCents > 0
-                  ? 'bg-emerald-500/10 text-emerald-200 border border-emerald-500/30'
-                  : 'bg-slate-800 text-slate-200 border border-slate-700'
-
-                return (
-                  <li
-                    key={ownership.id}
-                    className="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="text-base font-medium text-slate-100">
-                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
-                      </p>
-                      <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Share {formatShare(ownership.shareBps)} · Paid {formatMoney(paidCents)} · Owes {formatMoney(owedCents)}
-                      </p>
-                    </div>
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
-                      {netCents === 0
-                        ? 'Settled'
-                        : owesOthers
-                        ? `${formatMoney(Math.abs(netCents))} owed to others`
-                        : `${formatMoney(netCents)} owed to them`}
-                    </span>
-                  </li>
-                )
-              })}
+        {selectedProperty ? (
+          <AdminCard title="Ownership split">
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              {selectedProperty.ownerships.map((ownership) => (
+                <li
+                  key={ownership.id}
+                  className="flex items-center justify-between rounded-lg border border-border/40 bg-background px-3 py-2"
+                >
+                  <span className="font-medium text-foreground">
+                    {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Share {formatShare(ownership.shareBps)} · Power {ownership.votingPower}
+                  </span>
+                </li>
+              ))}
             </ul>
-          </section>
-        )}
 
-        {selectedPropertyId && (
-          <section className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <div
-              ref={formSectionRef}
-              className="rounded-3xl border border-border/60 bg-surface p-6 shadow-soft"
+            <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              You are logging this as
+            </label>
+            <Select
+              value={activeOwnershipId ?? ''}
+              onChange={(event) => setActiveOwnershipId(event.target.value ? Number(event.target.value) : null)}
+              className="mt-2"
             >
-              <h2 className="text-lg font-semibold tracking-tight text-foreground">Log a shared expense</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Owners will see this immediately and can approve or reject it.</p>
+              <option value="">Choose an owner…</option>
+              {selectedProperty.ownerships.map((ownership) => (
+                <option key={ownership.id} value={ownership.id}>
+                  {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({ownership.role.toLowerCase()})
+                </option>
+              ))}
+            </Select>
+          </AdminCard>
+        ) : null}
+      </div>
+    </AdminSection>
 
-              {validationErrors.length > 0 && (
-                <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                  <ul className="space-y-1">
-                    {validationErrors.map((err, idx) => (
-                      <li key={idx}>• {err}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {isEditing && editingExpense && (
-                <div className="mt-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-100">
-                  <p>
-                    Editing “{editingExpense.vendorName || 'Untitled expense'}” from {formatDisplayDate(editingExpense.incurredOn)}
-                    {editingExpense.dueDate ? ` · Due ${formatDisplayDate(editingExpense.dueDate)}` : ''}. Saving will reset
-                    approvals for this expense.
+    {selectedProperty && ownerBalances.length > 0 && expenses.length > 0 ? (
+      <AdminSection
+        title="Running balances"
+        description="Positive balances mean the group owes that owner money. Negative balances mean they owe the pool."
+      >
+        <ul className="space-y-3 text-sm text-muted-foreground">
+          {ownerBalances.map(({ ownership, paidCents, owedCents, netCents }) => (
+            <li key={ownership.id} className="rounded-xl border border-border/40 bg-background px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Share {formatShare(ownership.shareBps)} · Paid {formatMoney(paidCents)} · Owes {formatMoney(owedCents)}
                   </p>
                 </div>
-              )}
+                <span
+                  className={`inline-flex min-w-[6rem] justify-center rounded-full px-3 py-1 text-xs font-semibold ${
+                    netCents > 0
+                      ? 'bg-emerald-500/10 text-emerald-600'
+                      : netCents < 0
+                      ? 'bg-rose-500/10 text-rose-600'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  Net {formatMoney(netCents)}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </AdminSection>
+    ) : null}
 
-              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="text-sm text-foreground">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vendor</span>
-                    <input
-                      type="text"
-                      value={formData.vendorName}
-                      onChange={(e) => handleFormChange('vendorName', e.target.value)}
-                      placeholder="Simcoe Plumbing, Home Depot…"
-                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+    {selectedPropertyId ? (
+      <AdminSection>
+        <div ref={formSectionRef}>
+          <AdminSplit
+            className="items-start gap-6"
+            primary={
+              <AdminCard
+                title={isEditing ? 'Edit expense' : 'Log a shared expense'}
+                description="Owners will see this immediately and can approve or reject it."
+              >
+            {validationErrors.length > 0 ? (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <h3 className="text-sm font-semibold uppercase tracking-wide">Fix these details</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
+                  {validationErrors.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+                <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block text-sm text-foreground">
+                      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Vendor
+                      </span>
+                      <Input
+                        value={formData.vendorName}
+                        onChange={(e) => handleFormChange('vendorName', e.target.value)}
+                        placeholder="Simcoe Plumbing, Home Depot…"
+                        autoComplete="organization"
+                      />
+                </label>
+                    <label className="block text-sm text-foreground">
+                      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Category
+                      </span>
+                      <Select
+                        value={formData.category}
+                        onChange={(e) => handleFormChange('category', e.target.value)}
+                      >
+                        <option value="">Select a category…</option>
+                        {categoryOptions.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </Select>
+                </label>
+              </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <label className="block text-sm text-foreground">
+                      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Amount
+                      </span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={formData.amount}
+                        onChange={(e) => handleFormChange('amount', e.target.value)}
+                        placeholder="0.00"
+                        min="0"
+                      />
+                </label>
+                    <label className="block text-sm text-foreground">
+                      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Incurred on
+                      </span>
+                      <Input
+                        type="date"
+                        value={formData.incurredOn}
+                        onChange={(e) => handleFormChange('incurredOn', e.target.value)}
+                        required
+                      />
+                </label>
+                    <label className="block text-sm text-foreground">
+                      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Due date
+                      </span>
+                      <Input
+                        type="date"
+                        value={formData.dueDate}
+                        onChange={(e) => handleFormChange('dueDate', e.target.value)}
+                      />
+                </label>
+              </div>
+
+                  <label className="block text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Notes
+                    </span>
+                    <Textarea
+                      value={formData.memo}
+                      onChange={(e) => handleFormChange('memo', e.target.value)}
+                      rows={3}
+                      placeholder="What was this for? Any special context the family should know?"
                     />
-                  </label>
-                  <label className="text-sm text-foreground">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Category</span>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => handleFormChange('category', e.target.value)}
-                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              </label>
+
+                  <label className="block text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Paid by (optional)
+                    </span>
+                    <Select
+                      value={formData.paidByOwnershipId}
+                      onChange={(event) => handleFormChange('paidByOwnershipId', event.target.value)}
                     >
-                      <option value="">Select category</option>
-                      {categoryOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
+                      <option value="">Not recorded yet</option>
+                      {selectedProperty?.ownerships.map((ownership) => (
+                        <option key={ownership.id} value={ownership.id}>
+                          {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({formatShare(ownership.shareBps)})
                         </option>
                       ))}
-                    </select>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Select who actually paid the bill to track running balances.
+                    </p>
                   </label>
-                </div>
 
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <label className="text-sm text-foreground">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount (CAD)</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.amount}
-                      onChange={(e) => handleFormChange('amount', e.target.value)}
-                      placeholder="0.00"
-                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                      required
-                    />
-                  </label>
-                  <label className="text-sm text-foreground">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Incurred on</span>
-                    <input
-                      type="date"
-                      value={formData.incurredOn}
-                      onChange={(e) => handleFormChange('incurredOn', e.target.value)}
-                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                      required
-                    />
-                  </label>
-                  <label className="text-sm text-foreground">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Due date</span>
-                    <input
-                      type="date"
-                      value={formData.dueDate}
-                      onChange={(e) => handleFormChange('dueDate', e.target.value)}
-                      className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
-                  </label>
-                </div>
-
-                <label className="block text-sm text-foreground">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</span>
-                  <textarea
-                    value={formData.memo}
-                    onChange={(e) => handleFormChange('memo', e.target.value)}
-                    rows={3}
-                    placeholder="What was this for? Any special context the family should know?"
-                    className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </label>
-
-                <label className="block text-sm text-foreground">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Paid by (optional)
-                  </span>
-                  <select
-                    value={formData.paidByOwnershipId}
-                    onChange={(event) => handleFormChange('paidByOwnershipId', event.target.value)}
-                    className="w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                  >
-                    <option value="">Not recorded yet</option>
-                    {selectedProperty?.ownerships.map((ownership) => (
-                      <option key={ownership.id} value={ownership.id}>
-                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({formatShare(ownership.shareBps)})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Select who actually paid the bill to track running balances.
-                  </p>
-                </label>
-
-                <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Receipts & proof</p>
-                      <p className="text-xs text-slate-500">Snap a photo or upload a document. You can still paste a link below.</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={triggerPhotoCapture}
-                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-black transition hover:bg-emerald-400 disabled:bg-slate-600"
-                        disabled={uploadingReceipt}
-                      >
-                        {uploadingReceipt ? 'Uploading…' : 'Take photo'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={triggerDocumentPicker}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-500 disabled:border-slate-800 disabled:text-slate-500"
-                        disabled={uploadingReceipt}
-                      >
-                        Upload document
-                      </button>
-                    </div>
+              <div className="space-y-3 rounded-xl border border-border/50 bg-background px-4 py-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Receipts & proof</p>
+                    <p className="text-xs text-muted-foreground">Snap a photo or upload a document. You can still paste a link below.</p>
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={triggerPhotoCapture}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-black transition hover:bg-emerald-400 disabled:bg-muted-foreground/40"
+                      disabled={uploadingReceipt}
+                    >
+                      {uploadingReceipt ? 'Uploading…' : 'Take photo'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={triggerDocumentPicker}
+                      className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:border-accent disabled:border-border/30 disabled:text-muted-foreground"
+                      disabled={uploadingReceipt}
+                    >
+                      Upload document
+                    </button>
+                  </div>
+                </div>
 
-                  {hasReceiptAttachment && (
-                    <div className="flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-slate-100">{receiptDisplayName}</p>
-                        <a
-                          href={receiptHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-medium text-emerald-300 hover:text-emerald-200"
-                        >
-                          View file ↗
-                        </a>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={clearReceiptAttachment}
-                        className="self-start rounded-lg border border-rose-500/30 px-3 py-1 text-xs font-semibold text-rose-200 transition hover:border-rose-400 hover:text-rose-100 sm:self-center"
+                {hasReceiptAttachment ? (
+                  <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-background px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{receiptDisplayName}</p>
+                      <a
+                        href={receiptHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-accent hover:text-accent-strong"
                       >
-                        Remove
-                      </button>
+                        View file ↗
+                      </a>
                     </div>
-                  )}
+                    <button
+                      type="button"
+                      onClick={clearReceiptAttachment}
+                      className="self-start rounded-lg border border-destructive/30 px-3 py-1 text-xs font-semibold text-destructive transition hover:border-destructive hover:text-destructive sm:self-center"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : null}
 
-                  <label className="block text-sm text-slate-300">
-                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Paste a link instead</span>
-                    <input
+                  <label className="block text-sm text-foreground">
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Paste a link instead
+                    </span>
+                    <Input
                       type="url"
                       value={formData.receiptUrl}
                       onChange={(e) => handleFormChange('receiptUrl', e.target.value)}
                       placeholder="https://drive.google.com/... (optional)"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
-                  </label>
-                </div>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(event) => {
-                    void handleReceiptUpload(event.target.files?.[0])
-                    event.target.value = ''
-                  }}
-                />
-                <input
-                  ref={documentInputRef}
-                  type="file"
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.heic,.heif,.webp"
-                  className="hidden"
-                  onChange={(event) => {
-                    void handleReceiptUpload(event.target.files?.[0])
-                    event.target.value = ''
-                  }}
-                />
+                </label>
+              </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:bg-slate-600 sm:flex-1"
-                  >
-                    {submitting
-                      ? isEditing
-                        ? 'Saving changes…'
-                        : 'Submitting expense…'
-                      : isEditing
-                      ? 'Save changes'
-                      : 'Submit for approval'}
-                  </button>
-                  {isEditing && (
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(event) => {
+                  void handleReceiptUpload(event.target.files?.[0])
+                  event.target.value = ''
+                }}
+              />
+              <input
+                ref={documentInputRef}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.heic,.heif,.webp"
+                className="hidden"
+                onChange={(event) => {
+                  void handleReceiptUpload(event.target.files?.[0])
+                  event.target.value = ''
+                }}
+              />
+
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <button
-                      type="button"
-                      onClick={resetFormState}
+                      type="submit"
                       disabled={submitting}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-rose-400 hover:text-rose-100 disabled:border-slate-800 disabled:text-slate-500 sm:w-auto"
+                      className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:bg-muted-foreground/40 sm:flex-1"
                     >
-                      Cancel editing
+                      {submitting
+                        ? isEditing
+                          ? 'Saving changes…'
+                          : 'Submitting expense…'
+                        : isEditing
+                        ? 'Save changes'
+                        : 'Submit for approval'}
                     </button>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-lg shadow-black/20">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-100">Recent expenses</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Everyone sees the same ledger. Voting closes the loop and locks in settlements.
-              </p>
-
-              {expenses.length === 0 ? (
-                <p className="mt-6 rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-6 text-sm text-slate-400">
-                  No expenses logged yet. Add one on the left to get started.
-                </p>
-              ) : (
-                <div className="mt-6 space-y-4">
-                  {expenses.map((expense) => {
-                    const statusClass = statusStyles[expense.status] ?? 'border-slate-700 bg-slate-900/60 text-slate-200'
-                    const activeOwnership = selectedProperty?.ownerships.find((o) => o.id === activeOwnershipId)
-                    const isEditingThisExpense = editingExpense?.id === expense.id
-                    const cardBorderClass = isEditingThisExpense ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : 'border-slate-800'
-
-                    return (
-                      <div
-                        key={expense.id}
-                        className={`space-y-4 rounded-2xl border bg-slate-950/70 p-5 shadow-inner shadow-black/30 transition hover:border-emerald-500/30 ${cardBorderClass}`}
+                    {isEditing ? (
+                      <button
+                        type="button"
+                        onClick={resetFormState}
+                        disabled={submitting}
+                        className="w-full rounded-xl border border-border/50 bg-background px-4 py-3 text-sm font-semibold text-muted-foreground transition hover:border-destructive hover:text-destructive disabled:border-border/30 disabled:text-muted-foreground sm:w-auto"
                       >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold text-slate-100">
-                              {expense.vendorName || 'Untitled expense'}
-                            </h3>
-                            <p className="text-sm text-slate-400">
-                              {expense.category ? `${expense.category} · ` : ''}
-                              {formatDisplayDate(expense.incurredOn)}
-                              {expense.dueDate ? <> · Due {formatDisplayDate(expense.dueDate)}</> : null}
-                            </p>
-                            {expense.memo && (
-                              <p className="mt-2 text-sm text-slate-300 leading-relaxed">{expense.memo}</p>
-                            )}
-                            {expense.receiptUrl && (
+                        Cancel editing
+                      </button>
+                    ) : null}
+                  </div>
+                </form>
+              </AdminCard>
+            }
+            secondary={
+              <AdminCard
+                title="Recent expenses"
+                description="Everyone sees the same ledger. Voting closes the loop and locks in settlements."
+              >
+            {expenses.length === 0 ? (
+              <div className="rounded-xl border border-border/40 bg-background px-4 py-6 text-sm text-muted-foreground">
+                No expenses logged yet. Add one on the left to get started.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {expenses.map((expense) => {
+                  const statusStyle =
+                    statusStyles[expense.status] ?? 'border-border/40 bg-background-muted text-foreground'
+                  const activeOwnership = selectedProperty?.ownerships.find((o) => o.id === activeOwnershipId)
+                  const isEditingThisExpense = editingExpense?.id === expense.id
+                  const cardBorderClass = isEditingThisExpense
+                    ? 'border-accent/60 ring-1 ring-accent/20'
+                    : 'border-border/50'
+
+                  return (
+                    <div
+                      key={expense.id}
+                      className={`space-y-4 rounded-2xl border bg-background px-5 py-5 shadow-inner shadow-black/10 transition hover:border-accent/25 ${cardBorderClass}`}
+                    >
+                      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-foreground">
+                              {expense.vendorName || expense.category || 'Expense'}
+                            </span>
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${statusStyle}`}>
+                              {expense.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {expense.category ? `${expense.category} · ` : ''}
+                            {formatDisplayDate(expense.incurredOn)}
+                            {expense.dueDate ? <> · Due {formatDisplayDate(expense.dueDate)}</> : null}
+                          </p>
+                          {expense.memo ? (
+                            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{expense.memo}</p>
+                          ) : null}
+                        </div>
+
+                        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                          <div className="text-right text-base font-semibold text-foreground">
+                            {expense.amountFormatted}
+                          </div>
+                          <div className="flex flex-col text-xs text-muted-foreground">
+                            {expense.createdBy ? (
+                              <span>
+                                Created by {expense.createdBy.owner.firstName} {expense.createdBy.owner.lastName ?? ''}
+                              </span>
+                            ) : null}
+                            {expense.paidBy ? (
+                              <span>
+                                Paid by {expense.paidBy.owner.firstName} {expense.paidBy.owner.lastName ?? ''}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap justify-end gap-2 text-xs">
+                            {expense.receiptUrl ? (
                               <a
                                 href={expense.receiptUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-2 inline-flex text-xs font-medium text-emerald-300 hover:text-emerald-200"
+                                className="rounded-full border border-border/40 px-3 py-1 font-semibold text-foreground transition hover:border-accent hover:text-accent"
                               >
-                                View receipt ↗
+                                View receipt
                               </a>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-start gap-2 sm:items-end">
-                            <div className={`inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold capitalize ${statusClass}`}>
-                              {expense.status}
-                            </div>
+                            ) : null}
                             {isEditingThisExpense ? (
-                              <span className="inline-flex items-center rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
-                                Editing
-                              </span>
+                              <button
+                                type="button"
+                                onClick={resetFormState}
+                                className="rounded-full border border-border/40 px-3 py-1 font-semibold text-muted-foreground transition hover:border-destructive hover:text-destructive"
+                              >
+                                Cancel edit
+                              </button>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => beginEditingExpense(expense)}
-                                className="inline-flex items-center rounded-md border border-slate-700 bg-slate-900/60 px-2.5 py-1 text-xs font-semibold text-slate-200 transition hover:border-emerald-500 hover:text-emerald-200"
-                                disabled={submitting}
+                                className="rounded-full border border-border/40 px-3 py-1 font-semibold text-muted-foreground transition hover:border-accent hover:text-accent"
                               >
-                                Edit
+                                Edit expense
                               </button>
                             )}
                           </div>
                         </div>
+                      </div>
 
-                        <div className="grid gap-4 text-sm text-slate-300 md:grid-cols-4">
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500">Amount</p>
-                            <p className="text-lg font-semibold text-slate-100">{expense.amountFormatted}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500">Logged by</p>
-                            <p>
-                              {expense.createdBy ? (
-                                <>
-                                  {expense.createdBy.owner.firstName} {expense.createdBy.owner.lastName ?? ''}
-                                </>
-                              ) : (
-                                '—'
-                              )}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500">Paid by</p>
-                            <p>
-                              {expense.paidBy ? (
-                                <>
-                                  {expense.paidBy.owner.firstName} {expense.paidBy.owner.lastName ?? ''}
-                                </>
-                              ) : (
-                                'Not recorded'
-                              )}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500">Decision</p>
-                            <p>{expense.decisionSummary ?? 'Waiting for votes'}</p>
-                          </div>
-                        </div>
-
+                      <div className="grid gap-4 border-t border-border/40 pt-4 text-sm text-muted-foreground sm:grid-cols-2">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Owner shares</p>
-                          <ul className="mt-2 space-y-2 text-sm text-slate-300">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Approvals</p>
+                          <ul className="mt-2 space-y-1 text-xs">
+                            {expense.approvals.length === 0 ? (
+                              <li className="text-muted-foreground/80">No approvals yet.</li>
+                            ) : (
+                              expense.approvals.map((approval) => (
+                                <li key={approval.id} className="flex items-center justify-between">
+                                  <span>
+                                    {approval.owner.firstName} {approval.owner.lastName ?? ''}
+                                  </span>
+                                  <span className="font-medium capitalize">{approval.choice}</span>
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Allocations</p>
+                          <ul className="mt-2 space-y-1 text-xs">
                             {expense.allocations.map((allocation) => (
-                              <li
-                                key={allocation.id}
-                                className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-                              >
+                              <li key={allocation.id} className="flex items-center justify-between">
                                 <span>
                                   {allocation.owner.firstName} {allocation.owner.lastName ?? ''}
                                 </span>
-                                <span className="font-medium text-slate-100">{allocation.amountFormatted}</span>
+                                <span className="font-medium">{allocation.amountFormatted}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
-
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Approval trail</p>
-                          {expense.approvals.length === 0 ? (
-                            <p className="mt-2 text-sm text-slate-400">No votes yet.</p>
-                          ) : (
-                            <ul className="mt-3 space-y-1 text-sm text-slate-300">
-                              {expense.approvals.map((approval) => (
-                                <li key={approval.id}>
-                                  <span className="font-medium text-slate-100">
-                                    {approval.owner.firstName} {approval.owner.lastName ?? ''}
-                                  </span>{' '}
-                                  <span className="capitalize">{approval.choice}</span>
-                                  {approval.rationale ? ` — ${approval.rationale}` : ''}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-
-                        {expense.status === 'pending' && (
-                          <div className="border-t border-slate-800 pt-4">
-                            <p className="mb-2 text-sm text-slate-400">
-                              {activeOwnership
-                                ? `Voting as ${activeOwnership.owner.firstName} ${activeOwnership.owner.lastName ?? ''}`
-                                : 'Select which owner you are to vote'}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:bg-slate-600"
-                                onClick={() => handleVote(expense.id, 'approve')}
-                                disabled={voteSubmitting || !activeOwnershipId}
-                              >
-                                Approve
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-500 disabled:bg-slate-600"
-                                onClick={() => handleVote(expense.id, 'reject')}
-                                disabled={voteSubmitting || !activeOwnershipId}
-                              >
-                                Reject
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-emerald-500 disabled:border-slate-800 disabled:text-slate-500"
-                                onClick={() => handleVote(expense.id, 'abstain')}
-                                disabled={voteSubmitting || !activeOwnershipId}
-                              >
-                                Abstain
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-      </div>
-    </div>
-  )
+
+                      {expense.status === 'pending' && activeOwnership ? (
+                        <div className="rounded-xl border border-border/50 bg-background px-4 py-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cast your vote</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            You&apos;re logged in as {activeOwnership.owner.firstName}. Only owners can approve or reject expenses.
+                          </p>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-400 disabled:bg-muted-foreground/40"
+                              onClick={() => handleVote(expense.id, 'approve')}
+                              disabled={voteSubmitting || !activeOwnershipId}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-400 disabled:bg-muted-foreground/40"
+                              onClick={() => handleVote(expense.id, 'reject')}
+                              disabled={voteSubmitting || !activeOwnershipId}
+                            >
+                              Reject
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-lg border border-border/50 bg-background px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-accent disabled:border-border/30 disabled:text-muted-foreground"
+                              onClick={() => handleVote(expense.id, 'abstain')}
+                              disabled={voteSubmitting || !activeOwnershipId}
+                            >
+                              Abstain
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+              </AdminCard>
+            }
+          />
+        </div>
+      </AdminSection>
+    ) : null}
+  </AdminPage>
+);
 }

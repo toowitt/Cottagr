@@ -20,6 +20,10 @@ const slugify = (value: string) =>
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
 
+const dollarsToCents = (value: number) => Math.round(value * 100);
+
+const parseCheckbox = (value: FormDataEntryValue | null) => value === 'on' || value === 'true' || value === '1';
+
 async function requireOwnerAdmin(contextMessage: string) {
   const supabase = await createServerSupabaseActionClient();
   const {
@@ -164,8 +168,8 @@ const CreatePropertySchema = z.object({
   location: z.string().optional(),
   beds: z.coerce.number().int().min(0).optional(),
   baths: z.coerce.number().int().min(0).optional(),
-  nightlyRate: z.coerce.number().int().min(0),
-  cleaningFee: z.coerce.number().int().min(0),
+  nightlyRate: z.coerce.number().min(0),
+  cleaningFee: z.coerce.number().min(0),
   minNights: z.coerce.number().int().min(1).default(2),
   description: z.string().optional(),
   photos: z.string().optional(),
@@ -176,6 +180,16 @@ const parsePhotos = (raw: string | undefined) =>
     ?.split(',')
     .map((item) => item.trim())
     .filter(Boolean) ?? [];
+
+const OwnershipPreferencesSchema = z.object({
+  propertyId: z.coerce.number().int().positive(),
+  bookingApprover: z.boolean(),
+  expenseApprover: z.boolean(),
+  blackoutManager: z.boolean(),
+  autoSkipBookings: z.boolean(),
+  notifyOnBookings: z.boolean(),
+  notifyOnExpenses: z.boolean(),
+});
 
 export async function setupCreateProperty(formData: FormData) {
   const { adminMemberships } = await requireOwnerAdmin('no-access');
@@ -193,6 +207,9 @@ export async function setupCreateProperty(formData: FormData) {
 
   const resolvedSlug = slugify(parsed.data.slug || parsed.data.name) || slugify(`${parsed.data.name}-${Date.now()}`);
 
+  const nightlyRateCents = dollarsToCents(parsed.data.nightlyRate);
+  const cleaningFeeCents = dollarsToCents(parsed.data.cleaningFee);
+
   await prisma.property.create({
     data: {
       organizationId: parsed.data.organizationId,
@@ -202,8 +219,8 @@ export async function setupCreateProperty(formData: FormData) {
       beds: parsed.data.beds ?? null,
       baths: parsed.data.baths ?? null,
       description: parsed.data.description ?? null,
-      nightlyRate: parsed.data.nightlyRate,
-      cleaningFee: parsed.data.cleaningFee,
+      nightlyRate: nightlyRateCents,
+      cleaningFee: cleaningFeeCents,
       minNights: parsed.data.minNights,
       photos: parsePhotos(parsed.data.photos),
     },
@@ -332,6 +349,9 @@ export async function setupUpdateProperty(propertyId: number, formData: FormData
 
   const resolvedSlug = slugify(parsed.data.slug || parsed.data.name) || slugify(`${parsed.data.name}-${Date.now()}`);
 
+  const nightlyRateCents = dollarsToCents(parsed.data.nightlyRate);
+  const cleaningFeeCents = dollarsToCents(parsed.data.cleaningFee);
+
   await prisma.property.update({
     where: { id: property.id },
     data: {
@@ -342,8 +362,8 @@ export async function setupUpdateProperty(propertyId: number, formData: FormData
       beds: parsed.data.beds ?? null,
       baths: parsed.data.baths ?? null,
       description: parsed.data.description ?? null,
-      nightlyRate: parsed.data.nightlyRate,
-      cleaningFee: parsed.data.cleaningFee,
+      nightlyRate: nightlyRateCents,
+      cleaningFee: cleaningFeeCents,
       minNights: parsed.data.minNights,
       photos: parsePhotos(parsed.data.photos),
     },
@@ -376,6 +396,51 @@ export async function setupDetachProperty(propertyId: number) {
 
   revalidatePath('/admin/setup');
   redirect(`/admin/setup?success=${encodeURIComponent('property-detached')}&focus=organizations`);
+}
+
+export async function setupUpdateOwnershipPreferences(ownershipId: number, formData: FormData) {
+  const { adminMemberships } = await requireOwnerAdmin('no-access');
+  const allowedOrgIds = resolveAllowedOrganizationIds(adminMemberships);
+
+  const parsed = OwnershipPreferencesSchema.safeParse({
+    propertyId: formData.get('propertyId'),
+    bookingApprover: parseCheckbox(formData.get('bookingApprover')),
+    expenseApprover: parseCheckbox(formData.get('expenseApprover')),
+    blackoutManager: parseCheckbox(formData.get('blackoutManager')),
+    autoSkipBookings: parseCheckbox(formData.get('autoSkipBookings')),
+    notifyOnBookings: parseCheckbox(formData.get('notifyOnBookings')),
+    notifyOnExpenses: parseCheckbox(formData.get('notifyOnExpenses')),
+  });
+
+  if (!parsed.success) {
+    const msg = parsed.error.issues?.[0]?.message ?? 'Invalid preferences';
+    const propertyKey = String(formData.get('propertyId') ?? 'unknown');
+    redirect(`/admin/setup?error=${encodeURIComponent(msg)}&focus=${encodeURIComponent(`owners-${propertyKey}`)}`);
+  }
+
+  const ownership = await ensureOwnershipAccess(ownershipId, allowedOrgIds);
+  if (ownership.property.id !== parsed.data.propertyId) {
+    redirect(`/admin/setup?error=${encodeURIComponent('Owner does not match property.')}`);
+  }
+
+  await prisma.ownership.update({
+    where: { id: ownershipId },
+    data: {
+      bookingApprover: parsed.data.bookingApprover,
+      expenseApprover: parsed.data.expenseApprover,
+      blackoutManager: parsed.data.blackoutManager,
+      autoSkipBookings: parsed.data.autoSkipBookings,
+      notifyOnBookings: parsed.data.notifyOnBookings,
+      notifyOnExpenses: parsed.data.notifyOnExpenses,
+    },
+  });
+
+  revalidatePath('/admin/setup');
+  redirect(
+    `/admin/setup?success=${encodeURIComponent('ownership-preferences-updated')}&focus=${encodeURIComponent(
+      `owners-${parsed.data.propertyId}`,
+    )}`,
+  );
 }
 
 export async function setupDeleteOrganization(organizationId: number) {
