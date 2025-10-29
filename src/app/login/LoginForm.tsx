@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -56,6 +56,7 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNavigating, startNavigation] = useTransition();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [cooldownMs, setCooldownMs] = useState(0);
   const retryCountRef = useRef(0);
@@ -248,7 +249,14 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
         resetCooldown();
 
         if (data?.session) {
-          router.replace(redirectTarget);
+          resetCooldown();
+          setIsSubmitting(false);
+          startNavigation(() => {
+            router.replace(redirectTarget);
+            if (typeof router.refresh === 'function') {
+              router.refresh();
+            }
+          });
           return;
         }
 
@@ -283,8 +291,16 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
         return;
       }
 
+      const target = buildRedirectTarget(SIGN_IN_FALLBACK_REDIRECT);
       resetCooldown();
-      router.replace(buildRedirectTarget(SIGN_IN_FALLBACK_REDIRECT));
+      setIsSubmitting(false);
+      startNavigation(() => {
+        router.replace(target);
+        if (typeof router.refresh === 'function') {
+          router.refresh();
+        }
+      });
+      return;
     } finally {
       setIsSubmitting(false);
     }
@@ -408,17 +424,19 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
 
         <button
           type="submit"
-          disabled={isSubmitting || cooldownMs > 0}
+          disabled={isSubmitting || cooldownMs > 0 || isNavigating}
           className={cn(
             'touch-target w-full rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-black shadow-strong transition-transform hover:-translate-y-0.5 hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
           )}
         >
           {cooldownMs > 0
             ? `Try again in ${Math.ceil(cooldownMs / 1000)}s`
-            : isSubmitting
-              ? mode === 'sign-up'
-                ? 'Creating account…'
-                : 'Signing in…'
+            : isNavigating
+              ? 'Redirecting…'
+              : isSubmitting
+                ? mode === 'sign-up'
+                  ? 'Creating account…'
+                  : 'Signing in…'
               : mode === 'sign-up'
                 ? 'Create account'
                 : 'Sign in'}

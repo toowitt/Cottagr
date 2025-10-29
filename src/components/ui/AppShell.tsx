@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import * as Icons from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 type IconComponent = React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 
@@ -27,14 +28,24 @@ export type NavItem = {
   icon: IconKey;
 };
 
+type ContentPadding = "default" | "none" | "compact";
+
+type ShellVariant = "default" | "neutral";
+
 export default function AppShell({
   nav,
   children,
   showSidebar = true,
+  variant = "default",
+  padding = "default",
+  className,
 }: {
   nav: NavItem[];
   children: ReactNode;
   showSidebar?: boolean;
+  variant?: ShellVariant;
+  padding?: ContentPadding;
+  className?: string;
 }) {
   const pathname = usePathname();
 
@@ -57,8 +68,16 @@ export default function AppShell({
 
   const hasSidebar = showSidebar && nav.length > 0;
 
+  const mainBackground = variant === "neutral" ? "bg-background" : "bg-surface";
+
+  const contentPadding = {
+    default: "py-8 md:py-10 px-4 sm:px-6 lg:px-8",
+    none: "p-0",
+    compact: "py-6 md:py-8 px-4 sm:px-5 lg:px-6",
+  } satisfies Record<ContentPadding, string>;
+
   return (
-    <div data-shell="admin-v1" className="min-h-dvh bg-background text-foreground">
+    <div data-shell="admin-v1" className={cn("min-h-dvh bg-background text-foreground", className)}>
       <div className={hasSidebar ? "grid md:grid-cols-[16rem_1fr]" : "block"}>
         {hasSidebar ? (
           <aside className="hidden border-r md:block">
@@ -101,10 +120,8 @@ export default function AppShell({
           </aside>
         ) : null}
 
-        <main className="min-w-0">
-          <div className="mx-auto w-full max-w-screen-xl px-4 pb-20 sm:px-6 lg:px-8 md:pb-8">
-            {children}
-          </div>
+        <main className={cn("min-w-0", mainBackground)}>
+          <div className={cn("mx-auto w-full max-w-screen-xl pb-20 md:pb-8", contentPadding[padding])}>{children}</div>
         </main>
       </div>
 

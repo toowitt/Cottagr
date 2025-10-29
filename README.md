@@ -16,12 +16,18 @@ To avoid hitting shared limits:
 
 If you still see 429 responses, wait for the cooldown (usually ~60 s) or adjust the rate-limit settings in the Supabase dashboard.
 
-### Email confirmations & SMTP
+### UI layout primitives
 
-- Copy `.env.example` to `.env.local` and provide values for `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO` (defaults to `http://localhost:4001/admin/setup` for local onboarding).
-- In the Supabase dashboard, enable email confirmations and update the Site URL/Auth redirect to match `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO`.
-- Provide SMTP credentials (e.g., Mailpit or another sandbox) via the Supabase project settings. The `.env.example` file lists the `SUPABASE_SMTP_*` variables you can mirror in Supabase to send confirmation emails during development.
-- Run `npm run check-env` to verify the required variables are present before starting the app.
+Admin and marketing views now share a common set of components:
+
+- `AppShell` (`src/components/ui/AppShell.tsx`) renders the responsive sidebar + bottom tab bar. Pass the server-derived nav array (`{ name, href, icon }[]`) and let the component hydrate icons on the client—do not send React elements across the boundary.
+- `AdminPage`, `AdminSection`, `AdminCard`, `AdminMetric`, and `AdminMetricGrid` (`src/components/ui/AdminPage.tsx`) provide the page header, content sections, and cards used across dashboard routes. Reach for these instead of ad-hoc Tailwind wrappers when building new admin screens.
+- Marketing pages use `MarketingSection` (`src/components/marketing/MarketingSection.tsx`) for consistent spacing, background variants, and optional dividers. Compose sections with this primitive rather than bespoke `section` styling.
+- `SupportFooter` (`src/components/SupportFooter.tsx`) anchors support contact info and the Copilot teaser. Include it at the bottom of public pages and auth flows instead of duplicating markup.
+
+When updating or adding pages, prefer these primitives so spacing, backgrounds, and breakpoints stay aligned across the app.
+
+### Email confirmations & SMTP
 
 ### Testing
 

@@ -170,10 +170,10 @@ export function ResponsiveTable<T>({
                   column.cellClassName,
                   cellAlignment(column.align),
                   column.sticky
-                    ? 'sticky left-0 z-10 bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
+                    ? 'sticky left-0 z-30 bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                     : null,
                   columnIndex === 0 && !column.sticky
-                    ? 'md:sticky md:left-0 md:z-10 md:bg-background'
+                    ? 'md:sticky md:left-0 md:z-30 md:bg-background md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                     : null,
                 )}
               >
@@ -182,7 +182,7 @@ export function ResponsiveTable<T>({
             ))}
 
             {hasActions ? (
-              <td className="sticky right-0 min-w-[6rem] border-b border-default bg-background px-4 py-4 align-middle">
+              <td className="sticky right-0 z-30 min-w-[6rem] border-b border-default bg-background px-4 py-4 align-middle shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
                 <RowActionsMenu actions={actions?.(data) ?? []} row={data} />
               </td>
             ) : null}
@@ -293,10 +293,10 @@ export function ResponsiveTable<T>({
                     column.minWidthClassName ?? 'min-w-[12rem]',
                     cellAlignment(column.align),
                     column.sticky
-                      ? 'sticky left-0 z-20 bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
+                      ? 'sticky left-0 z-40 bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                       : null,
                     index === 0 && !column.sticky
-                      ? 'md:sticky md:left-0 md:z-20 md:bg-background'
+                      ? 'md:sticky md:left-0 md:z-40 md:bg-background md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                       : null,
                   )}
                 >
@@ -304,7 +304,7 @@ export function ResponsiveTable<T>({
                 </th>
               ))}
               {hasActions ? (
-                <th className="sticky right-0 min-w-[6rem] border-b border-default bg-background px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
+                <th className="sticky right-0 z-40 min-w-[6rem] border-b border-default bg-background px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
                   Actions
                 </th>
               ) : null}
@@ -403,7 +403,7 @@ function RowActionsMenu<T>({ actions, row }: RowActionsMenuProps<T>) {
       <button
         ref={buttonRef}
         type="button"
-        className="touch-target inline-flex items-center justify-center rounded-full border border-default bg-background px-2 py-2 text-muted-foreground shadow-soft transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-default bg-background text-muted-foreground shadow-soft transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={toggleMenu}
@@ -416,7 +416,7 @@ function RowActionsMenu<T>({ actions, row }: RowActionsMenuProps<T>) {
         <ul
           ref={menuRef}
           role="menu"
-          className="absolute right-0 top-full z-50 mt-2 min-w-[12rem] space-y-1 rounded-xl border border-default bg-background p-2 shadow-strong"
+          className="absolute right-0 top-full z-[90] mt-2 min-w-[9.5rem] space-y-1 rounded-lg border border-border/60 bg-surface p-2 shadow-[0_18px_48px_-20px_rgba(15,23,42,0.35)] ring-1 ring-black/5"
         >
           {actions.map((action) => {
             const Icon = action.icon;

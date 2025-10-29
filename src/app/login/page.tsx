@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import LoginForm from './LoginForm';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
+import SupportFooter from '@/components/SupportFooter';
 
 type LoginPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -25,15 +26,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
-        <div className="space-y-4 text-center">
-          <div className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent">
-            Welcome back
-          </div>
-          <h1 className="text-pretty text-4xl font-semibold">Sign in to Cottagr</h1>
-          <p className="text-sm text-muted-foreground">
-            Your shared home for bookings, expenses, and every document that keeps the cottage running smoothly.
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background-secondary to-background">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-6 py-12">
+        <div className="rounded-3xl border border-default bg-card p-8 shadow-2xl">
+          <h1 className="text-3xl font-semibold">Welcome to Cottagr</h1>
+          <p className="mt-2 text-sm text-muted">
+            Sign in to access your cottage dashboard or create a new owner profile to get started.
           </p>
         </div>
 
@@ -51,6 +49,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <LoginForm redirectTo={redirectPath} />
         </section>
       </div>
+      <SupportFooter />
     </div>
   );
 }
