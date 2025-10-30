@@ -3,6 +3,7 @@ import { ExpenseStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ExpenseApprovalSchema } from '@/lib/validation';
 import { formatCents } from '@/lib/money';
+import { getRouteUserRecord, assertPropertyAccess, RouteAuthError } from '@/lib/auth/routeAuth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,13 +14,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', issues: parsed.error.issues }, { status: 400 });
     }
 
-    const { expenseId, ownershipId, choice, rationale } = parsed.data;
+    const { expenseId, ownershipId: requestedOwnershipId, choice, rationale } = parsed.data;
+
+    const userRecord = await getRouteUserRecord();
 
     const expense = await prisma.expense.findUnique({
       where: { id: expenseId },
       include: {
         property: {
-          include: { ownerships: true },
+          include: {
+            ownerships: {
+              include: { ownerProfile: true },
+            },
+          },
         },
       },
     });
@@ -28,14 +35,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
     }
 
+    const membership = assertPropertyAccess(userRecord, expense.propertyId);
+
     if (expense.status !== ExpenseStatus.pending) {
       return NextResponse.json({ error: 'This expense is no longer open for approval' }, { status: 409 });
     }
 
-    const ownership = expense.property.ownerships.find((share) => share.id === ownershipId);
+    const ownership = expense.property.ownerships.find((share) => share.ownerProfileId === membership.ownerProfileId);
     if (!ownership) {
-      return NextResponse.json({ error: 'Ownership record does not belong to this property' }, { status: 400 });
+      return NextResponse.json({ error: 'You are not linked to an ownership share for this property' }, { status: 403 });
     }
+
+    if (!ownership.expenseApprover) {
+      return NextResponse.json({ error: 'This owner cannot approve expenses' }, { status: 403 });
+    }
+
+    if (requestedOwnershipId && requestedOwnershipId !== ownership.id) {
+      return NextResponse.json({ error: 'Mismatched ownership' }, { status: 400 });
+    }
+
+    const ownershipId = ownership.id;
 
     await prisma.expenseApproval.upsert({
       where: {
@@ -59,7 +78,9 @@ export async function POST(request: NextRequest) {
     const approvals = await prisma.expenseApproval.findMany({
       where: { expenseId },
       include: {
-        ownership: true,
+        ownership: {
+          include: { ownerProfile: true },
+        },
       },
     });
 
@@ -96,13 +117,13 @@ export async function POST(request: NextRequest) {
     const refreshed = await prisma.expense.findUnique({
       where: { id: expenseId },
       include: {
-        createdByOwnership: { include: { owner: true } },
+        createdByOwnership: { include: { ownerProfile: true } },
         approvals: {
-          include: { ownership: { include: { owner: true } } },
+          include: { ownership: { include: { ownerProfile: true } } },
           orderBy: { createdAt: 'asc' },
         },
         allocations: {
-          include: { ownership: { include: { owner: true } } },
+          include: { ownership: { include: { ownerProfile: true } } },
         },
       },
     });
@@ -124,10 +145,10 @@ export async function POST(request: NextRequest) {
         createdAt: vote.createdAt.toISOString(),
         ownershipId: vote.ownershipId,
         owner: {
-          id: vote.ownership.owner.id,
-          firstName: vote.ownership.owner.firstName,
-          lastName: vote.ownership.owner.lastName,
-          email: vote.ownership.owner.email,
+          id: vote.ownership.ownerProfile.id,
+          firstName: vote.ownership.ownerProfile.firstName,
+          lastName: vote.ownership.ownerProfile.lastName,
+          email: vote.ownership.ownerProfile.email,
         },
       })),
       tallies: {
@@ -140,6 +161,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(responsePayload, { status: 200 });
   } catch (error) {
+    if (error instanceof RouteAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('POST /api/expense-approvals error:', error);
     return NextResponse.json({ error: 'Failed to record approval' }, { status: 500 });
   }

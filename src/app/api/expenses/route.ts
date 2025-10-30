@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ExpenseCreateSchema, ExpenseUpdateSchema, BookingListQuerySchema } from '@/lib/validation';
 import { formatCents } from '@/lib/money';
+import { getRouteUserRecord, assertPropertyAccess, getAccessiblePropertyIds, RouteAuthError } from '@/lib/auth/routeAuth';
 
 const splitAmount = (amountCents: number, shares: Array<{ id: number; shareBps: number }>) => {
   let remainder = amountCents;
@@ -29,17 +30,28 @@ export async function GET(request: NextRequest) {
 
     const { propertyId } = parsed.data;
 
+    const userRecord = await getRouteUserRecord();
+    const accessiblePropertyIds = getAccessiblePropertyIds(userRecord);
+
+    if (propertyId) {
+      if (!accessiblePropertyIds.has(propertyId)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } else if (accessiblePropertyIds.size === 0) {
+      return NextResponse.json({ expenses: [] }, { status: 200 });
+    }
+
     const expenses = await prisma.expense.findMany({
-      where: { propertyId },
+      where: propertyId ? { propertyId } : { propertyId: { in: Array.from(accessiblePropertyIds) } },
       include: {
-        createdByOwnership: { include: { owner: true } },
-        paidByOwnership: { include: { owner: true } },
+        createdByOwnership: { include: { ownerProfile: true } },
+        paidByOwnership: { include: { ownerProfile: true } },
         approvals: {
-          include: { ownership: { include: { owner: true } } },
+          include: { ownership: { include: { ownerProfile: true } } },
           orderBy: { createdAt: 'asc' },
         },
         allocations: {
-          include: { ownership: { include: { owner: true } } },
+          include: { ownership: { include: { ownerProfile: true } } },
         },
       },
       orderBy: [{ incurredOn: 'desc' }, { createdAt: 'desc' }],
@@ -52,24 +64,28 @@ export async function GET(request: NextRequest) {
       createdBy: expense.createdByOwnership
         ? {
             ownershipId: expense.createdByOwnership.id,
-            owner: {
-              id: expense.createdByOwnership.owner.id,
-              firstName: expense.createdByOwnership.owner.firstName,
-              lastName: expense.createdByOwnership.owner.lastName,
-              email: expense.createdByOwnership.owner.email,
-            },
+            ownerProfile: expense.createdByOwnership.ownerProfile
+              ? {
+                  id: expense.createdByOwnership.ownerProfile.id,
+                  firstName: expense.createdByOwnership.ownerProfile.firstName,
+                  lastName: expense.createdByOwnership.ownerProfile.lastName,
+                  email: expense.createdByOwnership.ownerProfile.email,
+                }
+              : null,
           }
         : null,
       paidByOwnershipId: expense.paidByOwnershipId,
       paidBy: expense.paidByOwnership
         ? {
             ownershipId: expense.paidByOwnership.id,
-            owner: {
-              id: expense.paidByOwnership.owner.id,
-              firstName: expense.paidByOwnership.owner.firstName,
-              lastName: expense.paidByOwnership.owner.lastName,
-              email: expense.paidByOwnership.owner.email,
-            },
+            ownerProfile: expense.paidByOwnership.ownerProfile
+              ? {
+                  id: expense.paidByOwnership.ownerProfile.id,
+                  firstName: expense.paidByOwnership.ownerProfile.firstName,
+                  lastName: expense.paidByOwnership.ownerProfile.lastName,
+                  email: expense.paidByOwnership.ownerProfile.email,
+                }
+              : null,
           }
         : null,
       vendorName: expense.vendorName,
@@ -88,11 +104,11 @@ export async function GET(request: NextRequest) {
         rationale: approval.rationale,
         createdAt: approval.createdAt.toISOString(),
         ownershipId: approval.ownershipId,
-        owner: {
-          id: approval.ownership.owner.id,
-          firstName: approval.ownership.owner.firstName,
-          lastName: approval.ownership.owner.lastName,
-          email: approval.ownership.owner.email,
+        ownerProfile: {
+          id: approval.ownership.ownerProfile.id,
+          firstName: approval.ownership.ownerProfile.firstName,
+          lastName: approval.ownership.ownerProfile.lastName,
+          email: approval.ownership.ownerProfile.email,
         },
       })),
       allocations: expense.allocations.map((allocation) => ({
@@ -100,17 +116,20 @@ export async function GET(request: NextRequest) {
         amountCents: allocation.amountCents,
         amountFormatted: formatCents(allocation.amountCents),
         ownershipId: allocation.ownershipId,
-        owner: {
-          id: allocation.ownership.owner.id,
-          firstName: allocation.ownership.owner.firstName,
-          lastName: allocation.ownership.owner.lastName,
-          email: allocation.ownership.owner.email,
+        ownerProfile: {
+          id: allocation.ownership.ownerProfile.id,
+          firstName: allocation.ownership.ownerProfile.firstName,
+          lastName: allocation.ownership.ownerProfile.lastName,
+          email: allocation.ownership.ownerProfile.email,
         },
       })),
     }));
 
     return NextResponse.json({ expenses: payload });
   } catch (error) {
+    if (error instanceof RouteAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('GET /api/expenses error:', error);
     return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 });
   }
@@ -127,7 +146,6 @@ export async function POST(request: NextRequest) {
 
     const {
       propertyId,
-      createdByOwnershipId,
       paidByOwnershipId,
       vendorName,
       category,
@@ -136,6 +154,9 @@ export async function POST(request: NextRequest) {
       incurredOn,
       receiptUrl,
     } = parsed.data;
+
+    const userRecord = await getRouteUserRecord();
+    const membership = assertPropertyAccess(userRecord, propertyId);
 
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
@@ -146,10 +167,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
-    const requestingOwnership = property.ownerships.find((share) => share.id === createdByOwnershipId);
+    const requestingOwnership = property.ownerships.find((share) => share.ownerProfileId === membership.ownerProfileId);
     if (!requestingOwnership) {
-      return NextResponse.json({ error: 'Ownership record not found for property' }, { status: 400 });
+      return NextResponse.json({ error: 'You are not linked to an ownership share for this property' }, { status: 403 });
     }
+
+    if (!requestingOwnership.expenseApprover) {
+      return NextResponse.json({ error: 'This owner cannot log expenses' }, { status: 403 });
+    }
+
+    const createdByOwnershipId = requestingOwnership.id;
 
     if (paidByOwnershipId) {
       const payerOwnership = property.ownerships.find((share) => share.id === paidByOwnershipId);
@@ -194,6 +221,9 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof RouteAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('POST /api/expenses error:', error);
     return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 });
   }
@@ -211,7 +241,6 @@ export async function PATCH(request: NextRequest) {
     const {
       expenseId,
       propertyId,
-      createdByOwnershipId,
       paidByOwnershipId,
       vendorName,
       category,
@@ -220,6 +249,8 @@ export async function PATCH(request: NextRequest) {
       incurredOn,
       receiptUrl,
     } = parsed.data;
+
+    const userRecord = await getRouteUserRecord();
 
     const expense = await prisma.expense.findUnique({
       where: { id: expenseId },
@@ -232,12 +263,21 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
     }
 
+    const membership = assertPropertyAccess(userRecord, expense.propertyId);
+
     const ownerships = expense.property.ownerships;
     const ownershipIds = new Set(ownerships.map((share) => share.id));
 
-    if (createdByOwnershipId !== null && !ownershipIds.has(createdByOwnershipId)) {
-      return NextResponse.json({ error: 'Ownership record not found for property' }, { status: 400 });
+    const actorOwnership = ownerships.find((share) => share.ownerProfileId === membership.ownerProfileId);
+    if (!actorOwnership) {
+      return NextResponse.json({ error: 'You are not linked to an ownership share for this property' }, { status: 403 });
     }
+
+    if (!actorOwnership.expenseApprover) {
+      return NextResponse.json({ error: 'This owner cannot manage expenses' }, { status: 403 });
+    }
+
+    const createdByOwnershipId = actorOwnership.id;
 
     if (paidByOwnershipId && !ownershipIds.has(paidByOwnershipId)) {
       return NextResponse.json({ error: 'Payer must be an owner of this property' }, { status: 400 });
@@ -280,6 +320,9 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ id: expenseId, amountFormatted: formatCents(amountCents) });
   } catch (error) {
+    if (error instanceof RouteAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('PATCH /api/expenses error:', error);
     return NextResponse.json({ error: 'Failed to update expense' }, { status: 500 });
   }
