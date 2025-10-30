@@ -1,7 +1,7 @@
-
 'use client';
 
-import { useState, useEffect, useCallback, FormEvent, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { FormEvent } from 'react';
 import {
   AdminPage,
   AdminSection,
@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
-import { ResponsiveTable, type ResponsiveColumn, type RowAction } from '@/components/datagrid/ResponsiveTable';
+import { cn } from '@/lib/cn';
 import type { BookingParticipantInput } from '@/lib/validation';
 import { confirmBooking, cancelBooking, deleteBooking } from './actions';
 interface PropertyOwnership {
@@ -75,6 +75,13 @@ interface BookingTimelineEventInfo {
     user: BookingUser | null;
     ownership: BookingOwnerInfo | null;
   };
+}
+
+interface BookingSectionConfig {
+  id: string;
+  title: string;
+  description: string;
+  bookings: Booking[];
 }
 
 interface BookingUsageSnapshotInfo {
@@ -163,19 +170,27 @@ export default function AdminBookingsPage() {
     propertyId: 0,
     startDate: '',
     endDate: '',
+    ownershipIds: [] as number[],
     guestName: '',
     guestEmail: '',
     notes: '',
-    ownershipIds: [] as number[],
   });
   const [rangeAnchor, setRangeAnchor] = useState<string | null>(null);
   const [requestSubmitting, setRequestSubmitting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [votingOwnershipId, setVotingOwnershipId] = useState<number | null>(null);
   const [votingSubmittingId, setVotingSubmittingId] = useState<number | null>(null);
+  const expandedBooking = useMemo(
+    () => (expandedBookingId ? bookings.find((booking) => booking.id === expandedBookingId) ?? null : null),
+    [bookings, expandedBookingId],
+  );
   const selectedFilterProperty = selectedPropertyId
     ? properties.find((property) => property.id === selectedPropertyId) ?? null
     : null;
+  const selectedComposerProperty = useMemo(
+    () => properties.find((property) => property.id === requestFormData.propertyId) ?? null,
+    [properties, requestFormData.propertyId],
+  );
   const pendingRequests = bookings.filter((booking) => booking.status === 'pending');
   const upcomingApprovedBookings = useMemo(
     () =>
@@ -208,11 +223,22 @@ export default function AdminBookingsPage() {
         setSelectedPropertyId(matchingBooking.propertyId);
       }
 
-      setRangeAnchor(null);
       setViewMode('list');
       setExpandedBookingId(matchingBooking.id);
     },
-    [bookings, selectedPropertyId, setSelectedPropertyId, setExpandedBookingId, setRangeAnchor, setViewMode],
+    [bookings, selectedPropertyId, setSelectedPropertyId, setExpandedBookingId, setViewMode],
+  );
+
+  const handleRequestPropertyChange = useCallback(
+    (propertyId: number) => {
+      const property = properties.find((candidate) => candidate.id === propertyId) ?? null;
+      setRequestFormData((prev) => ({
+        ...prev,
+        propertyId,
+        ownershipIds: property && property.ownerships.length ? [property.ownerships[0].id] : [],
+      }));
+    },
+    [properties],
   );
 
   const handleCalendarCellClick = useCallback(
@@ -228,29 +254,48 @@ export default function AdminBookingsPage() {
       }
 
       const isoDate = formatISODate(cell.date);
-      setShowRequestComposer(true);
-      setExpandedBookingId(null);
-      setViewMode('calendar');
+      const targetPropertyId =
+        selectedPropertyId ??
+        (requestFormData.propertyId > 0 ? requestFormData.propertyId : undefined) ??
+        properties[0]?.id ??
+        0;
+      if (!targetPropertyId) {
+        return;
+      }
+
+      handleRequestPropertyChange(targetPropertyId);
 
       if (!rangeAnchor) {
         setRequestFormData((prev) => ({
           ...prev,
+          propertyId: targetPropertyId,
           startDate: isoDate,
-          endDate: isoDate,
+          endDate: '',
         }));
         setRangeAnchor(isoDate);
+        setShowRequestComposer(false);
         return;
       }
 
       const [start, end] = rangeAnchor <= isoDate ? [rangeAnchor, isoDate] : [isoDate, rangeAnchor];
       setRequestFormData((prev) => ({
         ...prev,
+        propertyId: targetPropertyId,
         startDate: start,
         endDate: end,
       }));
       setRangeAnchor(null);
+      setExpandedBookingId(null);
+      setShowRequestComposer(true);
     },
-    [handleCalendarItemClick, rangeAnchor, setExpandedBookingId, setRangeAnchor, setRequestFormData, setShowRequestComposer, setViewMode],
+    [
+      handleCalendarItemClick,
+      handleRequestPropertyChange,
+      properties,
+      rangeAnchor,
+      requestFormData.propertyId,
+      selectedPropertyId,
+    ],
   );
 
   const roleLabels: Record<string, string> = {
@@ -432,29 +477,6 @@ export default function AdminBookingsPage() {
   }, [selectedPropertyId, calendarMonth, fetchAvailability]);
 
   useEffect(() => {
-    if (properties.length === 0) return;
-
-    setRequestFormData((prev) => {
-      if (prev.propertyId && properties.some((property) => property.id === prev.propertyId)) {
-        return prev;
-      }
-
-      const defaultProperty = properties[0];
-      const defaultOwnershipIds = defaultProperty.ownerships.length
-        ? [defaultProperty.ownerships[0].id]
-        : [];
-
-      setVotingOwnershipId((current) => current ?? (defaultOwnershipIds[0] ?? null));
-
-      return {
-        ...prev,
-        propertyId: defaultProperty.id,
-        ownershipIds: defaultOwnershipIds,
-      };
-    });
-  }, [properties]);
-
-  useEffect(() => {
     if (!selectedPropertyId) {
       setVotingOwnershipId(null);
       return;
@@ -489,8 +511,24 @@ export default function AdminBookingsPage() {
           }
           return data[0].id;
         });
+        setRequestFormData((prev) => {
+          if (prev.propertyId && data.some((property) => property.id === prev.propertyId)) {
+            return prev;
+          }
+          const firstProperty = data[0];
+          return {
+            ...prev,
+            propertyId: firstProperty.id,
+            ownershipIds: firstProperty.ownerships.length ? [firstProperty.ownerships[0].id] : [],
+          };
+        });
       } else {
         setSelectedPropertyId(null);
+        setRequestFormData((prev) => ({
+          ...prev,
+          propertyId: 0,
+          ownershipIds: [],
+        }));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -545,62 +583,6 @@ export default function AdminBookingsPage() {
     }
   }
 
-  const handleRequestPropertyChange = (propertyId: number) => {
-    const property = properties.find((candidate) => candidate.id === propertyId);
-    setRangeAnchor(null);
-    setRequestFormData((prev) => ({
-      ...prev,
-      propertyId,
-      startDate: '',
-      endDate: '',
-      ownershipIds: property && property.ownerships.length ? [property.ownerships[0].id] : [],
-    }));
-    setVotingOwnershipId(property && property.ownerships.length ? property.ownerships[0].id : null);
-  };
-
-  async function handleVote(bookingId: number, choice: 'approve' | 'reject' | 'abstain') {
-    if (!selectedFilterProperty) {
-      setError('Select a property to cast votes');
-      return;
-    }
-
-    if (!votingOwnershipId) {
-      setError('Select which owner you are voting as');
-      return;
-    }
-
-    setVotingSubmittingId(bookingId);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/booking-votes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bookingId,
-          ownershipId: votingOwnershipId,
-          choice,
-        }),
-      });
-
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        setError(payload?.error ?? 'Failed to record vote');
-        return;
-      }
-
-      await fetchBookings(selectedPropertyId ?? selectedFilterProperty.id);
-    } catch (err) {
-      console.error('vote error', err);
-      setError('Unexpected error while recording vote');
-    } finally {
-      setVotingSubmittingId(null);
-    }
-  }
-
   const handleOwnershipToggle = (ownershipId: number, checked: boolean) => {
     setRequestFormData((prev) => {
       const ownershipIds = checked
@@ -649,11 +631,11 @@ export default function AdminBookingsPage() {
           ownershipId: ownership.id,
           displayName: ownerName,
           email: ownership.owner.email,
-        };
+        } satisfies BookingParticipantInput;
       })
-      .filter(Boolean);
+      .filter(Boolean) as BookingParticipantInput[];
 
-    const participants: BookingParticipantInput[] = ownerParticipants as BookingParticipantInput[];
+    const participants: BookingParticipantInput[] = [...ownerParticipants];
 
     if (requestFormData.guestName.trim()) {
       participants.push({
@@ -720,8 +702,48 @@ export default function AdminBookingsPage() {
     }
   }
 
-  const selectedComposerProperty =
-    properties.find((property) => property.id === requestFormData.propertyId) ?? null;
+  async function handleVote(bookingId: number, choice: 'approve' | 'reject' | 'abstain') {
+    if (!selectedFilterProperty) {
+      setError('Select a property to cast votes');
+      return;
+    }
+
+    if (!votingOwnershipId) {
+      setError('Select which owner you are voting as');
+      return;
+    }
+
+    setVotingSubmittingId(bookingId);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/booking-votes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId,
+          ownershipId: votingOwnershipId,
+          choice,
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setError(payload?.error ?? 'Failed to record vote');
+        return;
+      }
+
+      await fetchBookings(selectedPropertyId ?? selectedFilterProperty.id);
+    } catch (err) {
+      console.error('vote error', err);
+      setError('Unexpected error while recording vote');
+    } finally {
+      setVotingSubmittingId(null);
+    }
+  }
 
   async function handleConfirm(bookingId: number) {
     try {
@@ -776,11 +798,6 @@ export default function AdminBookingsPage() {
     }
   }
 
-  const expandedBooking = useMemo(
-    () => (expandedBookingId ? bookings.find((booking) => booking.id === expandedBookingId) ?? null : null),
-    [bookings, expandedBookingId],
-  );
-
   const resolveProperty = useCallback(
     (booking: Booking) => booking.property ?? properties.find((property) => property.id === booking.propertyId) ?? null,
     [properties],
@@ -796,166 +813,154 @@ export default function AdminBookingsPage() {
     [],
   );
 
-  const bookingColumns = useMemo<ResponsiveColumn<Booking>[]>(
-    () => [
-      {
-        id: 'property',
-        header: 'Property',
-        priority: 'high',
-        mobileLabel: 'Property',
-        renderCell: (booking) => {
-          const property = resolveProperty(booking);
-          return (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-foreground">{property?.name ?? 'Unknown property'}</span>
-              {property?.location ? (
-                <span className="text-xs text-muted-foreground">{property.location}</span>
-              ) : null}
-            </div>
-          );
-        },
-      },
-      {
-        id: 'guest',
-        header: 'Guest',
-        priority: 'high',
-        mobileLabel: 'Guest',
-        renderCell: (booking) => {
-          const primaryParticipant = booking.participants.find((participant) => participant.role !== 'OWNER');
-          const displayGuestName = booking.guestName ?? primaryParticipant?.displayName ?? '—';
-          const displayGuestEmail = booking.guestEmail ?? primaryParticipant?.email ?? '—';
-
-          return (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-foreground">{displayGuestName}</span>
-              <span className="text-xs text-muted-foreground">{displayGuestEmail}</span>
-            </div>
-          );
-        },
-      },
-      {
-        id: 'dates',
-        header: 'Dates',
-        priority: 'medium',
-        mobileLabel: 'Dates',
-        renderCell: (booking) => {
-          const start = new Date(booking.startDate);
-          const end = new Date(booking.endDate);
-          const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-
-          return (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-foreground">
-                {start.toLocaleDateString()} – {end.toLocaleDateString()}
-              </span>
-              <span className="text-xs text-muted-foreground">{nights} nights</span>
-            </div>
-          );
-        },
-      },
-      {
-        id: 'status',
-        header: 'Status',
-        priority: 'low',
-        align: 'center',
-        mobileLabel: 'Status',
-        minWidthClassName: 'min-w-[8rem]',
-        renderCell: (booking) => (
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${
-              statusClassByState[booking.status as keyof typeof statusClassByState] ?? 'text-muted-foreground bg-background-muted'
-            }`}
-          >
-            {booking.status}
-          </span>
-        ),
-      },
-      {
-        id: 'total',
-        header: 'Total',
-        align: 'end',
-        priority: 'medium',
-        mobileLabel: 'Total',
-        minWidthClassName: 'min-w-[8rem]',
-        headerClassName: 'pr-16',
-        cellClassName: 'pr-16',
-        renderCell: (booking) => (
-          <span className="text-sm font-semibold text-foreground">
-            {booking.totalFormatted ?? `$${(booking.totalAmount / 100).toFixed(2)}`}
-          </span>
-        ),
-      },
-    ],
-    [resolveProperty, statusClassByState],
-  );
-
-  const bookingRowActions = (booking: Booking): RowAction<Booking>[] => {
-    const actionList: RowAction<Booking>[] = [
-      {
-        id: 'details',
-        label: expandedBookingId === booking.id ? 'Hide details' : 'View details',
-        onSelect: () => setExpandedBookingId((prev) => (prev === booking.id ? null : booking.id)),
-      },
-    ];
-
-    if (booking.status === 'pending') {
-      actionList.push({
-        id: 'confirm',
-        label: 'Confirm',
-        onSelect: () => {
-          void handleConfirm(booking.id);
-        },
-      });
-    }
-
-    if (booking.status !== 'cancelled') {
-      actionList.push({
-        id: 'cancel',
-        label: 'Cancel',
-        onSelect: () => {
-          void handleCancel(booking.id);
-        },
-      });
-    }
-
-    actionList.push({
-      id: 'delete',
-      label: 'Delete',
-      destructive: true,
-      onSelect: () => {
-        void handleDelete(booking.id);
-      },
-    });
-
-    return actionList;
-  };
-
   const isLoading = loading;
+
+  const renderBookingSection = ({ id, title, description, bookings }: BookingSectionConfig) => {
+    return (
+      <AdminSection title={title} description={description}>
+        <div id={id} className="space-y-4 md:table md:w-full md:border-separate md:[border-spacing:0_0.75rem]">
+          <div className="hidden md:table-row text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="md:table-cell md:px-4 md:py-2 md:first:pl-0">Property</span>
+            <span className="md:table-cell md:px-4 md:py-2">Guest</span>
+            <span className="md:table-cell md:px-4 md:py-2">Dates</span>
+            <span className="md:table-cell md:px-4 md:py-2 text-right">Total</span>
+            <span className="md:table-cell md:px-4 md:py-2 text-center">Status</span>
+            <span className="md:table-cell md:px-4 md:py-2 text-right">Actions</span>
+          </div>
+
+          {bookings.length === 0 ? (
+            <div className="rounded-2xl border border-default bg-background px-4 py-6 text-sm text-muted-foreground shadow-soft">
+              No bookings found
+            </div>
+          ) : null}
+
+          {bookings.map((booking) => {
+            const property = resolveProperty(booking);
+            const start = new Date(booking.startDate);
+            const end = new Date(booking.endDate);
+            const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+            const primaryParticipant = booking.participants.find((participant) => participant.role !== 'OWNER');
+            const displayGuestName = booking.guestName ?? primaryParticipant?.displayName ?? '—';
+            const displayGuestEmail = booking.guestEmail ?? primaryParticipant?.email ?? '—';
+
+            return (
+              <article
+                key={booking.id}
+                className="rounded-2xl border border-default bg-background px-4 py-5 shadow-soft transition md:table-row md:rounded-xl md:border md:border-border md:bg-background md:px-0 md:py-0 md:shadow-none"
+              >
+                <div className="flex flex-col gap-1 md:table-cell md:align-middle md:px-4 md:py-4 md:first:pl-0">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:hidden">
+                    Property
+                  </span>
+                  <div className="mt-1 flex flex-col gap-1 md:mt-0">
+                    <span className="text-sm font-semibold text-foreground">{property?.name ?? 'Unknown property'}</span>
+                    {property?.location ? (
+                      <span className="text-xs text-muted-foreground">{property.location}</span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1 md:table-cell md:align-middle md:px-4 md:py-4">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Guest</span>
+                  <div className="mt-1 flex flex-col gap-1 md:mt-0">
+                    <span className="text-sm text-foreground">{displayGuestName}</span>
+                    <span className="text-xs text-muted-foreground">{displayGuestEmail}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1 md:table-cell md:align-middle md:px-4 md:py-4">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Dates</span>
+                  <div className="mt-1 flex flex-col gap-1 md:mt-0">
+                    <span className="text-sm text-foreground">
+                      {start.toLocaleDateString()} – {end.toLocaleDateString()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{nights} nights</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1 md:table-cell md:align-middle md:px-4 md:py-4 md:text-right">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Total</span>
+                  <span className="mt-1 text-sm font-semibold text-foreground md:mt-0">
+                    {booking.totalFormatted ?? `$${(booking.totalAmount / 100).toFixed(2)}`}
+                  </span>
+                </div>
+
+                <div className="mt-2 md:mt-0 md:table-cell md:align-middle md:px-4 md:py-4 md:text-center">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Status</span>
+                  <span
+                    className={cn(
+                      'mt-1 inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold md:mt-0',
+                      statusClassByState[booking.status as keyof typeof statusClassByState] ??
+                        'text-muted-foreground bg-background-muted',
+                    )}
+                  >
+                    {booking.status}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2 md:mt-0 md:table-cell md:align-middle md:px-4 md:py-4 md:text-right">
+                  <span className="w-full text-xs font-semibold uppercase tracking-wide text-muted-foreground md:hidden">
+                    Actions
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedBookingId((prev) => (prev === booking.id ? null : booking.id))}
+                    className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:ml-auto"
+                  >
+                    {expandedBookingId === booking.id ? 'Hide details' : 'View details'}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </AdminSection>
+    );
+  };
 
   const headerActions = (
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex rounded-full border border-default bg-background-muted p-1 text-xs text-muted-foreground">
         <button
+          type="button"
           onClick={() => setViewMode('list')}
-          className={`rounded-full px-3 py-1 transition ${viewMode === 'list' ? 'bg-emerald-500 text-black' : ''}`}
+          className={cn(
+            'rounded-full px-3 py-1 transition',
+            viewMode === 'list' ? 'bg-emerald-500 text-black shadow-soft' : 'hover:bg-background'
+          )}
         >
           List
         </button>
         <button
+          type="button"
           onClick={() => setViewMode('calendar')}
-          className={`rounded-full px-3 py-1 transition ${viewMode === 'calendar' ? 'bg-emerald-500 text-black' : ''}`}
+          className={cn(
+            'rounded-full px-3 py-1 transition',
+            viewMode === 'calendar' ? 'bg-emerald-500 text-black shadow-soft' : 'hover:bg-background'
+          )}
         >
           Calendar
         </button>
       </div>
       <button
+        type="button"
         onClick={() => {
+          const fallbackPropertyId =
+            (requestFormData.propertyId && requestFormData.propertyId > 0
+              ? requestFormData.propertyId
+              : undefined) ??
+            selectedPropertyId ??
+            properties[0]?.id ??
+            0;
+          if (fallbackPropertyId) {
+            handleRequestPropertyChange(fallbackPropertyId);
+          }
           setRangeAnchor(null);
           setShowRequestComposer((prev) => !prev);
         }}
-        className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-black shadow-[0_18px_45px_-25px_rgba(52,211,153,0.9)] transition hover:bg-emerald-500"
+        className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-black shadow-[0_18px_45px_-25px_rgba(52,211,153,0.9)] transition hover:bg-emerald-400"
       >
-        {showRequestComposer ? 'Close Request Composer' : 'New Booking Request'}
+        {showRequestComposer ? 'Close booking form' : 'New booking request'}
       </button>
     </div>
   );
@@ -975,15 +980,18 @@ export default function AdminBookingsPage() {
 
       <AdminMetricGrid className="md:grid-cols-3">
         <AdminMetric label="Pending requests" value={pendingRequests.length} />
-        <button
-          type="button"
-          disabled={upcomingApprovedBookings.length === 0}
-          onClick={() => {
-            if (upcomingApprovedBookings.length === 0) return;
+      <button
+        type="button"
+        disabled={upcomingApprovedBookings.length === 0}
+        onClick={() => {
+          if (upcomingApprovedBookings.length === 0) return;
+          setViewMode('list');
+          requestAnimationFrame(() => {
             document.getElementById('upcoming-bookings')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
-          className="text-left disabled:opacity-60"
-        >
+          });
+        }}
+        className="text-left disabled:opacity-60"
+      >
           <AdminMetric
             label="Upcoming bookings"
             value={upcomingApprovedBookings.length}
@@ -1143,20 +1151,55 @@ export default function AdminBookingsPage() {
               {calendarCells.map((cell) => {
                 const hasItems = cell.items.length > 0;
                 const isInteractive = cell.available || cell.items.some((item) => item.type === 'booking');
-                const startIso = requestFormData.startDate || null;
-                const endIso = requestFormData.endDate || null;
-                const hasRange = Boolean(startIso && endIso);
+
+                const startSelection = requestFormData.startDate;
+                const endSelection = requestFormData.endDate;
+                const hasCommittedRange = Boolean(startSelection && endSelection);
+                const pendingAnchor = rangeAnchor;
+
+                const startValue = startSelection || '';
+                const endValue = endSelection || '';
+
+                const hasPendingSelection = !hasCommittedRange && pendingAnchor !== null;
+                const pendingStart = pendingAnchor ?? '';
+                const pendingEndCandidate = !hasCommittedRange && pendingAnchor ? cell.iso : '';
+                const isPendingInRange = hasPendingSelection
+                  ? pendingStart <= cell.iso
+                    ? pendingStart <= cell.iso && cell.iso <= pendingEndCandidate
+                    : pendingEndCandidate <= cell.iso && cell.iso <= pendingStart
+                  : false;
+
+                const effectiveStart = hasCommittedRange ? startValue : pendingAnchor ?? '';
+                const effectiveEnd = hasCommittedRange ? endValue : pendingEndCandidate || pendingStart || '';
+
                 const isInRange =
-                  hasRange && startIso && endIso ? cell.iso >= startIso && cell.iso <= endIso : false;
-                const isRangeEndpoint = isInRange && (cell.iso === startIso || cell.iso === endIso);
+                  effectiveStart && effectiveEnd
+                    ? effectiveStart <= cell.iso && cell.iso <= effectiveEnd
+                    : isPendingInRange;
+
+                const isRangeEndpoint = hasCommittedRange
+                  ? cell.iso === startValue || cell.iso === endValue
+                  : pendingAnchor
+                  ? cell.iso === pendingAnchor
+                  : false;
+
+                const isPendingSelection = !hasCommittedRange && pendingAnchor === cell.iso;
+
                 const cellClasses = [
                   'min-h-[5.5rem] border border-default bg-background p-2 text-xs transition',
                   cell.inCurrentMonth ? 'text-foreground' : 'bg-background-muted text-muted-foreground',
                   !cell.available ? 'ring-1 ring-rose-500/60' : '',
-                  cell.isToday ? 'ring-2 ring-accent' : '',
+                  cell.isToday ? 'ring-1 ring-emerald-400/70' : '',
                   isInteractive ? 'hover:bg-background-muted cursor-pointer' : 'cursor-default',
-                  isInRange ? 'bg-accent/20 text-accent' : '',
-                  isRangeEndpoint ? 'ring-2 ring-accent text-accent font-semibold' : '',
+                  isInRange
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-100'
+                    : '',
+                  isRangeEndpoint
+                    ? 'ring-2 ring-emerald-500 text-emerald-600 dark:text-emerald-100 font-semibold'
+                    : '',
+                  isPendingSelection
+                    ? 'ring-2 ring-emerald-400 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-100'
+                    : '',
                 ].join(' ');
 
                 return (
@@ -1176,11 +1219,6 @@ export default function AdminBookingsPage() {
                     <div className="flex items-center justify-between text-foreground">
                       <span className="text-sm font-semibold">{cell.date.getDate()}</span>
                       <div className="flex items-center gap-1">
-                        {isRangeEndpoint ? (
-                          <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-accent">
-                            {cell.iso === startIso ? 'Start' : 'End'}
-                          </span>
-                        ) : null}
                         {!cell.available ? (
                           <span className="rounded-full bg-rose-500/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-rose-100">
                             Hold
@@ -1251,33 +1289,41 @@ export default function AdminBookingsPage() {
         </div>
       </AdminSection>
 
-      {/* Booking Request Composer */}
-      {showRequestComposer && (
+      {showRequestComposer ? (
         <AdminSection
           title="New booking request"
           description="Draft a new stay and include the owners who should review it."
         >
           {requestError ? (
-            <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {requestError}
             </div>
           ) : null}
+
           <form onSubmit={handleCreateRequest} className="mt-6 grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Property</label>
               <Select
                 value={requestFormData.propertyId || ''}
-                onChange={(event) => handleRequestPropertyChange(Number(event.target.value))}
+                onChange={(event) => {
+                  const propertyId = Number(event.target.value);
+                  if (Number.isNaN(propertyId) || propertyId === 0) {
+                    return;
+                  }
+                  handleRequestPropertyChange(propertyId);
+                }}
               >
+                <option value="">Select property</option>
                 {properties.map((property) => (
                   <option key={property.id} value={property.id}>
                     {property.name}
+                    {property.location ? ` · ${property.location}` : ''}
                   </option>
                 ))}
               </Select>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               <div className="space-y-2">
                 <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Start date</label>
                 <Input
@@ -1294,6 +1340,7 @@ export default function AdminBookingsPage() {
                 <Input
                   type="date"
                   value={requestFormData.endDate}
+                  min={requestFormData.startDate || undefined}
                   onChange={(event) =>
                     setRequestFormData((prev) => ({ ...prev, endDate: event.target.value }))
                   }
@@ -1376,54 +1423,41 @@ export default function AdminBookingsPage() {
               <button
                 type="submit"
                 disabled={requestSubmitting}
-                className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent/90 disabled:bg-muted-foreground/30"
+                className="rounded-full bg-emerald-500 px-5 py-2 text-xs font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60"
               >
                 {requestSubmitting ? 'Submitting…' : 'Submit request'}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setRangeAnchor(null);
                   setShowRequestComposer(false);
+                  setRequestError(null);
+                  setRangeAnchor(null);
                 }}
-                className="rounded-full border border-default px-5 py-2 text-sm font-semibold text-foreground transition hover:bg-background-muted"
+                className="rounded-full border border-border px-5 py-2 text-xs font-semibold text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 Cancel
               </button>
             </div>
           </form>
         </AdminSection>
-      )}
+      ) : null}
 
       {viewMode === 'list' && (
         <>
-          {upcomingApprovedBookings.length > 0 ? (
-            <AdminSection
-              title="Upcoming bookings"
-              description="Approved stays that haven’t started yet."
-            >
-              <div id="upcoming-bookings" />
-              <ResponsiveTable
-                columns={bookingColumns}
-                rows={upcomingApprovedBookings}
-                rowKey={(booking) => `upcoming-${booking.id}`}
-                emptyState="No upcoming bookings"
-                mobileTitleColumnId="property"
-                actions={bookingRowActions}
-              />
-            </AdminSection>
-          ) : null}
+          {upcomingApprovedBookings.length > 0 ? renderBookingSection({
+            id: 'upcoming-bookings',
+            title: 'Upcoming bookings',
+            description: 'Approved stays that haven’t started yet.',
+            bookings: upcomingApprovedBookings,
+          }) : null}
 
-          <AdminSection title="All bookings" description="Full history including pending and past stays.">
-            <ResponsiveTable
-              columns={bookingColumns}
-              rows={bookings}
-              rowKey={(booking) => booking.id.toString()}
-              emptyState="No bookings found"
-              mobileTitleColumnId="property"
-              actions={bookingRowActions}
-            />
-          </AdminSection>
+          {renderBookingSection({
+            id: 'all-bookings',
+            title: 'All bookings',
+            description: 'Full history including pending and past stays.',
+            bookings,
+          })}
 
           {expandedBooking ? (
             <AdminSection
@@ -1504,40 +1538,92 @@ export default function AdminBookingsPage() {
                   </AdminCard>
                 }
                 secondary={
-                  <AdminCard className="space-y-3" title="Timeline">
-                    {expandedBooking.timeline.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No timeline events recorded.</p>
-                    ) : (
-                      <ol className="space-y-3 text-sm text-foreground">
-                        {expandedBooking.timeline.map((event) => {
-                          const actorUser = event.actor.user;
-                          const actorOwnership = event.actor.ownership;
-                          const actorOwner = actorOwnership?.owner;
-                          const actorName =
-                            (actorUser
-                              ? [actorUser.firstName, actorUser.lastName].filter(Boolean).join(' ') || actorUser.email
-                              : null) ??
-                            (actorOwner
-                              ? [actorOwner.firstName, actorOwner.lastName].filter(Boolean).join(' ') || actorOwner.email
-                              : null);
+                  <AdminCard className="space-y-4" title="Actions & timeline">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedBookingId(null)}
+                        className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                      >
+                        Close
+                      </button>
+                      {expandedBooking.status === 'pending' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleConfirm(expandedBooking.id);
+                          }}
+                          className="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                        >
+                          Confirm booking
+                        </button>
+                      ) : null}
+                      {expandedBooking.status !== 'cancelled' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleCancel(expandedBooking.id);
+                          }}
+                          className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                        >
+                          Cancel booking
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleDelete(expandedBooking.id);
+                        }}
+                        className="rounded-full bg-destructive px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                      >
+                        Delete booking
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground opacity-60"
+                        disabled
+                        title="Edit booking coming soon"
+                      >
+                        Edit booking
+                      </button>
+                    </div>
 
-                          return (
-                            <li key={event.id} className="rounded-xl border border-default bg-background-muted p-3">
-                              <div className="flex items-start justify-between text-xs uppercase tracking-wide text-muted-foreground">
-                                <span>{eventLabels[event.type] ?? event.type}</span>
-                                <span>{new Date(event.createdAt).toLocaleString()}</span>
-                              </div>
-                              {event.message ? (
-                                <p className="mt-2 text-sm text-foreground leading-relaxed">{event.message}</p>
-                              ) : null}
-                              {actorName ? (
-                                <p className="mt-1 text-xs text-muted-foreground">By {actorName}</p>
-                              ) : null}
-                            </li>
-                          );
-                        })}
-                      </ol>
-                    )}
+                    <section className="space-y-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Timeline</h3>
+                      {expandedBooking.timeline.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No timeline events recorded.</p>
+                      ) : (
+                        <ol className="space-y-3 text-sm text-foreground">
+                          {expandedBooking.timeline.map((event) => {
+                            const actorUser = event.actor.user;
+                            const actorOwnership = event.actor.ownership;
+                            const actorOwner = actorOwnership?.owner;
+                            const actorName =
+                              (actorUser
+                                ? [actorUser.firstName, actorUser.lastName].filter(Boolean).join(' ') || actorUser.email
+                                : null) ??
+                              (actorOwner
+                                ? [actorOwner.firstName, actorOwner.lastName].filter(Boolean).join(' ') || actorOwner.email
+                                : null);
+
+                            return (
+                              <li key={event.id} className="rounded-xl border border-default bg-background-muted p-3">
+                                <div className="flex items-start justify-between text-xs uppercase tracking-wide text-muted-foreground">
+                                  <span>{eventLabels[event.type] ?? event.type}</span>
+                                  <span>{new Date(event.createdAt).toLocaleString()}</span>
+                                </div>
+                                {event.message ? (
+                                  <p className="mt-2 text-sm text-foreground leading-relaxed">{event.message}</p>
+                                ) : null}
+                                {actorName ? (
+                                  <p className="mt-1 text-xs text-muted-foreground">By {actorName}</p>
+                                ) : null}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      )}
+                    </section>
                   </AdminCard>
                 }
               />

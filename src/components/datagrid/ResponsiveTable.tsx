@@ -169,11 +169,11 @@ export function ResponsiveTable<T>({
                   column.minWidthClassName ?? 'min-w-[12rem]',
                   column.cellClassName,
                   cellAlignment(column.align),
-                  column.sticky
-                    ? 'sticky left-0 z-30 bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
+                    column.sticky
+                    ? 'sticky left-0 z-[55] bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                     : null,
                   columnIndex === 0 && !column.sticky
-                    ? 'md:sticky md:left-0 md:z-30 md:bg-background md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
+                    ? 'md:sticky md:left-0 md:z-[55] md:bg-background md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                     : null,
                 )}
               >
@@ -182,7 +182,7 @@ export function ResponsiveTable<T>({
             ))}
 
             {hasActions ? (
-              <td className="sticky right-0 z-30 min-w-[6rem] border-b border-default bg-background px-4 py-4 align-middle shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
+              <td className="sticky right-0 z-[55] min-w-[6rem] border-b border-default bg-background px-4 py-4 align-middle shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
                 <RowActionsMenu actions={actions?.(data) ?? []} row={data} />
               </td>
             ) : null}
@@ -279,8 +279,10 @@ export function ResponsiveTable<T>({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="table-container hidden rounded-2xl border border-default bg-background shadow-soft md:block">
-        <table className="min-w-full table-fixed border-collapse">
+      <div className="table-container relative hidden rounded-2xl border border-default bg-background shadow-soft md:block">
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background via-background/60 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-background via-background/60 to-transparent" />
+        <table className="min-w-full table-auto border-collapse">
           <thead className="bg-background-muted text-left">
             <tr>
               {orderedColumns.map((column, index) => (
@@ -293,10 +295,10 @@ export function ResponsiveTable<T>({
                     column.minWidthClassName ?? 'min-w-[12rem]',
                     cellAlignment(column.align),
                     column.sticky
-                      ? 'sticky left-0 z-40 bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
+                      ? 'sticky left-0 z-[60] bg-background text-foreground shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                       : null,
                     index === 0 && !column.sticky
-                      ? 'md:sticky md:left-0 md:z-40 md:bg-background md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
+                      ? 'md:sticky md:left-0 md:z-[60] md:bg-background md:shadow-[inset_-1px_0_0_rgba(148,163,184,0.18)]'
                       : null,
                   )}
                 >
@@ -304,7 +306,7 @@ export function ResponsiveTable<T>({
                 </th>
               ))}
               {hasActions ? (
-                <th className="sticky right-0 z-40 min-w-[6rem] border-b border-default bg-background px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
+                <th className="sticky right-0 z-[60] min-w-[5rem] border-b border-default bg-background px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
                   Actions
                 </th>
               ) : null}
@@ -403,7 +405,7 @@ function RowActionsMenu<T>({ actions, row }: RowActionsMenuProps<T>) {
       <button
         ref={buttonRef}
         type="button"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-default bg-background text-muted-foreground shadow-soft transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground shadow-soft transition hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={toggleMenu}
@@ -416,12 +418,12 @@ function RowActionsMenu<T>({ actions, row }: RowActionsMenuProps<T>) {
         <ul
           ref={menuRef}
           role="menu"
-          className="absolute right-0 top-full z-[90] mt-2 min-w-[9.5rem] space-y-1 rounded-lg border border-border/60 bg-surface p-2 shadow-[0_18px_48px_-20px_rgba(15,23,42,0.35)] ring-1 ring-black/5"
+          className="absolute right-0 top-full z-[90] mt-2 min-w-[10rem] space-y-1 rounded-md border border-border/70 bg-background px-2 py-2 text-sm shadow-[0_18px_48px_-20px_rgba(15,23,42,0.35)] backdrop-blur-sm"
         >
           {actions.map((action) => {
             const Icon = action.icon;
             const content = (
-              <span className="flex w-full items-center justify-between gap-3">
+              <span className="flex w-full items-center justify-between gap-2">
                 <span>{action.label}</span>
                 {Icon ? <Icon className="h-4 w-4" aria-hidden /> : null}
               </span>
@@ -433,8 +435,8 @@ function RowActionsMenu<T>({ actions, row }: RowActionsMenuProps<T>) {
                   <Link
                     href={action.href}
                     className={cn(
-                      'flex w-full items-center rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-                      action.destructive ? 'text-danger hover:bg-red-50' : null,
+                      'flex w-full items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                      action.destructive ? 'text-destructive hover:bg-destructive/10' : null,
                       action.disabled ? 'pointer-events-none opacity-60' : null,
                     )}
                     role="menuitem"
@@ -453,8 +455,8 @@ function RowActionsMenu<T>({ actions, row }: RowActionsMenuProps<T>) {
                   role="menuitem"
                   onClick={(event) => handleActionClick(action, event)}
                   className={cn(
-                    'flex w-full items-center rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-                    action.destructive ? 'text-danger hover:bg-red-50' : null,
+                    'flex w-full items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:bg-background-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                    action.destructive ? 'text-destructive hover:bg-destructive/10' : null,
                     action.disabled ? 'cursor-not-allowed opacity-60' : null,
                   )}
                   disabled={action.disabled}

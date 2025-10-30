@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Expenses', href: '/admin/expenses', icon: 'Wallet' },
   { name: 'Tasks', href: '/admin/calendar', icon: 'ListTodo' },
   { name: 'Documents', href: '/admin/knowledge-hub', icon: 'FileText' },
+  { name: 'Blackouts', href: '/admin/blackouts', icon: 'Calendar' },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

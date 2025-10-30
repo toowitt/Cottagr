@@ -495,7 +495,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                 <article
                   key={property.id}
                   id={`owners-${property.id}`}
-                  className="space-y-6 rounded-3xl border border-border/60 bg-surface p-6 shadow-soft"
+                  className="space-y-6 rounded-3xl border border-border/40 bg-surface p-6 shadow-soft"
                 >
                   <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -513,8 +513,8 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                     </Link>
                   </header>
 
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <section className="space-y-4 rounded-2xl border border-border/60 bg-background p-5">
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <section className="space-y-4 rounded-2xl bg-background p-5 ring-1 ring-border/15">
                       <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground/80">
                         Add an owner
                       </h4>
@@ -526,7 +526,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                           </span>
                           <Input type="email" name="email" required placeholder="owner@example.com" />
                         </label>
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 lg:grid-cols-2">
                           <label className="text-sm text-muted-foreground">
                             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                               First name
@@ -540,7 +540,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                             <Input type="text" name="lastName" />
                           </label>
                         </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-3 lg:grid-cols-2">
                           <label className="text-sm text-muted-foreground">
                             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                               Share (%)
@@ -584,7 +584,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                       </form>
                     </section>
 
-                    <section className="space-y-3 rounded-2xl border border-border/60 bg-background p-5">
+                    <section className="space-y-3 rounded-2xl bg-background p-5 ring-1 ring-border/15">
                       <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground/80">
                         Current owners
                       </h4>
@@ -603,7 +603,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                               <li
                                 key={ownership.id}
                                 id={`owners-${property.id}-${ownership.id}`}
-                                className="rounded-xl border border-border/60 bg-background p-4 shadow-soft"
+                                className="rounded-xl bg-background p-4 shadow-soft ring-1 ring-border/15"
                               >
                                 <div className="flex flex-col gap-2 border-b border-border/60 pb-3 text-foreground md:flex-row md:items-center md:justify-between">
                                   <div>
@@ -618,14 +618,14 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                 </div>
 
                                 <div className="mt-3 space-y-4">
-                                  <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                                     {isEditing ? (
                                       <form
                                         action={setupUpdateOwnership.bind(null, ownership.id)}
                                         className="flex-1 space-y-4"
                                       >
                                         <input type="hidden" name="propertyId" value={property.id} />
-                                        <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="grid gap-3 lg:grid-cols-2">
                                           <label className="text-xs text-muted-foreground">
                                             <span className="mb-1 block uppercase tracking-wide">First name</span>
                                             <Input
@@ -687,8 +687,8 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         </div>
                                       </form>
                                     ) : (
-                                      <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                        <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
+                                      <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                        <div className="grid gap-2 text-xs text-muted-foreground lg:grid-cols-3">
                                           <span>
                                             Share: <strong>{formatShare(ownership.shareBps)}</strong>
                                           </span>
@@ -699,7 +699,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                             Role: <strong>{ownership.role}</strong>
                                           </span>
                                         </div>
-                                        <div className="flex gap-2 md:justify-end">
+                                        <div className="flex gap-2 lg:justify-end">
                                           <Link
                                             href={`/admin/setup?${focusQuery}&editOwner=${ownership.id}#owners-${property.id}-${ownership.id}`}
                                             className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
@@ -723,14 +723,14 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
 
                                   <form
                                     action={setupUpdateOwnershipPreferences.bind(null, ownership.id)}
-                                    className="grid gap-4 rounded-2xl border border-border/60 bg-background-muted px-4 py-4 sm:grid-cols-2"
+                                    className="grid gap-4 rounded-2xl bg-background-muted px-4 py-4 ring-1 ring-border/15 lg:grid-cols-2"
                                   >
                                     <input type="hidden" name="propertyId" value={property.id} />
                                     <fieldset className="space-y-3">
                                       <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                                         Booking participation
                                       </legend>
-                                      <label className="flex items-center gap-3 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground">
+                                      <label className="flex items-center gap-3 rounded-lg bg-background px-3 py-2 text-xs text-foreground shadow-[0_0_0_1px_rgba(148,163,184,0.2)]">
                                         <input
                                           type="checkbox"
                                           name="bookingApprover"
@@ -739,7 +739,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         />
                                         <span>Approve booking requests</span>
                                       </label>
-                                      <label className="flex items-center gap-3 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground">
+                                      <label className="flex items-center gap-3 rounded-lg bg-background px-3 py-2 text-xs text-foreground shadow-[0_0_0_1px_rgba(148,163,184,0.2)]">
                                         <input
                                           type="checkbox"
                                           name="autoSkipBookings"
@@ -748,7 +748,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         />
                                         <span>Skip booking approvals by default</span>
                                       </label>
-                                      <label className="flex items-center gap-3 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground">
+                                      <label className="flex items-center gap-3 rounded-lg bg-background px-3 py-2 text-xs text-foreground shadow-[0_0_0_1px_rgba(148,163,184,0.2)]">
                                         <input
                                           type="checkbox"
                                           name="notifyOnBookings"
@@ -762,7 +762,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                       <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
                                         Expense & maintenance
                                       </legend>
-                                      <label className="flex items-center gap-3 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground">
+                                      <label className="flex items-center gap-3 rounded-lg bg-background px-3 py-2 text-xs text-foreground shadow-[0_0_0_1px_rgba(148,163,184,0.2)]">
                                         <input
                                           type="checkbox"
                                           name="expenseApprover"
@@ -771,7 +771,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         />
                                         <span>Approve expenses</span>
                                       </label>
-                                      <label className="flex items-center gap-3 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground">
+                                      <label className="flex items-center gap-3 rounded-lg bg-background px-3 py-2 text-xs text-foreground shadow-[0_0_0_1px_rgba(148,163,184,0.2)]">
                                         <input
                                           type="checkbox"
                                           name="notifyOnExpenses"
@@ -780,7 +780,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         />
                                         <span>Notify about expense activity</span>
                                       </label>
-                                      <label className="flex items-center gap-3 rounded-lg border border-border/40 bg-background px-3 py-2 text-xs text-foreground">
+                                      <label className="flex items-center gap-3 rounded-lg bg-background px-3 py-2 text-xs text-foreground shadow-[0_0_0_1px_rgba(148,163,184,0.2)]">
                                         <input
                                           type="checkbox"
                                           name="blackoutManager"

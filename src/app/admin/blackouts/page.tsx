@@ -53,29 +53,31 @@ export default async function AdminBlackoutsPage() {
               </select>
             </label>
 
-            <label className="text-sm text-foreground">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Start date
-              </span>
-              <input
-                type="date"
-                name="startDate"
-                required
-                className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              />
-            </label>
+            <div className="grid gap-4 md:col-span-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <label className="text-sm text-foreground">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Start date
+                </span>
+                <input
+                  type="date"
+                  name="startDate"
+                  required
+                  className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                />
+              </label>
 
-            <label className="text-sm text-foreground">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                End date
-              </span>
-              <input
-                type="date"
-                name="endDate"
-                required
-                className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              />
-            </label>
+              <label className="text-sm text-foreground">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  End date
+                </span>
+                <input
+                  type="date"
+                  name="endDate"
+                  required
+                  className="w-full rounded-xl border border-default bg-background px-3 py-2 text-sm text-foreground shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                />
+              </label>
+            </div>
 
             <label className="md:col-span-2 text-sm text-foreground">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
