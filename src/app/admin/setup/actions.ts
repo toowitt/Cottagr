@@ -78,6 +78,14 @@ async function requirePropertyManager(propertyId: number) {
   return membership;
 }
 
+async function requirePropertyOwner(propertyId: number) {
+  const membership = await ensureActionPropertyMembership(propertyId);
+  if (membership.role !== 'OWNER') {
+    throw new ActionAuthError('Forbidden', 403);
+  }
+  return membership;
+}
+
 const CreateOrganizationSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z.string().optional(),
@@ -189,9 +197,9 @@ export async function setupCreateProperty(formData: FormData) {
     },
   });
 
-  const addManager = String(formData.get('addManager') ?? '').toLowerCase() === 'on';
+  const addOwner = String(formData.get('addOwner') ?? '').toLowerCase() === 'on';
 
-  if (addManager) {
+  if (addOwner) {
     const ownerProfile = await prisma.ownerProfile.upsert({
       where: { email: userRecord.email },
       update: {
@@ -215,13 +223,13 @@ export async function setupCreateProperty(formData: FormData) {
       },
       update: {
         userId: userRecord.id,
-        role: 'MANAGER',
+        role: 'OWNER',
       },
       create: {
         ownerProfileId: ownerProfile.id,
         propertyId: property.id,
         userId: userRecord.id,
-        role: 'MANAGER',
+        role: 'OWNER',
       },
     });
   }
@@ -260,7 +268,7 @@ export async function setupAddOwner(formData: FormData) {
   const propertyId = parsed.data.propertyId;
 
   try {
-    await requirePropertyManager(propertyId);
+    await requirePropertyOwner(propertyId);
 
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
@@ -324,7 +332,7 @@ export async function setupAddOwner(formData: FormData) {
     );
   } catch (error) {
     if (error instanceof ActionAuthError) {
-      redirect(`/admin/setup?error=${encodeURIComponent(error.message)}`);
+      redirect(`/admin/setup?error=${encodeURIComponent(error.message)}&focus=${encodeURIComponent(`owners-${propertyId}`)}`);
     }
     throw error;
   }
@@ -466,7 +474,7 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
   }
 
   try {
-    await requirePropertyManager(ownership.property.id);
+    await requirePropertyOwner(ownership.property.id);
 
     if (!ownership.ownerProfile) {
       redirect(
@@ -549,7 +557,9 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
     );
   } catch (error) {
     if (error instanceof ActionAuthError) {
-      redirect(`/admin/setup?error=${encodeURIComponent(error.message)}`);
+      redirect(`/admin/setup?error=${encodeURIComponent(error.message)}&focus=${encodeURIComponent(
+        `owners-${parsed.data.propertyId}`,
+      )}`);
     }
     throw error;
   }
@@ -579,7 +589,7 @@ export async function setupRemoveOwnership(ownershipId: number, formData: FormDa
   }
 
   try {
-    await requirePropertyManager(propertyId);
+    await requirePropertyOwner(propertyId);
     await prisma.ownership.delete({ where: { id: ownershipId } });
 
     revalidatePath('/admin/setup');

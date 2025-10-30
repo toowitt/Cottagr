@@ -381,11 +381,11 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                 <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200">
                   <input
                     type="checkbox"
-                    name="addManager"
+                    name="addOwner"
                     defaultChecked
                     className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
                   />
-                  <span>Add me as a manager so I can configure this property</span>
+                  <span>Add me as an owner so I can manage this property</span>
                 </label>
               ) : null}
 
