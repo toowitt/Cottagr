@@ -5,7 +5,6 @@ import { BookingStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { createServerSupabaseClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
-import { getUserMemberships } from '@/lib/auth/getMemberships';
 
 const currency = new Intl.NumberFormat('en-CA', {
   style: 'currency',
@@ -44,6 +43,28 @@ type UpcomingBlackout = Awaited<ReturnType<typeof prisma.blackout.findMany>>[num
   property: { id: number; name: string };
 };
 
+type DashboardOrganization = {
+  id: number;
+  name: string;
+  slug: string | null;
+  properties: Array<{
+    id: number;
+    name: string;
+    location: string | null;
+    nightlyRate: number;
+    minNights: number;
+    ownerships: Array<{
+      ownerProfileId: number;
+      ownerProfile: {
+        id: number;
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
+      } | null;
+    }>;
+  }>;
+};
+
 export default async function AdminDashboard() {
   const supabase = await createServerSupabaseClient();
   const {
@@ -62,59 +83,60 @@ export default async function AdminDashboard() {
     redirect('/login?redirect=/admin');
   }
 
-  const memberships = await getUserMemberships(userRecord.id);
-  const adminOrganizationIds = memberships
-    .filter((membership) => membership.role === 'OWNER_ADMIN')
-    .map((membership) => membership.organizationId);
+  const propertyMemberships = userRecord.memberships ?? [];
+  const propertyIds = Array.from(
+    new Set(propertyMemberships.map((membership) => membership.propertyId)),
+  );
 
-  if (adminOrganizationIds.length === 0) {
+  if (propertyIds.length === 0) {
     return (
       <div className="space-y-8">
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold text-white">Owner dashboard</h1>
           <p className="text-sm text-slate-300">
-            You&apos;ll see a summary of organizations, properties, expenses, and maintenance here once you create
-            your first organization.
+            Claim an invite or ask an admin to add you to a property to unlock your dashboard.
           </p>
         </header>
 
         <div className="rounded-3xl border border-emerald-500/40 bg-emerald-500/10 p-6 text-sm text-emerald-100">
-          <h2 className="text-lg font-semibold text-emerald-200">Get started</h2>
-          <p className="mt-2">Create an ownership group to unlock calendar, expenses, and knowledge hub tools.</p>
+          <h2 className="text-lg font-semibold text-emerald-200">Need access?</h2>
+          <p className="mt-2">Check the setup area for pending invitations or contact an existing owner.</p>
           <Link
             href="/admin/setup"
             className="mt-4 inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
           >
-            Go to setup
+            Check invites
           </Link>
         </div>
       </div>
     );
   }
 
-  const organizations = await prisma.organization.findMany({
-    where: { id: { in: adminOrganizationIds } },
-    orderBy: { name: 'asc' },
-    include: {
-      properties: {
-        orderBy: { name: 'asc' },
+  const properties = await prisma.property.findMany({
+    where: { id: { in: propertyIds } },
+    orderBy: [{ organizationId: 'asc' }, { name: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      location: true,
+      nightlyRate: true,
+      minNights: true,
+      organization: {
         select: {
           id: true,
           name: true,
-          location: true,
-          nightlyRate: true,
-          minNights: true,
-          ownerships: {
+          slug: true,
+        },
+      },
+      ownerships: {
+        select: {
+          ownerProfileId: true,
+          ownerProfile: {
             select: {
-              ownerId: true,
-              owner: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                },
-              },
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
         },
@@ -122,20 +144,77 @@ export default async function AdminDashboard() {
     },
   });
 
-  const propertyIds = organizations.flatMap((organization) => organization.properties.map((property) => property.id));
+  const organizationsMap = new Map<number, DashboardOrganization>();
+  const unassigned: DashboardOrganization = {
+    id: -1,
+    name: 'Unassigned properties',
+    slug: null,
+    properties: [],
+  };
+
+  for (const property of properties) {
+    const propertyForView = {
+      id: property.id,
+      name: property.name,
+      location: property.location,
+      nightlyRate: property.nightlyRate,
+      minNights: property.minNights,
+      ownerships: property.ownerships.map((ownership) => ({
+        ownerProfileId: ownership.ownerProfileId,
+        ownerProfile: ownership.ownerProfile
+          ? {
+            id: ownership.ownerProfile.id,
+            firstName: ownership.ownerProfile.firstName,
+            lastName: ownership.ownerProfile.lastName,
+            email: ownership.ownerProfile.email,
+          }
+          : null,
+      })),
+    };
+
+    if (property.organization) {
+      const orgId = property.organization.id;
+      let entry = organizationsMap.get(orgId);
+      if (!entry) {
+        entry = {
+          id: orgId,
+          name: property.organization.name,
+          slug: property.organization.slug,
+          properties: [],
+        };
+        organizationsMap.set(orgId, entry);
+      }
+      entry.properties.push(propertyForView);
+    } else {
+      unassigned.properties.push(propertyForView);
+    }
+  }
+
+  const organizations: DashboardOrganization[] = Array.from(organizationsMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  if (unassigned.properties.length > 0) {
+    organizations.push(unassigned);
+  }
+
+  const organizationCount = organizations.filter((org) => org.id !== -1).length;
+
   const ownerMap = new Map<number, { id: number; firstName: string | null; lastName: string | null; email: string }>();
 
   organizations.forEach((organization) => {
     organization.properties.forEach((property) => {
       property.ownerships.forEach((ownership) => {
-        if (ownership.owner) {
-          ownerMap.set(ownership.owner.id, {
-            id: ownership.owner.id,
-            firstName: ownership.owner.firstName ?? null,
-            lastName: ownership.owner.lastName ?? null,
-            email: ownership.owner.email,
-          });
+        const owner = ownership.ownerProfile;
+        if (!owner) {
+          return;
         }
+        ownerMap.set(owner.id, {
+          id: owner.id,
+          firstName: owner.firstName ?? null,
+          lastName: owner.lastName ?? null,
+          email: owner.email,
+        });
       });
     });
   });
@@ -280,7 +359,7 @@ export default async function AdminDashboard() {
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <DashboardStat label="Organizations" value={organizations.length} href="/admin/setup#organizations" />
+        <DashboardStat label="Organizations" value={organizationCount} href="/admin/setup#organizations" />
         <DashboardStat label="Properties" value={propertyIds.length} href="/admin/setup#properties" />
         <DashboardStat label="Owners" value={ownerMap.size} href="/admin/setup#owners" />
         <DashboardStat
@@ -412,7 +491,7 @@ export default async function AdminDashboard() {
                   ) : (
                     <ul className="space-y-3 text-sm text-slate-200">
                       {propertySummary.map((property) => {
-                        const owners = property.ownerships.map((ownership) => ownership.owner).filter(Boolean);
+                        const owners = property.ownerships.map((ownership) => ownership.ownerProfile).filter(Boolean);
                         return (
                           <li key={property.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                             <div className="flex items-start justify-between gap-3">

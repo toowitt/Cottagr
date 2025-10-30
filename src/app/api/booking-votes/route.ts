@@ -3,6 +3,7 @@ import { BookingStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BookingVoteSchema } from '@/lib/validation';
 import { formatCents } from '@/lib/money';
+import { getRouteUserRecord, assertPropertyAccess, RouteAuthError } from '@/lib/auth/routeAuth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,13 +17,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { bookingId, ownershipId, choice, rationale } = parsed.data;
+    const { bookingId, ownershipId: requestedOwnershipId, choice, rationale } = parsed.data;
+
+    const userRecord = await getRouteUserRecord();
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
         property: {
-          include: { ownerships: true },
+          include: {
+            ownerships: {
+              include: { ownerProfile: true },
+            },
+          },
         },
       },
     });
@@ -31,6 +38,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
+    const membership = assertPropertyAccess(userRecord, booking.propertyId);
+
     if (booking.status !== BookingStatus.pending) {
       return NextResponse.json(
         { error: 'This booking is no longer open for voting' },
@@ -38,9 +47,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ownership = booking.property.ownerships.find(
-      (record) => record.id === ownershipId
+    const ownershipFromMembership = booking.property.ownerships.find(
+      (record) => record.ownerProfileId === membership.ownerProfileId,
     );
+
+    if (!ownershipFromMembership) {
+      return NextResponse.json(
+        { error: 'You are not linked to an ownership share for this property' },
+        { status: 403 }
+      );
+    }
+
+    const ownership = ownershipFromMembership;
+    const ownershipId = ownership.id;
+
+    if (requestedOwnershipId && requestedOwnershipId !== ownership.id) {
+      return NextResponse.json(
+        { error: 'Mismatched ownership' },
+        { status: 400 }
+      );
+    }
 
     if (!ownership) {
       return NextResponse.json(
@@ -71,7 +97,9 @@ export async function POST(request: NextRequest) {
     const votes = await prisma.bookingVote.findMany({
       where: { bookingId },
       include: {
-        ownership: true,
+        ownership: {
+          include: { ownerProfile: true },
+        },
       },
     });
 
@@ -114,12 +142,12 @@ export async function POST(request: NextRequest) {
       where: { id: bookingId },
       include: {
         createdByOwnership: {
-          include: { owner: true },
+          include: { ownerProfile: true },
         },
         votes: {
           include: {
             ownership: {
-              include: { owner: true },
+              include: { ownerProfile: true },
             },
           },
           orderBy: { createdAt: 'asc' },
@@ -144,10 +172,10 @@ export async function POST(request: NextRequest) {
         createdAt: vote.createdAt.toISOString(),
         ownershipId: vote.ownershipId,
         owner: {
-          id: vote.ownership.owner.id,
-          firstName: vote.ownership.owner.firstName,
-          lastName: vote.ownership.owner.lastName,
-          email: vote.ownership.owner.email,
+          id: vote.ownership.ownerProfile.id,
+          firstName: vote.ownership.ownerProfile.firstName,
+          lastName: vote.ownership.ownerProfile.lastName,
+          email: vote.ownership.ownerProfile.email,
         },
         ownership: {
           role: vote.ownership.role,
@@ -165,6 +193,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(responsePayload, { status: 200 });
   } catch (error) {
+    if (error instanceof RouteAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('POST /api/booking-votes error:', error);
     return NextResponse.json(
       { error: 'Failed to record vote' },

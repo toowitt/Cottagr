@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 
 interface OwnerSummary {
   id: number
-  firstName: string
+  firstName: string | null
   lastName?: string | null
   email: string
 }
@@ -14,7 +14,7 @@ interface OwnershipSummary {
   role: string
   shareBps: number
   votingPower: number
-  owner: OwnerSummary
+  ownerProfile: OwnerSummary | null
 }
 
 interface Property {
@@ -35,7 +35,7 @@ interface ExpenseApproval {
   rationale: string | null
   createdAt: string
   ownershipId: number
-  owner: OwnerSummary
+  ownerProfile: OwnerSummary
 }
 
 interface ExpenseAllocation {
@@ -43,7 +43,7 @@ interface ExpenseAllocation {
   amountCents: number
   amountFormatted: string
   ownershipId: number
-  owner: OwnerSummary
+  ownerProfile: OwnerSummary
 }
 
 interface Expense {
@@ -52,12 +52,12 @@ interface Expense {
   createdByOwnershipId: number | null
   createdBy: {
     ownershipId: number
-    owner: OwnerSummary
+    ownerProfile: OwnerSummary | null
   } | null
   paidByOwnershipId: number | null
   paidBy: {
     ownershipId: number
-    owner: OwnerSummary
+    ownerProfile: OwnerSummary | null
   } | null
   vendorName: string | null
   category: string | null
@@ -516,19 +516,25 @@ export default function ExpensesPage() {
             <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-400">Ownership split</p>
               <ul className="mt-2 space-y-2 text-sm text-slate-300">
-                {selectedProperty.ownerships.map((ownership) => (
-                  <li
-                    key={ownership.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-                  >
-                    <span className="font-medium text-slate-100">
-                      {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
-                    </span>
-                  </li>
-                ))}
+                {selectedProperty.ownerships.map((ownership) => {
+                  const ownerProfile = ownership.ownerProfile;
+                  if (!ownerProfile) {
+                    return null;
+                  }
+                  return (
+                    <li
+                      key={ownership.id}
+                      className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
+                    >
+                      <span className="font-medium text-slate-100">
+                        {ownerProfile.firstName} {ownerProfile.lastName ?? ''}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
 
               <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -540,11 +546,17 @@ export default function ExpensesPage() {
                 className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               >
                 <option value="">Choose an owner…</option>
-                {selectedProperty.ownerships.map((ownership) => (
-                  <option key={ownership.id} value={ownership.id}>
-                    {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({ownership.role.toLowerCase()})
-                  </option>
-                ))}
+                {selectedProperty.ownerships.map((ownership) => {
+                  const ownerProfile = ownership.ownerProfile;
+                  if (!ownerProfile) {
+                    return null;
+                  }
+                  return (
+                    <option key={ownership.id} value={ownership.id}>
+                      {ownerProfile.firstName} {ownerProfile.lastName ?? ''} ({ownership.role.toLowerCase()})
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}
@@ -559,6 +571,10 @@ export default function ExpensesPage() {
             <ul className="mt-4 space-y-3 text-sm text-slate-300">
               {ownerBalances.map((entry) => {
                 const { ownership, paidCents, owedCents, netCents } = entry
+                const ownerProfile = ownership.ownerProfile
+                if (!ownerProfile) {
+                  return null
+                }
                 const owesOthers = netCents < 0
                 const badgeClass = owesOthers
                   ? 'bg-rose-500/10 text-rose-200 border border-rose-500/30'
@@ -573,7 +589,7 @@ export default function ExpensesPage() {
                   >
                     <div>
                       <p className="text-base font-medium text-slate-100">
-                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
+                        {ownerProfile.firstName} {ownerProfile.lastName ?? ''}
                       </p>
                       <p className="text-xs uppercase tracking-wide text-slate-500">
                         Share {(ownership.shareBps / 100).toFixed(2)}% · Paid {formatMoney(paidCents)} · Owes {formatMoney(owedCents)}
@@ -692,11 +708,17 @@ export default function ExpensesPage() {
                     className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
                     <option value="">Not recorded yet</option>
-                    {selectedProperty?.ownerships.map((ownership) => (
-                      <option key={ownership.id} value={ownership.id}>
-                        {ownership.owner.firstName} {ownership.owner.lastName ?? ''} ({(ownership.shareBps / 100).toFixed(2)}%)
-                      </option>
-                    ))}
+                    {selectedProperty?.ownerships.map((ownership) => {
+                      const ownerProfile = ownership.ownerProfile;
+                      if (!ownerProfile) {
+                        return null;
+                      }
+                      return (
+                        <option key={ownership.id} value={ownership.id}>
+                          {ownerProfile.firstName} {ownerProfile.lastName ?? ''} ({(ownership.shareBps / 100).toFixed(2)}%)
+                        </option>
+                      );
+                    })}
                   </select>
                   <p className="mt-1 text-xs text-slate-500">
                     Select who actually paid the bill to track running balances.
@@ -888,9 +910,10 @@ export default function ExpensesPage() {
                           <div>
                             <p className="text-xs uppercase tracking-wide text-slate-500">Logged by</p>
                             <p>
-                              {expense.createdBy ? (
+                              {expense.createdBy?.ownerProfile ? (
                                 <>
-                                  {expense.createdBy.owner.firstName} {expense.createdBy.owner.lastName ?? ''}
+                                  {expense.createdBy.ownerProfile.firstName}{' '}
+                                  {expense.createdBy.ownerProfile.lastName ?? ''}
                                 </>
                               ) : (
                                 '—'
@@ -900,9 +923,9 @@ export default function ExpensesPage() {
                           <div>
                             <p className="text-xs uppercase tracking-wide text-slate-500">Paid by</p>
                             <p>
-                              {expense.paidBy ? (
+                              {expense.paidBy?.ownerProfile ? (
                                 <>
-                                  {expense.paidBy.owner.firstName} {expense.paidBy.owner.lastName ?? ''}
+                                  {expense.paidBy.ownerProfile.firstName} {expense.paidBy.ownerProfile.lastName ?? ''}
                                 </>
                               ) : (
                                 'Not recorded'
@@ -924,7 +947,7 @@ export default function ExpensesPage() {
                                 className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
                               >
                                 <span>
-                                  {allocation.owner.firstName} {allocation.owner.lastName ?? ''}
+                                  {allocation.ownerProfile.firstName} {allocation.ownerProfile.lastName ?? ''}
                                 </span>
                                 <span className="font-medium text-slate-100">{allocation.amountFormatted}</span>
                               </li>
@@ -941,7 +964,7 @@ export default function ExpensesPage() {
                               {expense.approvals.map((approval) => (
                                 <li key={approval.id}>
                                   <span className="font-medium text-slate-100">
-                                    {approval.owner.firstName} {approval.owner.lastName ?? ''}
+                                    {approval.ownerProfile.firstName} {approval.ownerProfile.lastName ?? ''}
                                   </span>{' '}
                                   <span className="capitalize">{approval.choice}</span>
                                   {approval.rationale ? ` — ${approval.rationale}` : ''}
@@ -955,7 +978,11 @@ export default function ExpensesPage() {
                           <div className="border-t border-slate-800 pt-4">
                             <p className="mb-2 text-sm text-slate-400">
                               {activeOwnership
-                                ? `Voting as ${activeOwnership.owner.firstName} ${activeOwnership.owner.lastName ?? ''}`
+                                ? `Voting as ${
+                                    [activeOwnership.ownerProfile?.firstName, activeOwnership.ownerProfile?.lastName]
+                                      .filter(Boolean)
+                                      .join(' ') || activeOwnership.ownerProfile?.email || 'Owner'
+                                  }`
                                 : 'Select which owner you are to vote'}
                             </p>
                             <div className="flex flex-wrap gap-2">

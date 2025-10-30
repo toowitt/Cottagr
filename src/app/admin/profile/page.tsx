@@ -31,7 +31,7 @@ export default async function OwnerProfilePage({ searchParams }: ProfilePageProp
     redirect('/login?redirect=/admin/profile');
   }
 
-  const owner = await prisma.owner.findUnique({
+  const owner = await prisma.ownerProfile.findUnique({
     where: { email: user.email ?? '' },
     include: {
       ownerships: {

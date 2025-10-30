@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { getRouteUserRecord, assertPropertyAccess, RouteAuthError } from '@/lib/auth/routeAuth';
 
 // Zod schema for availability query
 const AvailabilityQuerySchema = z.object({
@@ -14,38 +15,26 @@ const AvailabilityQuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-
-  const propertyIdParam = searchParams.get('propertyId');
-  const fromParam = searchParams.get('from');
-  const toParam = searchParams.get('to');
-
-  // Input validation using Zod
-  let validatedData;
   try {
-    validatedData = AvailabilityQuerySchema.parse({
+    const { searchParams } = new URL(request.url);
+
+    const propertyIdParam = searchParams.get('propertyId');
+    const fromParam = searchParams.get('from');
+    const toParam = searchParams.get('to');
+
+    // Input validation using Zod
+    const validatedData = AvailabilityQuerySchema.parse({
       propertyId: propertyIdParam ? parseInt(propertyIdParam) : undefined,
       from: fromParam,
       to: toParam,
     });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues?.[0]?.message ?? 'Invalid request' },
-        { status: 400 }
-      );
-    }
 
-    return NextResponse.json(
-      { error: 'Invalid request parameters' },
-      { status: 400 }
-    );
-  }
+    const userRecord = await getRouteUserRecord();
+    assertPropertyAccess(userRecord, validatedData.propertyId);
 
-  const fromDate = new Date(validatedData.from);
-  const toDate = new Date(validatedData.to);
+    const fromDate = new Date(validatedData.from);
+    const toDate = new Date(validatedData.to);
 
-  try {
     // Fetch bookings and blackouts that overlap with the date range
     const [bookings, blackouts] = await Promise.all([
       prisma.booking.findMany({
@@ -146,6 +135,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ days, items });
 
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.issues?.[0]?.message ?? 'Invalid request' },
+        { status: 400 }
+      );
+    }
+    if (error instanceof RouteAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('Error fetching availability:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

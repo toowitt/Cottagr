@@ -3,12 +3,12 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib/supabase/server';
-import { ensureUserRecord } from '@/lib/auth/ensureUser';
-import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { prisma } from '@/lib/prisma';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { APP_URL } from '@/lib/auth/config';
+import { getActionUserRecord, ensureActionPropertyMembership, ActionAuthError } from '@/lib/auth/actionAuth';
+import { isManagerRole } from '@/lib/auth/propertyMembership';
+import type { PropertyMembershipRole } from '@prisma/client';
 
 const inviteSchema = z.object({
   propertyId: z.coerce.number().int().positive().optional(),
@@ -17,34 +17,15 @@ const inviteSchema = z.object({
   expiresInDays: z.coerce.number().int().min(1).max(30).default(7),
 });
 
-function resolveAllowedOrganizationIds(
-  memberships: Array<{ organizationId: number; role: 'OWNER_ADMIN' | 'OWNER' | 'GUEST_VIEWER' }>,
-) {
-  return new Set(memberships.filter((item) => item.role === 'OWNER_ADMIN').map((item) => item.organizationId));
-}
-
 export async function sendGuestInvite(formData: FormData) {
-  const supabase = await createServerSupabaseActionClient();
-  const {
-    data: userData,
-    error: authError,
-  } = await supabase.auth.getUser();
-  handleSupabaseAuthError(authError);
-  const user = userData?.user ?? null;
-
-  if (!user) {
-    redirect('/login?redirect=/admin/guests');
-  }
-
-  const userRecord = await ensureUserRecord(user);
-  if (!userRecord) {
-    redirect('/login?redirect=/admin/guests');
-  }
-
-  const memberships = await getUserMemberships(userRecord.id);
-  const allowedOrgIds = resolveAllowedOrganizationIds(memberships);
-  if (allowedOrgIds.size === 0) {
-    redirect('/admin/guests?error=You%20do%20not%20have%20permission%20to%20send%20invites');
+  let userRecord;
+  try {
+    userRecord = await getActionUserRecord();
+  } catch (error) {
+    if (error instanceof ActionAuthError) {
+      redirect('/login?redirect=/admin/guests');
+    }
+    throw error;
   }
 
   const parsed = inviteSchema.safeParse({
@@ -64,22 +45,27 @@ export async function sendGuestInvite(formData: FormData) {
     redirect(`/admin/guests?error=${encodeURIComponent(msg)}`);
   }
 
+  const memberships = userRecord.memberships ?? [];
+  const manageablePropertyIds = memberships
+    .filter((membership) => isManagerRole(membership.role as PropertyMembershipRole))
+    .map((membership) => membership.propertyId);
+
   let propertyId: number | null = null;
   if (parsed.data.propertyId) {
-    const property = await prisma.property.findUnique({
-      where: { id: parsed.data.propertyId },
-      select: { id: true, organizationId: true, name: true },
-    });
-
-    if (!property) {
-      redirect('/admin/guests?error=Property%20not%20found');
+    try {
+      const membership = await ensureActionPropertyMembership(parsed.data.propertyId);
+      if (!isManagerRole(membership.role)) {
+        throw new ActionAuthError('Forbidden', 403);
+      }
+      propertyId = membership.propertyId;
+    } catch (error) {
+      if (error instanceof ActionAuthError) {
+        redirect(`/admin/guests?error=${encodeURIComponent(error.message)}`);
+      }
+      throw error;
     }
-
-    if (!property.organizationId || !allowedOrgIds.has(property.organizationId)) {
-      redirect('/admin/guests?error=You%20do%20not%20manage%20that%20property');
-    }
-
-    propertyId = property.id;
+  } else if (manageablePropertyIds.length === 0) {
+    redirect('/admin/guests?error=No%20eligible%20properties');
   }
 
   const serviceClient = createSupabaseServiceClient();
@@ -127,27 +113,13 @@ export async function sendGuestInvite(formData: FormData) {
 }
 
 export async function markInviteConsumed(inviteId: number) {
-  const supabase = await createServerSupabaseActionClient();
-  const {
-    data: userData,
-    error: authError,
-  } = await supabase.auth.getUser();
-  handleSupabaseAuthError(authError);
-  const user = userData?.user ?? null;
-
-  if (!user) {
-    redirect('/login?redirect=/admin/guests');
-  }
-
-  const userRecord = await ensureUserRecord(user);
-  if (!userRecord) {
-    redirect('/login?redirect=/admin/guests');
-  }
-
-  const memberships = await getUserMemberships(userRecord.id);
-  const allowedOrgIds = resolveAllowedOrganizationIds(memberships);
-  if (allowedOrgIds.size === 0) {
-    redirect('/admin/guests?error=No%20access');
+  try {
+    await getActionUserRecord();
+  } catch (error) {
+    if (error instanceof ActionAuthError) {
+      redirect('/login?redirect=/admin/guests');
+    }
+    throw error;
   }
 
   const invite = await prisma.guestInvite.findUnique({
@@ -161,8 +133,18 @@ export async function markInviteConsumed(inviteId: number) {
     redirect('/admin/guests?error=Invite%20not%20found');
   }
 
-  if (invite.property?.organizationId && !allowedOrgIds.has(invite.property.organizationId)) {
-    redirect('/admin/guests?error=You%20cannot%20modify%20that%20invite');
+  if (invite.propertyId) {
+    try {
+      const membership = await ensureActionPropertyMembership(invite.propertyId);
+      if (!isManagerRole(membership.role)) {
+        throw new ActionAuthError('Forbidden', 403);
+      }
+    } catch (error) {
+      if (error instanceof ActionAuthError) {
+        redirect(`/admin/guests?error=${encodeURIComponent(error.message)}`);
+      }
+      throw error;
+    }
   }
 
   await prisma.guestInvite.update({

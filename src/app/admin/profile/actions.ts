@@ -3,9 +3,8 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib/supabase/server';
-import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { prisma } from '@/lib/prisma';
+import { getActionUserRecord, ensureActionPropertyMembership, ActionAuthError } from '@/lib/auth/actionAuth';
 
 const updatePreferencesSchema = z.object({
   ownershipId: z.coerce.number().int().positive(),
@@ -22,21 +21,14 @@ function parseCheckbox(value: FormDataEntryValue | null) {
 }
 
 export async function updateOwnershipPreferences(formData: FormData) {
-  const supabase = await createServerSupabaseActionClient();
-  const {
-    data: userData,
-    error: authError,
-  } = await supabase.auth.getUser();
-  handleSupabaseAuthError(authError);
-  const user = userData?.user ?? null;
-
-  if (!user) {
-    redirect('/login?redirect=/admin/profile');
-  }
-
-  const userRecord = await ensureUserRecord(user);
-  if (!userRecord) {
-    redirect('/login?redirect=/admin/profile');
+  let userRecord;
+  try {
+    userRecord = await getActionUserRecord();
+  } catch (error) {
+    if (error instanceof ActionAuthError) {
+      redirect('/login?redirect=/admin/profile');
+    }
+    throw error;
   }
 
   const parsed = updatePreferencesSchema.safeParse({
@@ -57,37 +49,50 @@ export async function updateOwnershipPreferences(formData: FormData) {
   const ownership = await prisma.ownership.findUnique({
     where: { id: parsed.data.ownershipId },
     include: {
-      owner: true,
+      ownerProfile: true,
+      property: {
+        select: { id: true },
+      },
     },
   });
 
-  if (!ownership || !ownership.owner) {
+  if (!ownership || !ownership.ownerProfile || !ownership.property) {
     redirect('/admin/profile?error=Ownership%20not%20found');
   }
 
-  if (ownership.owner.userId && ownership.owner.userId !== userRecord.id) {
-    redirect('/admin/profile?error=You%20cannot%20update%20another%20owner');
-  }
+  try {
+    const membership = await ensureActionPropertyMembership(ownership.property.id);
+    if (membership.ownerProfileId !== ownership.ownerProfileId) {
+      redirect('/admin/profile?error=You%20cannot%20update%20another%20owner');
+    }
 
-  if (!ownership.owner.userId) {
-    await prisma.owner.update({
-      where: { id: ownership.ownerId },
-      data: { userId: userRecord.id },
+    if (!ownership.ownerProfile.userId) {
+      await prisma.ownerProfile.update({
+        where: { id: ownership.ownerProfileId },
+        data: { userId: userRecord.id },
+      });
+    } else if (ownership.ownerProfile.userId !== userRecord.id) {
+      redirect('/admin/profile?error=You%20cannot%20update%20another%20owner');
+    }
+
+    await prisma.ownership.update({
+      where: { id: ownership.id },
+      data: {
+        bookingApprover: parsed.data.bookingApprover,
+        expenseApprover: parsed.data.expenseApprover,
+        blackoutManager: parsed.data.blackoutManager,
+        autoSkipBookings: parsed.data.autoSkipBookings,
+        notifyOnBookings: parsed.data.notifyOnBookings,
+        notifyOnExpenses: parsed.data.notifyOnExpenses,
+      },
     });
+
+    revalidatePath('/admin/profile');
+    redirect('/admin/profile?success=preferences-saved');
+  } catch (error) {
+    if (error instanceof ActionAuthError) {
+      redirect('/admin/profile?error=' + encodeURIComponent(error.message));
+    }
+    throw error;
   }
-
-  await prisma.ownership.update({
-    where: { id: ownership.id },
-    data: {
-      bookingApprover: parsed.data.bookingApprover,
-      expenseApprover: parsed.data.expenseApprover,
-      blackoutManager: parsed.data.blackoutManager,
-      autoSkipBookings: parsed.data.autoSkipBookings,
-      notifyOnBookings: parsed.data.notifyOnBookings,
-      notifyOnExpenses: parsed.data.notifyOnExpenses,
-    },
-  });
-
-  revalidatePath('/admin/profile');
-  redirect('/admin/profile?success=preferences-saved');
 }
