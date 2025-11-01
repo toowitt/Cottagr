@@ -12,12 +12,12 @@ export const bookingInclude = {
     },
   },
   createdByOwnership: {
-    include: { owner: true },
+    include: { ownerProfile: true },
   },
   votes: {
     include: {
       ownership: {
-        include: { owner: true },
+        include: { ownerProfile: true },
       },
     },
     orderBy: { createdAt: 'asc' as const },
@@ -25,7 +25,7 @@ export const bookingInclude = {
   participants: {
     include: {
       ownership: {
-        include: { owner: true },
+        include: { ownerProfile: true },
       },
       user: {
         select: {
@@ -41,7 +41,7 @@ export const bookingInclude = {
   timeline: {
     include: {
       actorOwnership: {
-        include: { owner: true },
+        include: { ownerProfile: true },
       },
       actorUser: {
         select: {
@@ -74,12 +74,12 @@ const serializeOwner = (ownership: BookingWithRelations['createdByOwnership'] | 
       role: ownership.role,
       shareBps: ownership.shareBps,
       votingPower: ownership.votingPower,
-      owner: ownership.owner
+      ownerProfile: ownership.ownerProfile
         ? {
-          id: ownership.owner.id,
-          email: ownership.owner.email,
-          firstName: ownership.owner.firstName,
-          lastName: ownership.owner.lastName,
+          id: ownership.ownerProfile.id,
+          email: ownership.ownerProfile.email,
+          firstName: ownership.ownerProfile.firstName,
+          lastName: ownership.ownerProfile.lastName,
         }
         : null,
     }
@@ -125,12 +125,12 @@ export const serializeBooking = (booking: BookingWithRelations) => {
       rationale: vote.rationale,
       createdAt: vote.createdAt.toISOString(),
       ownershipId: vote.ownershipId,
-      owner: vote.ownership.owner
+      ownerProfile: vote.ownership.ownerProfile
         ? {
-          id: vote.ownership.owner.id,
-          firstName: vote.ownership.owner.firstName,
-          lastName: vote.ownership.owner.lastName,
-          email: vote.ownership.owner.email,
+          id: vote.ownership.ownerProfile.id,
+          firstName: vote.ownership.ownerProfile.firstName,
+          lastName: vote.ownership.ownerProfile.lastName,
+          email: vote.ownership.ownerProfile.email,
         }
         : null,
       ownership: {
@@ -159,12 +159,12 @@ export const serializeBooking = (booking: BookingWithRelations) => {
           role: participant.ownership.role,
           shareBps: participant.ownership.shareBps,
           votingPower: participant.ownership.votingPower,
-          owner: participant.ownership.owner
+          ownerProfile: participant.ownership.ownerProfile
             ? {
-              id: participant.ownership.owner.id,
-              email: participant.ownership.owner.email,
-              firstName: participant.ownership.owner.firstName,
-              lastName: participant.ownership.owner.lastName,
+              id: participant.ownership.ownerProfile.id,
+              email: participant.ownership.ownerProfile.email,
+              firstName: participant.ownership.ownerProfile.firstName,
+              lastName: participant.ownership.ownerProfile.lastName,
             }
             : null,
         }
@@ -191,12 +191,12 @@ export const serializeBooking = (booking: BookingWithRelations) => {
             role: event.actorOwnership.role,
             shareBps: event.actorOwnership.shareBps,
             votingPower: event.actorOwnership.votingPower,
-            owner: event.actorOwnership.owner
+            ownerProfile: event.actorOwnership.ownerProfile
               ? {
-                id: event.actorOwnership.owner.id,
-                email: event.actorOwnership.owner.email,
-                firstName: event.actorOwnership.owner.firstName,
-                lastName: event.actorOwnership.owner.lastName,
+                id: event.actorOwnership.ownerProfile.id,
+                email: event.actorOwnership.ownerProfile.email,
+                firstName: event.actorOwnership.ownerProfile.firstName,
+                lastName: event.actorOwnership.ownerProfile.lastName,
               }
               : null,
           }

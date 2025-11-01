@@ -79,7 +79,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
           ownerships: {
             orderBy: { createdAt: 'asc' },
             include: {
-              owner: true,
+              ownerProfile: true,
             },
           },
         },
@@ -377,6 +377,18 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                 />
               </label>
 
+              {!propertyToEdit ? (
+                <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200">
+                  <input
+                    type="checkbox"
+                    name="addOwner"
+                    defaultChecked
+                    className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
+                  />
+                  <span>Add me as an owner so I can manage this property</span>
+                </label>
+              ) : null}
+
               <label className="md:col-span-2 text-sm text-slate-300">
                 <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Description</span>
                 <textarea
@@ -635,9 +647,9 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                 <div className="flex flex-col gap-2 border-b border-slate-800 pb-3 text-slate-100 md:flex-row md:items-center md:justify-between">
                                   <div>
                                     <p className="font-semibold">
-                                      {ownership.owner.firstName} {ownership.owner.lastName ?? ''}
+                                      {ownership.ownerProfile.firstName} {ownership.ownerProfile.lastName ?? ''}
                                     </p>
-                                    <p className="text-xs text-slate-400">{ownership.owner.email}</p>
+                                    <p className="text-xs text-slate-400">{ownership.ownerProfile.email}</p>
                                   </div>
                                   <div className="text-xs text-slate-400">
                                     Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
@@ -656,7 +668,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         <input
                                           type="text"
                                           name="firstName"
-                                          defaultValue={ownership.owner.firstName ?? ''}
+                                          defaultValue={ownership.ownerProfile.firstName ?? ''}
                                           className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                           required
                                         />
@@ -666,7 +678,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         <input
                                           type="text"
                                           name="lastName"
-                                          defaultValue={ownership.owner.lastName ?? ''}
+                                          defaultValue={ownership.ownerProfile.lastName ?? ''}
                                           className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                         />
                                       </label>
@@ -675,7 +687,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                         <input
                                           type="email"
                                           name="email"
-                                          defaultValue={ownership.owner.email}
+                                          defaultValue={ownership.ownerProfile.email}
                                           className="w-full rounded-lg border border-slate-800 bg-slate-950/70 px-2 py-1 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                           required
                                         />

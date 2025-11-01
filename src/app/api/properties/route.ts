@@ -1,14 +1,23 @@
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getRouteUserRecord, getAccessiblePropertyIds, RouteAuthError } from '@/lib/auth/routeAuth'
 
 export async function GET() {
   try {
+    const userRecord = await getRouteUserRecord()
+    const accessiblePropertyIds = getAccessiblePropertyIds(userRecord)
+
+    if (accessiblePropertyIds.size === 0) {
+      return NextResponse.json([])
+    }
+
     const properties = await prisma.property.findMany({
+      where: { id: { in: Array.from(accessiblePropertyIds) } },
       include: {
         ownerships: {
           include: {
-            owner: {
+            ownerProfile: {
               select: {
                 id: true,
                 firstName: true,
@@ -35,12 +44,15 @@ export async function GET() {
         role: ownership.role,
         shareBps: ownership.shareBps,
         votingPower: ownership.votingPower,
-        owner: ownership.owner,
+        ownerProfile: ownership.ownerProfile,
       })),
     }))
 
     return NextResponse.json(payload)
-  } catch {
+  } catch (error) {
+    if (error instanceof RouteAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 })
   }
 }

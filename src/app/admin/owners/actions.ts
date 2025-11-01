@@ -4,10 +4,12 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { ensureActionPropertyMembership, ActionAuthError } from '@/lib/auth/actionAuth';
+import { isManagerRole } from '@/lib/auth/propertyMembership';
 
 const assignExistingOwnerSchema = z.object({
   propertyId: z.coerce.number().int().positive(),
-  ownerId: z.coerce.number().int().positive(),
+  ownerProfileId: z.coerce.number().int().positive(),
   shareBps: z.coerce.number().int().min(0).max(10_000),
   votingPower: z.coerce.number().int().min(0),
 });
@@ -47,6 +49,39 @@ async function ensureShareCapacity(propertyId: number, additionalShare: number) 
   return true;
 }
 
+async function requirePropertyManager(propertyId: number) {
+  const membership = await ensureActionPropertyMembership(propertyId);
+  if (!isManagerRole(membership.role)) {
+    throw new ActionAuthError('Forbidden', 403);
+  }
+  return membership;
+}
+
+function redirectWithError(message: string, propertyId: number | undefined): never {
+  redirect(
+    buildRedirect('/admin/owners', {
+      error: message,
+      propertyId,
+    }),
+  );
+}
+
+function redirectWithSuccess(message: string, propertyId: number): never {
+  redirect(
+    buildRedirect('/admin/owners', {
+      success: message,
+      propertyId,
+    }),
+  );
+}
+
+function handleActionError(error: unknown, propertyId: number | undefined): never {
+  if (error instanceof ActionAuthError) {
+    redirectWithError(error.message, propertyId);
+  }
+  throw error instanceof Error ? error : new Error('Unexpected error');
+}
+
 export async function assignExistingOwner(formData: FormData) {
   const parsed = assignExistingOwnerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -59,48 +94,39 @@ export async function assignExistingOwner(formData: FormData) {
     );
   }
 
-  const { propertyId, ownerId, shareBps, votingPower } = parsed.data;
-
-  const hasCapacity = await ensureShareCapacity(propertyId, shareBps);
-  if (!hasCapacity) {
-    redirect(
-      buildRedirect('/admin/owners', {
-        error: 'Adding this share exceeds 100%',
-        propertyId,
-      }),
-    );
-  }
+  const { propertyId, ownerProfileId, shareBps, votingPower } = parsed.data;
 
   try {
-    await prisma.ownership.create({
-      data: {
-        propertyId,
-        ownerId,
-        shareBps,
-        votingPower,
-      },
-    });
+    await requirePropertyManager(propertyId);
+
+    const hasCapacity = await ensureShareCapacity(propertyId, shareBps);
+    if (!hasCapacity) {
+      redirectWithError('Adding this share exceeds 100%', propertyId);
+    }
+
+    try {
+      await prisma.ownership.create({
+        data: {
+          propertyId,
+          ownerProfileId,
+          shareBps,
+          votingPower,
+        },
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.includes('Unique constraint failed')
+          ? 'That owner is already assigned to this property.'
+          : 'Could not assign owner. Please try again.';
+
+      redirectWithError(message, propertyId);
+    }
+
+    revalidatePath('/admin/owners');
+    redirectWithSuccess('assigned', propertyId);
   } catch (error) {
-    const message =
-      error instanceof Error && error.message.includes('Unique constraint failed')
-        ? 'That owner is already assigned to this property.'
-        : 'Could not assign owner. Please try again.';
-
-    redirect(
-      buildRedirect('/admin/owners', {
-        error: message,
-        propertyId,
-      }),
-    );
+    handleActionError(error, propertyId);
   }
-
-  revalidatePath('/admin/owners');
-  redirect(
-    buildRedirect('/admin/owners', {
-      success: 'assigned',
-      propertyId,
-    }),
-  );
 }
 
 export async function createOwnerAndAssign(formData: FormData) {
@@ -117,65 +143,56 @@ export async function createOwnerAndAssign(formData: FormData) {
 
   const { propertyId, firstName, lastName, email, shareBps, votingPower } = parsed.data;
 
-  const hasCapacity = await ensureShareCapacity(propertyId, shareBps);
-  if (!hasCapacity) {
-    redirect(
-      buildRedirect('/admin/owners', {
-        error: 'Adding this share exceeds 100%',
-        propertyId,
-      }),
-    );
-  }
+  try {
+    await requirePropertyManager(propertyId);
 
-  const normalizedLastName = lastName?.trim() || null;
+    const hasCapacity = await ensureShareCapacity(propertyId, shareBps);
+    if (!hasCapacity) {
+      redirectWithError('Adding this share exceeds 100%', propertyId);
+    }
 
-  const existingOwner = await prisma.owner.findUnique({ where: { email } });
-  const owner = existingOwner
-    ? await prisma.owner.update({
-        where: { id: existingOwner.id },
+    const normalizedLastName = lastName?.trim() || null;
+
+    const existingOwner = await prisma.ownerProfile.findUnique({ where: { email } });
+    const owner = existingOwner
+      ? await prisma.ownerProfile.update({
+          where: { id: existingOwner.id },
+          data: {
+            firstName,
+            lastName: normalizedLastName,
+          },
+        })
+      : await prisma.ownerProfile.create({
+          data: {
+            email,
+            firstName,
+            lastName: normalizedLastName,
+          },
+        });
+
+    try {
+      await prisma.ownership.create({
         data: {
-          firstName,
-          lastName: normalizedLastName,
-        },
-      })
-    : await prisma.owner.create({
-        data: {
-          email,
-          firstName,
-          lastName: normalizedLastName,
+          propertyId,
+          ownerProfileId: owner.id,
+          shareBps,
+          votingPower,
         },
       });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.includes('Unique constraint failed')
+          ? 'That owner is already assigned to this property.'
+          : 'Could not assign owner. Please try again.';
 
-  try {
-    await prisma.ownership.create({
-      data: {
-        propertyId,
-        ownerId: owner.id,
-        shareBps,
-        votingPower,
-      },
-    });
+      redirectWithError(message, propertyId);
+    }
+
+    revalidatePath('/admin/owners');
+    redirectWithSuccess('created', propertyId);
   } catch (error) {
-    const message =
-      error instanceof Error && error.message.includes('Unique constraint failed')
-        ? 'That owner is already assigned to this property.'
-        : 'Could not assign owner. Please try again.';
-
-    redirect(
-      buildRedirect('/admin/owners', {
-        error: message,
-        propertyId,
-      }),
-    );
+    handleActionError(error, propertyId);
   }
-
-  revalidatePath('/admin/owners');
-  redirect(
-    buildRedirect('/admin/owners', {
-      success: 'created',
-      propertyId,
-    }),
-  );
 }
 
 export async function deleteOwnership(formData: FormData) {
@@ -183,20 +200,27 @@ export async function deleteOwnership(formData: FormData) {
   const propertyId = Number(formData.get('propertyId')) || undefined;
 
   if (!id) {
-    redirect(
-      buildRedirect('/admin/owners', {
-        error: 'Missing ownership id',
-        propertyId,
-      }),
-    );
+    redirectWithError('Missing ownership id', propertyId);
   }
 
-  await prisma.ownership.delete({ where: { id } });
-  revalidatePath('/admin/owners');
-  redirect(
-    buildRedirect('/admin/owners', {
-      success: 'deleted',
-      propertyId,
-    }),
-  );
+  const ownership = await prisma.ownership.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      propertyId: true,
+    },
+  });
+
+  if (!ownership) {
+    redirectWithError('Ownership not found', propertyId);
+  }
+
+  try {
+    await requirePropertyManager(ownership.propertyId);
+    await prisma.ownership.delete({ where: { id: ownership.id } });
+    revalidatePath('/admin/owners');
+    redirectWithSuccess('deleted', ownership.propertyId);
+  } catch (error) {
+    handleActionError(error, ownership.propertyId);
+  }
 }

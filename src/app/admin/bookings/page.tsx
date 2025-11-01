@@ -9,12 +9,12 @@ interface PropertyOwnership {
   role: string;
   shareBps: number;
   votingPower: number;
-  owner: {
+  ownerProfile: {
     id: number;
     firstName: string | null;
     lastName: string | null;
     email: string;
-  };
+  } | null;
 }
 
 interface Property {
@@ -40,7 +40,7 @@ interface BookingOwnerInfo {
   role: string;
   shareBps: number;
   votingPower: number;
-  owner: BookingUser | null;
+  ownerProfile: BookingUser | null;
 }
 
 interface BookingParticipantInfo {
@@ -109,7 +109,7 @@ interface Booking {
     ownershipId: number;
     createdAt: string;
     rationale: string | null;
-    owner: BookingUser | null;
+    ownerProfile: BookingUser | null;
     ownership: {
       role: string;
       votingPower: number;
@@ -616,13 +616,17 @@ export default function AdminBookingsPage() {
       .map((ownershipId) => {
         const ownership = property.ownerships.find((item) => item.id === ownershipId);
         if (!ownership) return null;
+        const ownerProfile = ownership.ownerProfile;
+        if (!ownerProfile) {
+          return null;
+        }
         const ownerName =
-          [ownership.owner.firstName, ownership.owner.lastName].filter(Boolean).join(' ') || ownership.owner.email;
+          [ownerProfile.firstName, ownerProfile.lastName].filter(Boolean).join(' ') || ownerProfile.email;
         return {
           role: 'OWNER' as const,
           ownershipId: ownership.id,
           displayName: ownerName,
-          email: ownership.owner.email,
+          email: ownerProfile.email,
         };
       })
       .filter(Boolean);
@@ -891,9 +895,12 @@ export default function AdminBookingsPage() {
               >
                 <option value="">Select owner</option>
                 {selectedFilterProperty?.ownerships.map((ownership) => {
+                  const ownerProfile = ownership.ownerProfile;
+                  if (!ownerProfile) {
+                    return null;
+                  }
                   const ownerName =
-                    [ownership.owner.firstName, ownership.owner.lastName].filter(Boolean).join(' ') ||
-                    ownership.owner.email;
+                    [ownerProfile.firstName, ownerProfile.lastName].filter(Boolean).join(' ') || ownerProfile.email;
                   return (
                     <option key={ownership.id} value={ownership.id}>
                       {ownerName} · Power {ownership.votingPower}
@@ -1179,9 +1186,13 @@ export default function AdminBookingsPage() {
               {selectedComposerProperty && selectedComposerProperty.ownerships.length > 0 ? (
                 <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
                   {selectedComposerProperty.ownerships.map((ownership) => {
+                    const ownerProfile = ownership.ownerProfile;
+                    if (!ownerProfile) {
+                      return null;
+                    }
                     const ownerName =
-                      [ownership.owner.firstName, ownership.owner.lastName].filter(Boolean).join(' ') ||
-                      ownership.owner.email;
+                      [ownerProfile.firstName, ownerProfile.lastName].filter(Boolean).join(' ') ||
+                      ownerProfile.email;
                     const checked = requestFormData.ownershipIds.includes(ownership.id);
 
                     return (
@@ -1194,7 +1205,7 @@ export default function AdminBookingsPage() {
                         />
                         <span className="flex-1">
                           <span className="font-medium text-white">{ownerName}</span>
-                          <span className="ml-2 text-xs text-slate-500">{ownership.owner.email}</span>
+                          <span className="ml-2 text-xs text-slate-500">{ownerProfile.email}</span>
                         </span>
                       </label>
                     );
@@ -1477,7 +1488,7 @@ export default function AdminBookingsPage() {
                                   ) : (
                                     <div className="space-y-3">
                                       {booking.participants.map((participant) => {
-                                        const ownershipOwner = participant.ownership?.owner;
+                                        const ownershipOwner = participant.ownership?.ownerProfile;
                                         const roleLabel = roleLabels[participant.role] ?? participant.role;
                                         const ownerName = ownershipOwner
                                           ? [ownershipOwner.firstName, ownershipOwner.lastName].filter(Boolean).join(' ') || ownershipOwner.email
@@ -1544,7 +1555,7 @@ export default function AdminBookingsPage() {
                                       {booking.timeline.map((event) => {
                                         const actorUser = event.actor.user;
                                         const actorOwnership = event.actor.ownership;
-                                        const actorOwner = actorOwnership?.owner;
+                                        const actorOwner = actorOwnership?.ownerProfile;
                                         const actorName =
                                           (actorUser
                                             ? [actorUser.firstName, actorUser.lastName].filter(Boolean).join(' ') || actorUser.email

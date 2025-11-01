@@ -8,6 +8,7 @@ import {
   coerceParticipants,
   serializeBooking,
 } from './utils';
+import { getRouteUserRecord, getAccessiblePropertyIds, RouteAuthError } from '@/lib/auth/routeAuth';
 
 // Overlap: [aStart, aEnd) intersects [bStart, bEnd)
 const overlaps = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) =>
@@ -56,14 +57,30 @@ export async function GET(request: NextRequest) {
 
     const { propertyId } = parsed.data;
 
+    const userRecord = await getRouteUserRecord();
+    const accessiblePropertyIds = getAccessiblePropertyIds(userRecord);
+
+    if (propertyId) {
+      if (!accessiblePropertyIds.has(propertyId)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } else if (accessiblePropertyIds.size === 0) {
+      return NextResponse.json({ bookings: [] });
+    }
+
     const bookings = await db.booking.findMany({
-      where: propertyId ? { propertyId } : undefined,
+      where: propertyId
+        ? { propertyId }
+        : { propertyId: { in: Array.from(accessiblePropertyIds) } },
       include: bookingInclude,
       orderBy: { startDate: 'asc' },
     });
 
     return NextResponse.json({ bookings: bookings.map(serializeBooking) });
   } catch (err) {
+    if (err instanceof RouteAuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('GET /api/bookings error:', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to fetch bookings' },
@@ -104,17 +121,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userRecord = await getRouteUserRecord();
+    const accessiblePropertyIds = getAccessiblePropertyIds(userRecord);
+
     const property = await db.property.findUnique({
       where: { id: propertyId },
       include: {
         ownerships: {
-          include: { owner: true },
+          include: { ownerProfile: true },
         },
       },
     });
 
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+    }
+
+    if (!accessiblePropertyIds.has(propertyId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const start = new Date(startDate);
@@ -169,8 +193,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!resolvedRequestorUserId && requestorOwnershipRecord?.owner.userId) {
-      resolvedRequestorUserId = requestorOwnershipRecord.owner.userId;
+    if (!resolvedRequestorUserId && requestorOwnershipRecord?.ownerProfile?.userId) {
+      resolvedRequestorUserId = requestorOwnershipRecord.ownerProfile.userId;
     }
 
     for (const participant of participants) {
@@ -192,16 +216,16 @@ export async function POST(request: NextRequest) {
       requestorOwnershipRecord
     ) {
       const displayName =
-        (requestorOwnershipRecord.owner.firstName && requestorOwnershipRecord.owner.lastName
-          ? `${requestorOwnershipRecord.owner.firstName} ${requestorOwnershipRecord.owner.lastName}`
-          : requestorOwnershipRecord.owner.firstName || requestorOwnershipRecord.owner.email)
+        (requestorOwnershipRecord.ownerProfile?.firstName && requestorOwnershipRecord.ownerProfile?.lastName
+          ? `${requestorOwnershipRecord.ownerProfile.firstName} ${requestorOwnershipRecord.ownerProfile.lastName}`
+          : requestorOwnershipRecord.ownerProfile?.firstName || requestorOwnershipRecord.ownerProfile?.email)
         ?? 'Owner';
       participants.unshift({
         role: 'OWNER',
         ownershipId: requestorOwnershipRecord.id,
-        userId: requestorOwnershipRecord.owner.userId ?? undefined,
+        userId: requestorOwnershipRecord.ownerProfile?.userId ?? undefined,
         displayName,
-        email: requestorOwnershipRecord.owner.email ?? undefined,
+        email: requestorOwnershipRecord.ownerProfile?.email ?? undefined,
       });
     }
 
@@ -335,6 +359,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(serializeBooking(booking), { status: 201 });
   } catch (err) {
+    if (err instanceof RouteAuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('POST /api/bookings error:', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to create booking' },

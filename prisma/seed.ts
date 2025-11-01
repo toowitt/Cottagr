@@ -10,27 +10,29 @@ async function main() {
   await prisma.bookingVote.deleteMany({})
   await prisma.booking.deleteMany({})
   await prisma.blackout.deleteMany({})
+  await prisma.membership.deleteMany({})
+  await prisma.invite.deleteMany({})
   await prisma.ownership.deleteMany({})
-  await prisma.owner.deleteMany({})
+  await prisma.ownerProfile.deleteMany({})
   await prisma.property.deleteMany({})
 
   // Create owners for the family group
   const [alex, blair, casey] = await Promise.all([
-    prisma.owner.create({
+    prisma.ownerProfile.create({
       data: {
         email: 'alex@blackpoint.family',
         firstName: 'Alex',
         lastName: 'Nguyen',
       },
     }),
-    prisma.owner.create({
+    prisma.ownerProfile.create({
       data: {
         email: 'blair@blackpoint.family',
         firstName: 'Blair',
         lastName: 'Singh',
       },
     }),
-    prisma.owner.create({
+    prisma.ownerProfile.create({
       data: {
         email: 'casey@blackpoint.family',
         firstName: 'Casey',
@@ -55,19 +57,19 @@ async function main() {
       ownerships: {
         create: [
           {
-            ownerId: alex.id,
+            ownerProfileId: alex.id,
             role: 'PRIMARY',
             shareBps: 4000, // 40%
             votingPower: 2,
           },
           {
-            ownerId: blair.id,
+            ownerProfileId: blair.id,
             role: 'OWNER',
             shareBps: 3500, // 35%
             votingPower: 1,
           },
           {
-            ownerId: casey.id,
+            ownerProfileId: casey.id,
             role: 'OWNER',
             shareBps: 2500, // 25%
             votingPower: 1,
@@ -82,7 +84,7 @@ async function main() {
 
   console.log('Seeded property with ownership group:', {
     property: property.slug,
-    owners: property.ownerships.map((o) => ({ ownerId: o.ownerId, shareBps: o.shareBps })),
+    owners: property.ownerships.map((o) => ({ ownerProfileId: o.ownerProfileId, shareBps: o.shareBps })),
   })
 
   // Add blackout for next weekend (Saturday-Sunday)
