@@ -60,6 +60,10 @@ Run `node scripts/db-apply-rls.mjs` for manual steps before applying the optiona
 - Run `npm run test:e2e` to smoke-test the auth toggles via Playwright (`PLAYWRIGHT_BROWSERS_PATH=~ npx playwright install chromium` may be required once per machine). The test runner boots `npm run dev` automatically; ensure your `.env.local` is populated so the app can start.
 - Playwright stores browsers outside the repo. Use `PLAYWRIGHT_BROWSERS_PATH=~ npx playwright install chromium`. Do not commit `Library/Caches/ms-playwright` or test artifact folders.
 
+### If push fails due to >100 MB binaries
+
+Large Playwright binaries may sneak into history. Run `scripts/git-purge-playwright.sh` locally (after installing `git-filter-repo`) to rewrite history and remove those paths before retrying your push.
+
 ---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
