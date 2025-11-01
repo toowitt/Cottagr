@@ -56,6 +56,13 @@ db_data
 test-results/
 playwright-report/
 artifacts/backfill/
+# Playwright caches / artifacts
+Library/Caches/ms-playwright/
+playwright/.cache/
+playwright-report/
+blob-report/
+test-results/
+trace.zip
 
 # logs
 /tmp/logs/

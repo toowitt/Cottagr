@@ -57,7 +57,8 @@ Run `node scripts/db-apply-rls.mjs` for manual steps before applying the optiona
 ### Testing
 
 - Run `npm test` for vitest + React Testing Library coverage of the auth UI (Supabase calls are mocked).
-- Run `npm run test:e2e` to smoke-test the auth toggles via Playwright (`npx playwright install` may be required once per machine). The test runner boots `npm run dev` automatically; ensure your `.env.local` is populated so the app can start.
+- Run `npm run test:e2e` to smoke-test the auth toggles via Playwright (`PLAYWRIGHT_BROWSERS_PATH=~ npx playwright install chromium` may be required once per machine). The test runner boots `npm run dev` automatically; ensure your `.env.local` is populated so the app can start.
+- Playwright stores browsers outside the repo. Use `PLAYWRIGHT_BROWSERS_PATH=~ npx playwright install chromium`. Do not commit `Library/Caches/ms-playwright` or test artifact folders.
 
 ---
 
