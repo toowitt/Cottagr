@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { APP_URL } from '@/lib/auth/config';
 import { getActionUserRecord, ensureActionPropertyMembership, ActionAuthError } from '@/lib/auth/actionAuth';
-import { isManagerRole } from '@/lib/auth/propertyMembership';
+import { isManagerRole } from '@/lib/auth/capabilities';
 import type { PropertyMembershipRole } from '@prisma/client';
 
 const inviteSchema = z.object({

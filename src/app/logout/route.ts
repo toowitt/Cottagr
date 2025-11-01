@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { AuthSessionMissingError } from '@supabase/supabase-js';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
 import { APP_URL, AUTH_COOKIE_DOMAIN, AUTH_COOKIE_OPTIONS } from '@/lib/auth/config';
+import { clearTestAuthCookie, isTestAuthEnabled } from '@/server/lib/testAuth';
 
 const buildRedirect = () => {
   const redirectUrl = new URL('/login', APP_URL);
@@ -27,6 +28,9 @@ const signOutHandler = async () => {
 
   response.cookies.set('auth', '', { ...cookieOptions, maxAge: 0 });
   response.cookies.set(supabaseCookieName, '', { ...cookieOptions, maxAge: 0 });
+  if (isTestAuthEnabled()) {
+    clearTestAuthCookie(response);
+  }
   return response;
 };
 

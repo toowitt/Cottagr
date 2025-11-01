@@ -13,6 +13,7 @@ import {
   setupDeleteProperty,
   setupDetachProperty,
   setupRemoveOwnership,
+  setupResendOwnerInvite,
   setupUpdateOwnership,
   setupUpdateProperty,
 } from './actions';
@@ -29,7 +30,7 @@ const successMessages: Record<string, string> = {
   'property-updated': 'Property updated.',
   'property-deleted': 'Property deleted.',
   'property-detached': 'Property detached from organization.',
-  'owner-added': 'Owner added.',
+  'owner-invited': 'Owner invited.',
   'owner-removed': 'Owner removed.',
   'ownership-updated': 'Owner updated.',
 };
@@ -79,7 +80,30 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
           ownerships: {
             orderBy: { createdAt: 'asc' },
             include: {
-              ownerProfile: true,
+              ownerProfile: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  memberships: {
+                    select: {
+                      propertyId: true,
+                      role: true,
+                    },
+                  },
+                  invites: {
+                    select: {
+                      id: true,
+                      propertyId: true,
+                      status: true,
+                      expiresAt: true,
+                      createdAt: true,
+                    },
+                    orderBy: { createdAt: 'desc' },
+                  },
+                },
+              },
             },
           },
         },
@@ -381,11 +405,11 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                 <label className="md:col-span-2 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200">
                   <input
                     type="checkbox"
-                    name="addOwner"
+                    name="addManager"
                     defaultChecked
                     className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-400"
                   />
-                  <span>Add me as an owner so I can manage this property</span>
+                  <span>Add me as a manager so I can work on this property immediately</span>
                 </label>
               ) : null}
 
@@ -638,6 +662,28 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                             const isEditing = editOwnerId === ownership.id;
                             const focusParam = `owners-${property.id}`;
                             const focusQuery = `focus=${encodeURIComponent(focusParam)}`;
+                            const memberships = ownership.ownerProfile.memberships ?? [];
+                            const invites = ownership.ownerProfile.invites ?? [];
+                            const membership = memberships.find((entry) => entry.propertyId === property.id);
+                            const pendingInvite = invites.find(
+                              (invite) => invite.propertyId === property.id && invite.status === 'PENDING',
+                            );
+                            const inviteBadge = membership
+                              ? {
+                                label: 'Claimed',
+                                className: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40',
+                              }
+                              : pendingInvite
+                                ? {
+                                  label: `Invited${pendingInvite.expiresAt ? ` · Expires ${new Date(pendingInvite.expiresAt).toLocaleDateString()}` : ''}`,
+                                  className: 'bg-amber-500/10 text-amber-200 border-amber-500/30',
+                                }
+                                : {
+                                  label: 'Invite required',
+                                  className: 'bg-slate-800 text-slate-300 border-slate-700',
+                                };
+                            const showInviteButton = !membership;
+                            const inviteButtonLabel = pendingInvite ? 'Resend invite' : 'Send invite';
 
                             return (
                               <li
@@ -650,6 +696,11 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                       {ownership.ownerProfile.firstName} {ownership.ownerProfile.lastName ?? ''}
                                     </p>
                                     <p className="text-xs text-slate-400">{ownership.ownerProfile.email}</p>
+                                    <span
+                                      className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${inviteBadge.className}`}
+                                    >
+                                      {inviteBadge.label}
+                                    </span>
                                   </div>
                                   <div className="text-xs text-slate-400">
                                     Share {(ownership.shareBps / 100).toFixed(2)}% · Power {ownership.votingPower}
@@ -753,7 +804,19 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                                           Role: <strong>{ownership.role}</strong>
                                         </span>
                                       </div>
-                                      <div className="flex gap-2 md:justify-end">
+                                      <div className="flex flex-wrap gap-2 md:justify-end">
+                                        {showInviteButton ? (
+                                          <form
+                                            action={setupResendOwnerInvite.bind(null, property.id, ownership.ownerProfile.id)}
+                                          >
+                                            <button
+                                              type="submit"
+                                              className="rounded-lg border border-amber-500/40 px-3 py-2 text-xs font-semibold text-amber-200 transition hover:border-amber-300 hover:text-amber-100"
+                                            >
+                                              {inviteButtonLabel}
+                                            </button>
+                                          </form>
+                                        ) : null}
                                         <Link
                                           href={`/admin/setup?${focusQuery}&editOwner=${ownership.id}`}
                                           className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-500"

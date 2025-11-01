@@ -1,3 +1,5 @@
+![CI](https://github.com/toowitt/Cottagr/actions/workflows/ci.yml/badge.svg)
+
 ## Development notes
 
 ### Supabase auth rate limiting
@@ -22,6 +24,35 @@ If you still see 429 responses, wait for the cooldown (usually ~60 s) or adjus
 - In the Supabase dashboard, enable email confirmations and update the Site URL/Auth redirect to match `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO`.
 - Provide SMTP credentials (e.g., Mailpit or another sandbox) via the Supabase project settings. The `.env.example` file lists the `SUPABASE_SMTP_*` variables you can mirror in Supabase to send confirmation emails during development.
 - Run `npm run check-env` to verify the required variables are present before starting the app.
+
+### Local test rig
+
+- `npm run dev` serves the app on `http://127.0.0.1:4001` with real Supabase auth.
+- `npm run dev:test` boots the invite/auth test harness on `http://127.0.0.1:5000` (includes the test mailbox and stubbed Supabase auth); use this when running Playwright or manual invite-claim flows.
+- When launching Playwright locally, export `PLAYWRIGHT_SKIP_WEB_SERVER=1 ENABLE_TEST_AUTH=true ENABLE_TEST_MAILBOX=true NEXT_PUBLIC_ENABLE_TEST_AUTH=true` so the tests reuse the already-running `npm run dev:test` server.
+- The property-membership backfill can be rehearsed via
+  ```
+  TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node"}' npx ts-node scripts/backfill-memberships.ts --dry-run
+  TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node"}' npx ts-node scripts/backfill-memberships.ts --dry-run --json
+  ```
+  Ensure your local Postgres instance referenced by `DATABASE_URL` is running before executing the commands.
+
+### Pass 2: local test steps
+
+1. `npm install && npx playwright install chromium`
+2. `npm run dev:test`
+3. `npm run e2e:invites`
+
+### Feature flags (Phase 3 scaffolding)
+
+Set the following environment variables to `true` to opt-in locally; they remain disabled by default in all environments:
+
+- `FEATURE_RLS` – enables database row-level security policies and related RPC helpers once applied manually.
+- `FEATURE_RATE_LIMITS` – activates the middleware rate limiter (per-IP and per-user sliding window).
+- `FEATURE_SIGNED_INVITES` – switches invite issuance/claiming to signed tokens (scaffolding only for now).
+
+You can add them to `.env.local` for local testing; leave them unset/`false` in shared environments until Phase 3 rollout.
+Run `node scripts/db-apply-rls.mjs` for manual steps before applying the optional RLS policies.
 
 ### Testing
 

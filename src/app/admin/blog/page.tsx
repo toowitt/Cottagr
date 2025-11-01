@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma';
 import {
-  createArticleAction,
   updateArticleAction,
   publishArticleAction,
   unpublishArticleAction,

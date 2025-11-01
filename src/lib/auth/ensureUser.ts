@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { OwnershipRole, PropertyMembershipRole } from '@prisma/client';
 import type { User } from '@supabase/supabase-js';
+import { planMembershipBackfill, applyBackfillOperations } from './backfill';
 
 type Metadata = Record<string, unknown> | undefined | null;
 
@@ -18,15 +18,6 @@ const parseName = (metadata: Metadata) => {
     firstName: firstName ?? null,
     lastName: lastName ?? null,
   };
-};
-
-const ownershipRoleToMembershipRole = (role: OwnershipRole): PropertyMembershipRole => {
-  switch (role) {
-    case 'CARETAKER':
-      return PropertyMembershipRole.MANAGER;
-    default:
-      return PropertyMembershipRole.OWNER;
-  }
 };
 
 export async function ensureUserRecord(authUser: User | null | undefined) {
@@ -68,17 +59,34 @@ export async function ensureUserRecord(authUser: User | null | undefined) {
         },
       });
 
-    const ownerProfiles = await tx.ownerProfile.findMany({
-      where: { email },
-      include: {
-        ownerships: {
-          select: {
-            id: true,
-            propertyId: true,
-            role: true,
-          },
+    const ownerProfileInclude = {
+      ownerships: {
+        select: {
+          propertyId: true,
+          role: true,
         },
       },
+      memberships: {
+        select: {
+          propertyId: true,
+          userId: true,
+          role: true,
+        },
+      },
+      invites: {
+        where: { status: 'PENDING' },
+        select: {
+          id: true,
+          propertyId: true,
+          status: true,
+          role: true,
+        },
+      },
+    } as const;
+
+    let ownerProfiles = await tx.ownerProfile.findMany({
+      where: { email },
+      include: ownerProfileInclude,
     });
 
     if (ownerProfiles.length === 0) {
@@ -105,38 +113,49 @@ export async function ensureUserRecord(authUser: User | null | undefined) {
             userId: userRecord.id,
           },
         });
+      }
+    }
 
-        // Claim property memberships tied to this owner profile.
-        for (const ownership of profile.ownerships) {
-          await tx.membership.upsert({
-            where: {
-              ownerProfileId_propertyId: {
-                ownerProfileId: profile.id,
-                propertyId: ownership.propertyId,
-              },
-            },
-            update: {
-              userId: userRecord.id,
-            },
-            create: {
-              ownerProfileId: profile.id,
-              propertyId: ownership.propertyId,
-              userId: userRecord.id,
-              role: ownershipRoleToMembershipRole(ownership.role),
-            },
-          });
-        }
+    ownerProfiles = await tx.ownerProfile.findMany({
+      where: { email },
+      include: ownerProfileInclude,
+    });
 
-        await tx.invite.updateMany({
-          where: {
-            ownerProfileId: profile.id,
-            status: 'PENDING',
-          },
-          data: {
-            status: 'CLAIMED',
-            claimedAt: new Date(),
-          },
-        });
+    if (ownerProfiles.length > 0) {
+      const backfillProfiles = ownerProfiles.map((profile) => ({
+        id: profile.id,
+        email: profile.email,
+        userId: profile.userId,
+        ownerships: profile.ownerships.map((ownership) => ({
+          propertyId: ownership.propertyId,
+          role: ownership.role,
+        })),
+        memberships: profile.memberships.map((membership) => ({
+          propertyId: membership.propertyId,
+          userId: membership.userId,
+          role: membership.role,
+        })),
+        invites: profile.invites.map((invite) => ({
+          id: invite.id,
+          propertyId: invite.propertyId,
+          status: invite.status,
+          role: invite.role,
+        })),
+      }));
+
+      const plan = planMembershipBackfill(backfillProfiles, [
+        {
+          id: userRecord.id,
+          email,
+        },
+      ]);
+
+      if (plan.conflicts.length > 0) {
+        console.warn('ensureUserRecord conflicts detected', plan.conflicts);
+      }
+
+      if (plan.operations.length > 0) {
+        await applyBackfillOperations(tx, plan.operations);
       }
     }
 

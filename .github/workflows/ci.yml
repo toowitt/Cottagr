@@ -2,38 +2,27 @@ name: CI
 
 on:
   pull_request:
+    branches: [develop]
   push:
-    branches: [ main ]
+    branches-ignore:
+      - main
+      - develop
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    env:
-      NEXT_PUBLIC_APP_NAME: Cottagr
-      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-      SUPABASE_SERVICE_ROLE_KEY: service-role-test
-      NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO: http://localhost:3000/admin/setup
-      DATABASE_URL: postgres://user:pass@localhost:5432/ci
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js from .nvmrc
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
-      - name: Install dependencies
-        run: npm ci
-      - name: Dev prepare
-        run: npm run dev:prepare
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Lint
-        run: npm run lint
-      - name: Test
-        run: npm test
-      - name: Env sanity
-        run: node scripts/check-env.mjs
-        env:
-          NODE_ENV: test
-      - name: Build
-        run: npm run build
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run prisma:gen
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test

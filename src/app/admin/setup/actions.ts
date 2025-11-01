@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma, OwnershipRole, PropertyMembershipRole } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -9,7 +9,9 @@ import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
 import { ensureActionPropertyMembership, ActionAuthError } from '@/lib/auth/actionAuth';
-import { isManagerRole } from '@/lib/auth/propertyMembership';
+import { isManagerRole, canManageOwners } from '@/lib/auth/capabilities';
+import { generateInviteToken, calculateInviteExpiry } from '@/lib/auth/inviteTokens';
+import { sendOwnerInviteEmail } from '@/server/lib/ownerInviteEmail';
 
 const slugify = (value: string) =>
   value
@@ -20,6 +22,23 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
+
+const ownershipRoleToMembershipRole = (role: OwnershipRole): PropertyMembershipRole => {
+  if (role === 'CARETAKER') {
+    return 'MANAGER';
+  }
+  return 'OWNER';
+};
+
+type InviteDispatchContext = {
+  email: string;
+  token: string;
+  propertyId: number;
+  propertyName: string;
+  organizationId: number | null;
+  organizationName: string | null;
+  role: PropertyMembershipRole;
+};
 
 async function requireOwnerAdmin(contextMessage: string) {
   const supabase = await createServerSupabaseActionClient();
@@ -80,7 +99,7 @@ async function requirePropertyManager(propertyId: number) {
 
 async function requirePropertyOwner(propertyId: number) {
   const membership = await ensureActionPropertyMembership(propertyId);
-  if (membership.role !== 'OWNER') {
+  if (!canManageOwners(membership.role)) {
     throw new ActionAuthError('Forbidden', 403);
   }
   return membership;
@@ -197,9 +216,9 @@ export async function setupCreateProperty(formData: FormData) {
     },
   });
 
-  const addOwner = String(formData.get('addOwner') ?? '').toLowerCase() === 'on';
+  const addManager = String(formData.get('addManager') ?? '').toLowerCase() === 'on';
 
-  if (addOwner) {
+  if (addManager) {
     const ownerProfile = await prisma.ownerProfile.upsert({
       where: { email: userRecord.email },
       update: {
@@ -223,13 +242,13 @@ export async function setupCreateProperty(formData: FormData) {
       },
       update: {
         userId: userRecord.id,
-        role: 'OWNER',
+        role: 'MANAGER',
       },
       create: {
         ownerProfileId: ownerProfile.id,
         propertyId: property.id,
         userId: userRecord.id,
-        role: 'OWNER',
+        role: 'MANAGER',
       },
     });
   }
@@ -266,69 +285,124 @@ export async function setupAddOwner(formData: FormData) {
   }
 
   const propertyId = parsed.data.propertyId;
+  let inviteContext: InviteDispatchContext | undefined;
 
   try {
     await requirePropertyOwner(propertyId);
-
-    const property = await prisma.property.findUnique({
-      where: { id: propertyId },
-      select: {
-        id: true,
-        ownerships: {
-          select: { shareBps: true },
+    await prisma.$transaction(async (tx) => {
+      const property = await tx.property.findUnique({
+        where: { id: propertyId },
+        select: {
+          id: true,
+          name: true,
+          organizationId: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          ownerships: {
+            select: { shareBps: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!property) {
-      redirect(`/admin/setup?error=${encodeURIComponent('Property not found.')}`);
-    }
+      if (!property) {
+        redirect(`/admin/setup?error=${encodeURIComponent('Property not found.')}`);
+      }
 
-    const currentShare = property.ownerships.reduce((total, ownership) => total + ownership.shareBps, 0);
-    if (currentShare + parsed.data.shareBps > 10000) {
-      redirect(
-        `/admin/setup?error=${encodeURIComponent('Shares exceed 100%.')}&focus=${encodeURIComponent(
-          `owners-${property.id}`,
-        )}`,
-      );
-    }
+      const currentShare = property.ownerships.reduce((total, ownership) => total + ownership.shareBps, 0);
+      if (currentShare + parsed.data.shareBps > 10000) {
+        redirect(
+          `/admin/setup?error=${encodeURIComponent('Shares exceed 100%.')}&focus=${encodeURIComponent(
+            `owners-${property.id}`,
+          )}`,
+        );
+      }
 
-    const owner = await prisma.ownerProfile.upsert({
-      where: { email: parsed.data.email },
-      update: {
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName ?? null,
-      },
-      create: {
-        email: parsed.data.email,
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName ?? null,
-      },
-    });
+      const owner = await tx.ownerProfile.upsert({
+        where: { email: parsed.data.email },
+        update: {
+          firstName: parsed.data.firstName,
+          lastName: parsed.data.lastName ?? null,
+        },
+        create: {
+          email: parsed.data.email,
+          firstName: parsed.data.firstName,
+          lastName: parsed.data.lastName ?? null,
+        },
+      });
 
-    try {
-      await prisma.ownership.create({
+      try {
+        await tx.ownership.create({
+          data: {
+            propertyId: property.id,
+            ownerProfileId: owner.id,
+            role: parsed.data.role,
+            shareBps: parsed.data.shareBps,
+            votingPower: parsed.data.votingPower,
+          },
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message.includes('Unique constraint failed')
+            ? 'That owner is already assigned to this property.'
+            : 'Could not add owner right now.';
+        redirect(
+          `/admin/setup?error=${encodeURIComponent(message)}&focus=${encodeURIComponent(`owners-${property.id}`)}`,
+        );
+      }
+
+      await tx.invite.updateMany({
+        where: {
+          propertyId: property.id,
+          ownerProfileId: owner.id,
+          status: 'PENDING',
+        },
+        data: {
+          status: 'REVOKED',
+        },
+      });
+
+      const invite = await tx.invite.create({
         data: {
           propertyId: property.id,
           ownerProfileId: owner.id,
-          role: parsed.data.role,
-          shareBps: parsed.data.shareBps,
-          votingPower: parsed.data.votingPower,
+          token: generateInviteToken(),
+          email: parsed.data.email.toLowerCase(),
+          role: ownershipRoleToMembershipRole(parsed.data.role as OwnershipRole),
+          status: 'PENDING',
+          expiresAt: calculateInviteExpiry(),
         },
       });
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message.includes('Unique constraint failed')
-          ? 'That owner is already assigned to this property.'
-          : 'Could not add owner right now.';
-      redirect(
-        `/admin/setup?error=${encodeURIComponent(message)}&focus=${encodeURIComponent(`owners-${property.id}`)}`,
-      );
+
+      inviteContext = {
+        email: parsed.data.email,
+        token: invite.token,
+        propertyId: property.id,
+        propertyName: property.name,
+        organizationId: property.organization?.id ?? property.organizationId ?? null,
+        organizationName: property.organization?.name ?? null,
+        role: ownershipRoleToMembershipRole(parsed.data.role as OwnershipRole),
+      };
+    });
+
+    if (inviteContext) {
+      await sendOwnerInviteEmail({
+        email: inviteContext.email,
+        propertyId: inviteContext.propertyId,
+        inviteToken: inviteContext.token,
+        propertyName: inviteContext.propertyName,
+        organizationId: inviteContext.organizationId,
+        organizationName: inviteContext.organizationName,
+        role: inviteContext.role,
+      });
     }
 
     revalidatePath('/admin/setup');
     redirect(
-      `/admin/setup?success=${encodeURIComponent('owner-added')}&focus=${encodeURIComponent(`owners-${property.id}`)}`,
+      `/admin/setup?success=${encodeURIComponent('owner-invited')}&focus=${encodeURIComponent(`owners-${propertyId}`)}`,
     );
   } catch (error) {
     if (error instanceof ActionAuthError) {
@@ -453,106 +527,173 @@ export async function setupUpdateOwnership(ownershipId: number, formData: FormDa
     redirect(`/admin/setup?error=${encodeURIComponent(msg)}&focus=${encodeURIComponent(`owners-${propertyKey}`)}`);
   }
 
-  const ownership = await prisma.ownership.findUnique({
-    where: { id: ownershipId },
-    include: {
-      property: {
-        select: {
-          id: true,
-        },
-      },
-      ownerProfile: true,
-    },
-  });
-
-  if (!ownership || !ownership.property) {
-    redirect(`/admin/setup?error=${encodeURIComponent('Owner record not found.')}`);
-  }
-
-  if (ownership.property.id !== parsed.data.propertyId) {
-    redirect(`/admin/setup?error=${encodeURIComponent('Owner does not match property.')}`);
-  }
+  let inviteContext: InviteDispatchContext | undefined;
 
   try {
-    await requirePropertyOwner(ownership.property.id);
+    await requirePropertyOwner(parsed.data.propertyId);
 
-    if (!ownership.ownerProfile) {
-      redirect(
-        `/admin/setup?error=${encodeURIComponent('Owner record not found.')}&focus=${encodeURIComponent(
-          `owners-${ownership.property.id}`,
-        )}`,
-      );
-    }
-
-    const siblingShare = await prisma.ownership.aggregate({
-      where: {
-        propertyId: ownership.property.id,
-        NOT: { id: ownershipId },
-      },
-      _sum: { shareBps: true },
-    });
-
-    const otherShare = siblingShare._sum.shareBps ?? 0;
-    if (otherShare + parsed.data.shareBps > 10000) {
-      redirect(
-        `/admin/setup?error=${encodeURIComponent('Shares exceed 100%.')}&focus=${encodeURIComponent(
-          `owners-${ownership.property.id}`,
-        )}`,
-      );
-    }
-
-    const trimmedFirstName = parsed.data.firstName.trim();
-    if (!trimmedFirstName) {
-      redirect(
-        `/admin/setup?error=${encodeURIComponent('First name is required.')}&focus=${encodeURIComponent(
-          `owners-${ownership.property.id}`,
-        )}`,
-      );
-    }
-
-    const trimmedLastName = parsed.data.lastName?.trim() || null;
-    const normalizedEmail = parsed.data.email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      redirect(
-        `/admin/setup?error=${encodeURIComponent('Email is required.')}&focus=${encodeURIComponent(
-          `owners-${ownership.property.id}`,
-        )}`,
-      );
-    }
-
-    try {
-      await prisma.ownerProfile.update({
-        where: { id: ownership.ownerProfile.id },
-        data: {
-          firstName: trimmedFirstName,
-          lastName: trimmedLastName,
-          email: normalizedEmail,
+    await prisma.$transaction(async (tx) => {
+      const ownership = await tx.ownership.findUnique({
+        where: { id: ownershipId },
+        include: {
+          property: {
+            select: {
+              id: true,
+              name: true,
+              organizationId: true,
+              organization: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          ownerProfile: {
+            include: {
+              memberships: {
+                where: { propertyId: parsed.data.propertyId },
+                select: { id: true },
+              },
+            },
+          },
         },
       });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+
+      if (!ownership || !ownership.property) {
+        redirect(`/admin/setup?error=${encodeURIComponent('Owner record not found.')}`);
+      }
+
+      if (ownership.property.id !== parsed.data.propertyId) {
+        redirect(`/admin/setup?error=${encodeURIComponent('Owner does not match property.')}`);
+      }
+
+      if (!ownership.ownerProfile) {
         redirect(
-          `/admin/setup?error=${encodeURIComponent('Another owner already uses that email.')}&focus=${encodeURIComponent(
+          `/admin/setup?error=${encodeURIComponent('Owner record not found.')}&focus=${encodeURIComponent(
             `owners-${ownership.property.id}`,
           )}`,
         );
       }
-      throw error;
-    }
 
-    await prisma.ownership.update({
-      where: { id: ownershipId },
-      data: {
-        shareBps: parsed.data.shareBps,
-        votingPower: parsed.data.votingPower,
-        role: parsed.data.role,
-      },
+      const siblingShare = await tx.ownership.aggregate({
+        where: {
+          propertyId: ownership.property.id,
+          NOT: { id: ownershipId },
+        },
+        _sum: { shareBps: true },
+      });
+
+      const otherShare = siblingShare._sum.shareBps ?? 0;
+      if (otherShare + parsed.data.shareBps > 10000) {
+        redirect(
+          `/admin/setup?error=${encodeURIComponent('Shares exceed 100%.')}&focus=${encodeURIComponent(
+            `owners-${ownership.property.id}`,
+          )}`,
+        );
+      }
+
+      const trimmedFirstName = parsed.data.firstName.trim();
+      if (!trimmedFirstName) {
+        redirect(
+          `/admin/setup?error=${encodeURIComponent('First name is required.')}&focus=${encodeURIComponent(
+            `owners-${ownership.property.id}`,
+          )}`,
+        );
+      }
+
+      const trimmedLastName = parsed.data.lastName?.trim() || null;
+      const normalizedEmail = parsed.data.email.trim().toLowerCase();
+      if (!normalizedEmail) {
+        redirect(
+          `/admin/setup?error=${encodeURIComponent('Email is required.')}&focus=${encodeURIComponent(
+            `owners-${ownership.property.id}`,
+          )}`,
+        );
+      }
+
+      try {
+        await tx.ownerProfile.update({
+          where: { id: ownership.ownerProfile.id },
+          data: {
+            firstName: trimmedFirstName,
+            lastName: trimmedLastName,
+            email: normalizedEmail,
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          redirect(
+            `/admin/setup?error=${encodeURIComponent('Another owner already uses that email.')}&focus=${encodeURIComponent(
+              `owners-${ownership.property.id}`,
+            )}`,
+          );
+        }
+        throw error;
+      }
+
+      await tx.ownership.update({
+        where: { id: ownershipId },
+        data: {
+          shareBps: parsed.data.shareBps,
+          votingPower: parsed.data.votingPower,
+          role: parsed.data.role,
+        },
+      });
+
+      const membershipExists = ownership.ownerProfile.memberships.length > 0;
+
+      if (!membershipExists) {
+        await tx.invite.updateMany({
+          where: {
+            propertyId: ownership.property.id,
+            ownerProfileId: ownership.ownerProfile.id,
+            status: 'PENDING',
+          },
+          data: { status: 'REVOKED' },
+        });
+
+        const invite = await tx.invite.create({
+          data: {
+            propertyId: ownership.property.id,
+            ownerProfileId: ownership.ownerProfile.id,
+            token: generateInviteToken(),
+            email: parsed.data.email.toLowerCase(),
+            role: ownershipRoleToMembershipRole(parsed.data.role as OwnershipRole),
+            status: 'PENDING',
+            expiresAt: calculateInviteExpiry(),
+          },
+        });
+
+        inviteContext = {
+          email: parsed.data.email,
+          token: invite.token,
+          propertyId: ownership.property.id,
+          propertyName: ownership.property.name,
+          organizationId:
+            ownership.property.organization?.id ?? ownership.property.organizationId ?? null,
+          organizationName: ownership.property.organization?.name ?? null,
+          role: ownershipRoleToMembershipRole(parsed.data.role as OwnershipRole),
+        };
+      }
     });
+
+    if (inviteContext) {
+      await sendOwnerInviteEmail({
+        email: inviteContext.email,
+        propertyId: inviteContext.propertyId,
+        inviteToken: inviteContext.token,
+        propertyName: inviteContext.propertyName,
+        organizationId: inviteContext.organizationId,
+        organizationName: inviteContext.organizationName,
+        role: inviteContext.role,
+      });
+    }
 
     revalidatePath('/admin/setup');
     redirect(
       `/admin/setup?success=${encodeURIComponent('ownership-updated')}&focus=${encodeURIComponent(
-        `owners-${ownership.property.id}`,
+        `owners-${parsed.data.propertyId}`,
       )}`,
     );
   } catch (error) {
@@ -577,6 +718,7 @@ export async function setupRemoveOwnership(ownershipId: number, formData: FormDa
     select: {
       id: true,
       propertyId: true,
+      ownerProfileId: true,
     },
   });
 
@@ -590,7 +732,20 @@ export async function setupRemoveOwnership(ownershipId: number, formData: FormDa
 
   try {
     await requirePropertyOwner(propertyId);
-    await prisma.ownership.delete({ where: { id: ownershipId } });
+
+    await prisma.$transaction(async (tx) => {
+
+      await tx.invite.updateMany({
+        where: {
+          propertyId,
+          ownerProfileId: ownership.ownerProfileId,
+          status: 'PENDING',
+        },
+        data: { status: 'REVOKED' },
+      });
+
+      await tx.ownership.delete({ where: { id: ownershipId } });
+    });
 
     revalidatePath('/admin/setup');
     redirect(
@@ -601,6 +756,103 @@ export async function setupRemoveOwnership(ownershipId: number, formData: FormDa
   } catch (error) {
     if (error instanceof ActionAuthError) {
       redirect(`/admin/setup?error=${encodeURIComponent(error.message)}`);
+    }
+    throw error;
+  }
+}
+
+export async function setupResendOwnerInvite(propertyId: number, ownerProfileId: number) {
+  try {
+    await requirePropertyOwner(propertyId);
+
+    let inviteContext: InviteDispatchContext | undefined;
+
+    await prisma.$transaction(async (tx) => {
+
+      const existing = await tx.ownership.findFirst({
+        where: { propertyId, ownerProfileId },
+        include: {
+          ownerProfile: {
+            include: {
+              memberships: {
+                where: { propertyId },
+                select: { id: true },
+              },
+            },
+          },
+          property: {
+            select: {
+              id: true,
+              name: true,
+              organizationId: true,
+              organization: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!existing) {
+        redirect('/admin/setup?error=Owner%20assignment%20not%20found');
+      }
+
+      if (existing.ownerProfile.memberships.length > 0) {
+        redirect('/admin/setup?error=Owner%20already%20claimed');
+      }
+
+      await tx.invite.updateMany({
+        where: {
+          propertyId,
+          ownerProfileId,
+          status: 'PENDING',
+        },
+        data: { status: 'REVOKED' },
+      });
+
+      const invite = await tx.invite.create({
+        data: {
+          propertyId,
+          ownerProfileId,
+          token: generateInviteToken(),
+          email: existing.ownerProfile.email.toLowerCase(),
+          role: 'OWNER',
+          status: 'PENDING',
+          expiresAt: calculateInviteExpiry(),
+        },
+      });
+
+      inviteContext = {
+        email: existing.ownerProfile.email,
+        token: invite.token,
+        propertyId: existing.property?.id ?? propertyId,
+        propertyName: existing.property?.name ?? 'Property',
+        organizationId: existing.property?.organization?.id ?? existing.property?.organizationId ?? null,
+        organizationName: existing.property?.organization?.name ?? null,
+        role: 'OWNER',
+      };
+    });
+
+    if (inviteContext) {
+      await sendOwnerInviteEmail({
+        email: inviteContext.email,
+        propertyId: inviteContext.propertyId,
+        inviteToken: inviteContext.token,
+        propertyName: inviteContext.propertyName,
+        organizationId: inviteContext.organizationId,
+        organizationName: inviteContext.organizationName,
+        role: inviteContext.role,
+      });
+    }
+
+    revalidatePath('/admin/setup');
+    redirect(`/admin/setup?success=${encodeURIComponent('invite-resent')}&focus=${encodeURIComponent(`owners-${propertyId}`)}`);
+  } catch (error) {
+    if (error instanceof ActionAuthError) {
+      redirect(`/admin/setup?error=${encodeURIComponent(error.message)}&focus=${encodeURIComponent(`owners-${propertyId}`)}`);
     }
     throw error;
   }

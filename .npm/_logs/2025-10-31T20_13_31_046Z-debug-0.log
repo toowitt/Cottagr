@@ -1,0 +1,17 @@
+0 verbose cli /Users/colinaikman/.nvm/versions/node/v20.19.5/bin/node /Users/colinaikman/.nvm/versions/node/v20.19.5/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.8.2
+2 info using node@v20.19.5
+3 silly config load:file:/Users/colinaikman/.nvm/versions/node/v20.19.5/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/colinaikman/Cottagr/.npmrc
+5 silly config load:file:/Users/colinaikman/.nvm/versions/node/v20.19.5/etc/npmrc
+6 verbose title npm exec playwright test tests/e2e/invite-flow.spec.ts -g invite claim is idempotent and links viewer membership --project=Desktop Chromium --workers=1 --trace=on
+7 verbose argv "exec" "--" "playwright" "test" "tests/e2e/invite-flow.spec.ts" "-g" "invite claim is idempotent and links viewer membership" "--project=Desktop Chromium" "--workers=1" "--trace=on"
+8 verbose logfile logs-max:10 dir:/Users/colinaikman/Cottagr/.npm/_logs/2025-10-31T20_13_31_046Z-
+9 verbose logfile /Users/colinaikman/Cottagr/.npm/_logs/2025-10-31T20_13_31_046Z-debug-0.log
+10 silly logfile done cleaning log files
+11 verbose cwd /Users/colinaikman/Cottagr
+12 verbose os Darwin 25.0.0
+13 verbose node v20.19.5
+14 verbose npm  v10.8.2
+15 verbose exit 1
+16 verbose code 1

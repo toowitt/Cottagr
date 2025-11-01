@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type { Membership, PropertyMembershipRole } from '@prisma/client';
+import type { Membership } from '@prisma/client';
 
 export class PropertyMembershipError extends Error {
   status: number;
@@ -73,6 +73,3 @@ export async function listAccessiblePropertyIds(userId: string) {
   });
   return memberships.map((membership) => membership.propertyId);
 }
-
-export const isManagerRole = (role: PropertyMembershipRole) =>
-  role === 'MANAGER' || role === 'OWNER';

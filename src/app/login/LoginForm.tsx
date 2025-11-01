@@ -21,6 +21,7 @@ const MIN_PASSWORD_LENGTH = 8;
 const SIGN_IN_FALLBACK_REDIRECT = '/admin';
 const SIGN_UP_FALLBACK_REDIRECT = '/admin/setup';
 const EMAIL_REDIRECT_BASE = process.env.NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_TO ?? AUTH_REDIRECT_URL;
+const IS_TEST_AUTH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_TEST_AUTH === 'true';
 
 const formSchema = z
   .object({
@@ -55,7 +56,7 @@ type LoginFormValues = z.infer<typeof formSchema>;
 
 export default function LoginForm({ redirectTo }: LoginFormProps) {
   const router = useRouter();
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const supabase = useMemo(() => (IS_TEST_AUTH_ENABLED ? null : createSupabaseBrowserClient()), []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [cooldownMs, setCooldownMs] = useState(0);
@@ -189,7 +190,40 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
         return;
       }
 
+      if (IS_TEST_AUTH_ENABLED) {
+        const target = buildRedirectTarget(
+          values.mode === 'sign-up' ? SIGN_UP_FALLBACK_REDIRECT : SIGN_IN_FALLBACK_REDIRECT,
+          values.mode === 'sign-up' ? { ignoreQuery: true } : undefined,
+        );
+
+        const response = await fetch('/api/test-auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: trimmedEmail,
+            name: values.name?.trim() ?? '',
+          }),
+        });
+
+        if (!response.ok) {
+          applyCooldown('soft');
+          const payload = await response.json().catch(() => null);
+          const message = typeof payload?.error === 'string' ? payload.error : 'Unable to sign in right now.';
+          form.setError('root', { type: 'server', message });
+          return;
+        }
+
+        resetCooldown();
+        router.replace(target);
+        router.refresh();
+        return;
+      }
+
       if (values.mode === 'sign-up') {
+        if (!supabase) {
+          form.setError('root', { type: 'server', message: 'Authentication is not available.' });
+          return;
+        }
         const trimmedName = values.name?.trim() ?? '';
         const redirectTarget = buildRedirectTarget(SIGN_UP_FALLBACK_REDIRECT, { ignoreQuery: true });
         const emailRedirectTo = buildEmailRedirectUrl(redirectTarget);
@@ -253,6 +287,11 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
           },
           { keepDefaultValues: false },
         );
+        return;
+      }
+
+      if (!supabase) {
+        form.setError('root', { type: 'server', message: 'Authentication is not available.' });
         return;
       }
 

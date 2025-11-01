@@ -1,0 +1,68 @@
+-- FEATURE_RLS scaffolding (disabled by default)
+--
+-- The statements below are examples only. Enable FEATURE_RLS=true locally and
+-- apply them manually once the schema aligns with Phase 3 requirements.
+--
+-- Example usage:
+--   psql "$DATABASE_URL" -f db/policies/rls.sql
+--
+-- Uncomment and adjust as needed when promoting to production.
+
+-- Row Level Security for properties
+-- ALTER TABLE public."Property" ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "properties_select_members" ON public."Property"
+--   FOR SELECT USING (
+--     EXISTS (
+--       SELECT 1 FROM public."Membership" m
+--       WHERE m."propertyId" = "Property"."id"
+--         AND m."userId" = auth.uid()
+--     )
+--   );
+
+-- Row Level Security for property memberships
+-- ALTER TABLE public."Membership" ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "memberships_self_access" ON public."Membership"
+--   FOR SELECT USING ("userId" = auth.uid());
+-- CREATE POLICY "memberships_manage_owner" ON public."Membership"
+--   FOR INSERT WITH CHECK (
+--     EXISTS (
+--       SELECT 1 FROM public."Membership" mgr
+--       WHERE mgr."propertyId" = "Membership"."propertyId"
+--         AND mgr."userId" = auth.uid()
+--         AND mgr."role" IN ('OWNER', 'MANAGER')
+--     )
+--   );
+
+-- Row Level Security for invites
+-- ALTER TABLE public."Invite" ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "invites_select_self" ON public."Invite"
+--   FOR SELECT USING (lower("email") = lower(auth.email()));
+-- CREATE POLICY "invites_admin_manage" ON public."Invite"
+--   FOR INSERT WITH CHECK (
+--     EXISTS (
+--       SELECT 1 FROM public."Membership" mgr
+--       WHERE mgr."propertyId" = "Invite"."propertyId"
+--         AND mgr."userId" = auth.uid()
+--         AND mgr."role" IN ('OWNER', 'MANAGER')
+--     )
+--   );
+-- CREATE POLICY "invites_admin_manage_update" ON public."Invite"
+--   FOR UPDATE USING (
+--     EXISTS (
+--       SELECT 1 FROM public."Membership" mgr
+--       WHERE mgr."propertyId" = "Invite"."propertyId"
+--         AND mgr."userId" = auth.uid()
+--         AND mgr."role" IN ('OWNER', 'MANAGER')
+--     )
+--   );
+
+-- SECURITY DEFINER RPC stubs (uncomment + adjust as needed)
+-- CREATE OR REPLACE FUNCTION api.claim_invite(invite_token text)
+-- RETURNS VOID
+-- LANGUAGE plpgsql
+-- SECURITY DEFINER
+-- AS $$
+-- BEGIN
+--   -- TODO: call the application claim logic (Phase 3)
+-- END;
+-- $$;

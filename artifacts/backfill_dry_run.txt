@@ -1,0 +1,13 @@
+
+=== Backfill property memberships (dry-run) ===
+prisma:error 
+Invalid `prisma.user.findMany()` invocation in
+/Users/colinaikman/Cottagr/scripts/backfill-memberships.ts:27:51
+
+  24 async function run() {
+  25   logHeader(`Backfill property memberships (${dryRunMode ? 'dry-run' : 'apply'})`);
+  26 
+→ 27   const users: BackfillUser[] = await prisma.user.findMany(
+Can't reach database server at `127.0.0.1:5432`
+
+Please make sure your database server is running at `127.0.0.1:5432`.

@@ -55,6 +55,7 @@ db_data
 # playwright
 test-results/
 playwright-report/
+artifacts/backfill/
 
 # logs
 /tmp/logs/

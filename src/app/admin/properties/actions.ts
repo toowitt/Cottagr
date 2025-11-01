@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { ensureActionPropertyMembership, ActionAuthError } from '@/lib/auth/actionAuth';
-import { isManagerRole } from '@/lib/auth/propertyMembership';
+import { isManagerRole } from '@/lib/auth/capabilities';
 import { createServerSupabaseActionClient, handleSupabaseAuthError } from '@/lib/supabase/server';
 import { ensureUserRecord } from '@/lib/auth/ensureUser';
 import { getUserMemberships } from '@/lib/auth/getMemberships';
